@@ -2135,54 +2135,6 @@ Additionally, we can override other pieces of metadata, such as the description 
 
 Check out [the overlay example](examples/overlay/) for the full code, and some more complex examples.
 
-## Generating Nullable types
-
-It's possible that you want to be able to determine whether a field isn't sent, is sent as `null` or has a value.
-
-For instance, if you had the following OpenAPI property:
-
-```yaml
-S:
-  type: object
-  properties:
-    Field:
-      type: string
-      nullable: true
-    required: []
-```
-
-The default behaviour in `oapi-codegen` is to generate:
-
-```go
-type S struct {
-	Field *string `json:"field,omitempty"`
-}
-```
-
-However, you lose the ability to understand the three cases, as there's no way to distinguish two of the types from each other:
-
-- is this field not sent? (Can be checked with `S.Field == nil`)
-- is this field `null`? (Can be checked with `S.Field == nil`)
-- does this field have a value? (`S.Field != nil && *S.Field == "123"`)
-
-As of `oapi-codegen` [v2.1.0](https://github.com/oapi-codegen/oapi-codegen/releases/tag/v2.1.0) it is now possible to represent this with the `nullable.Nullable` type from [our new library, oapi-codegen/nullable](https://github.com/oapi-codegen/nullable).
-
-If you configure your generator's Output Options to opt-in to this behaviour, as so:
-
-```yaml
-output-options:
-  nullable-type: true
-```
-
-You will now receive the following output:
-
-```go
-type S struct {
-    // note that there's no pointer here, just `omitempty`
-    Field nullable.Nullable[string] `json:"field,omitempty"`
-}
-```
-
 ## OpenAPI extensions
 
 As well as the core OpenAPI support, we also support the following OpenAPI extensions, as denoted by the [OpenAPI Specification Extensions](https://spec.openapis.org/oas/v3.0.3#specification-extensions).
