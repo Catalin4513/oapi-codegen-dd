@@ -29,10 +29,6 @@ func TestExamplePetStoreCodeGeneration(t *testing.T) {
 	packageName := "api"
 	opts := codegen.Configuration{
 		PackageName: packageName,
-		Generate: codegen.GenerateOptions{
-			Client: true,
-			Models: true,
-		},
 	}
 
 	// Get a spec from the example PetStore definition:
@@ -74,9 +70,6 @@ func TestExamplePetStoreCodeGenerationWithUserTemplates(t *testing.T) {
 	packageName := "api"
 	opts := codegen.Configuration{
 		PackageName: packageName,
-		Generate: codegen.GenerateOptions{
-			Models: true,
-		},
 		OutputOptions: codegen.OutputOptions{
 			UserTemplates: userTemplates,
 		},
@@ -110,9 +103,6 @@ func TestExamplePetStoreCodeGenerationWithFileUserTemplates(t *testing.T) {
 	packageName := "api"
 	opts := codegen.Configuration{
 		PackageName: packageName,
-		Generate: codegen.GenerateOptions{
-			Models: true,
-		},
 		OutputOptions: codegen.OutputOptions{
 			UserTemplates: userTemplates,
 		},
@@ -151,9 +141,6 @@ func TestExamplePetStoreCodeGenerationWithHTTPUserTemplates(t *testing.T) {
 	packageName := "api"
 	opts := codegen.Configuration{
 		PackageName: packageName,
-		Generate: codegen.GenerateOptions{
-			Models: true,
-		},
 		OutputOptions: codegen.OutputOptions{
 			UserTemplates: userTemplates,
 		},

@@ -3,7 +3,6 @@ package codegen
 import (
 	"errors"
 	"fmt"
-	"reflect"
 )
 
 type AdditionalImport struct {
@@ -15,8 +14,6 @@ type AdditionalImport struct {
 type Configuration struct {
 	// PackageName to generate the code under
 	PackageName string `yaml:"package"`
-	// Generate specifies which supported output formats to generate
-	Generate GenerateOptions `yaml:"generate,omitempty"`
 	// OutputOptions are used to modify the output code in some way.
 	OutputOptions OutputOptions `yaml:"output-options,omitempty"`
 	// ImportMapping specifies the golang package path for each external reference
@@ -32,12 +29,6 @@ func (o Configuration) Validate() error {
 	}
 
 	var errs []error
-	if problems := o.Generate.Validate(); problems != nil {
-		for k, v := range problems {
-			errs = append(errs, fmt.Errorf("`generate` configuration for %v was incorrect: %v", k, v))
-		}
-	}
-
 	if problems := o.OutputOptions.Validate(); problems != nil {
 		for k, v := range problems {
 			errs = append(errs, fmt.Errorf("`output-options` configuration for %v was incorrect: %v", k, v))
@@ -49,27 +40,6 @@ func (o Configuration) Validate() error {
 		return fmt.Errorf("failed to validate configuration: %w", err)
 	}
 
-	return nil
-}
-
-// UpdateDefaults sets reasonable default values for unset fields in Configuration
-func (o Configuration) UpdateDefaults() Configuration {
-	if reflect.ValueOf(o.Generate).IsZero() {
-		o.Generate = GenerateOptions{
-			Models: true,
-		}
-	}
-	return o
-}
-
-// GenerateOptions specifies which supported output formats to generate.
-type GenerateOptions struct {
-	Client bool `yaml:"client,omitempty"`
-	// Models specifies whether to generate type definitions
-	Models bool `yaml:"models,omitempty"`
-}
-
-func (oo GenerateOptions) Validate() map[string]string {
 	return nil
 }
 

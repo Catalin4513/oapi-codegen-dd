@@ -23,10 +23,6 @@ func TestExampleOpenAPICodeGeneration(t *testing.T) {
 	packageName := "testswagger"
 	opts := Configuration{
 		PackageName: packageName,
-		Generate: GenerateOptions{
-			Client: true,
-			Models: true,
-		},
 	}
 
 	loader := openapi3.NewLoader()
@@ -86,10 +82,6 @@ func TestExtPropGoTypeSkipOptionalPointer(t *testing.T) {
 	packageName := "api"
 	opts := Configuration{
 		PackageName: packageName,
-		Generate: GenerateOptions{
-			Models: true,
-			Client: true,
-		},
 	}
 	spec := "test_specs/x-go-type-skip-optional-pointer.yaml"
 	swagger, err := util.LoadSwagger(spec)
@@ -122,10 +114,6 @@ func TestGoTypeImport(t *testing.T) {
 	packageName := "api"
 	opts := Configuration{
 		PackageName: packageName,
-		Generate: GenerateOptions{
-			Models: true,
-			Client: true,
-		},
 	}
 	spec := "test_specs/x-go-type-import-pet.yaml"
 	swagger, err := util.LoadSwagger(spec)
@@ -168,10 +156,6 @@ func TestRemoteExternalReference(t *testing.T) {
 	packageName := "api"
 	opts := Configuration{
 		PackageName: packageName,
-		Generate: GenerateOptions{
-			Models: true,
-			Client: true,
-		},
 		ImportMapping: map[string]string{
 			remoteRefFile: remoteRefImport,
 		},

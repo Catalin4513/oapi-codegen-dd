@@ -184,38 +184,32 @@ func Generate(spec *openapi3.T, opts Configuration) (string, error) {
 	}
 
 	var typeDefinitions, constantDefinitions string
-	if opts.Generate.Models {
-		typeDefinitions, err = GenerateTypeDefinitions(t, spec, ops, opts.OutputOptions.ExcludeSchemas)
-		if err != nil {
-			return "", fmt.Errorf("error generating type definitions: %w", err)
-		}
 
-		constantDefinitions, err = GenerateConstants(t, ops)
-		if err != nil {
-			return "", fmt.Errorf("error generating constants: %w", err)
-		}
-
-		imprts, err := GetTypeDefinitionsImports(spec, opts.OutputOptions.ExcludeSchemas)
-		if err != nil {
-			return "", fmt.Errorf("error getting type definition imports: %w", err)
-		}
-		MergeImports(xGoTypeImports, imprts)
+	typeDefinitions, err = GenerateTypeDefinitions(t, spec, ops, opts.OutputOptions.ExcludeSchemas)
+	if err != nil {
+		return "", fmt.Errorf("error generating type definitions: %w", err)
 	}
 
-	var clientOut string
-	if opts.Generate.Client {
-		clientOut, err = GenerateClient(t, ops)
-		if err != nil {
-			return "", fmt.Errorf("error generating client: %w", err)
-		}
+	constantDefinitions, err = GenerateConstants(t, ops)
+	if err != nil {
+		return "", fmt.Errorf("error generating constants: %w", err)
+	}
+
+	imprts, err := GetTypeDefinitionsImports(spec, opts.OutputOptions.ExcludeSchemas)
+	if err != nil {
+		return "", fmt.Errorf("error getting type definition imports: %w", err)
+	}
+	MergeImports(xGoTypeImports, imprts)
+
+	clientOut, err := GenerateClient(t, ops)
+	if err != nil {
+		return "", fmt.Errorf("error generating client: %w", err)
 	}
 
 	var clientWithResponsesOut string
-	if opts.Generate.Client {
-		clientWithResponsesOut, err = GenerateClientWithResponses(t, ops)
-		if err != nil {
-			return "", fmt.Errorf("error generating client with responses: %w", err)
-		}
+	clientWithResponsesOut, err = GenerateClientWithResponses(t, ops)
+	if err != nil {
+		return "", fmt.Errorf("error generating client with responses: %w", err)
 	}
 
 	var buf bytes.Buffer
@@ -246,15 +240,13 @@ func Generate(spec *openapi3.T, opts Configuration) (string, error) {
 		return "", fmt.Errorf("error writing type definitions: %w", err)
 	}
 
-	if opts.Generate.Client {
-		_, err = w.WriteString(clientOut)
-		if err != nil {
-			return "", fmt.Errorf("error writing client: %w", err)
-		}
-		_, err = w.WriteString(clientWithResponsesOut)
-		if err != nil {
-			return "", fmt.Errorf("error writing client: %w", err)
-		}
+	_, err = w.WriteString(clientOut)
+	if err != nil {
+		return "", fmt.Errorf("error writing client: %w", err)
+	}
+	_, err = w.WriteString(clientWithResponsesOut)
+	if err != nil {
+		return "", fmt.Errorf("error writing client: %w", err)
 	}
 
 	err = w.Flush()
