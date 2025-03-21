@@ -5,6 +5,55 @@ import (
 	"strings"
 )
 
+type ConstraintsContext struct {
+	name       string
+	hasNilType bool
+	required   bool
+}
+
+type Constraints struct {
+	Required  bool
+	Nullable  bool
+	ReadOnly  bool
+	WriteOnly bool
+	MinLength int64
+	MaxLength int64
+	Min       float64
+	Max       float64
+	MinItems  int
+}
+
+// ValidateTags returns a map of tags that can be used for validation.
+func (c Constraints) ValidateTags() map[string]string {
+	var tags []string
+
+	if c.Required {
+		tags = append(tags, "required")
+	}
+
+	if c.MinLength > 0 {
+		tags = append(tags, fmt.Sprintf("min=%d", c.MinLength))
+	}
+
+	if c.MaxLength > 0 {
+		tags = append(tags, fmt.Sprintf("max=%d", c.MaxLength))
+	}
+
+	if c.Min > 0 {
+		tags = append(tags, fmt.Sprintf("gt=%f", c.Min))
+	}
+
+	if c.Max > 0 {
+		tags = append(tags, fmt.Sprintf("lt=%f", c.Max))
+	}
+
+	if len(tags) == 0 {
+		return nil
+	}
+
+	return map[string]string{"validate": strings.Join(tags, ",")}
+}
+
 type Property struct {
 	GoName        string
 	Description   string
@@ -17,6 +66,7 @@ type Property struct {
 	NeedsFormTag  bool
 	Extensions    map[string]any
 	Deprecated    bool
+	Constraints   Constraints
 }
 
 func (p Property) GoFieldName() string {
