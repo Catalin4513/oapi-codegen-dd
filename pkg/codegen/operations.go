@@ -28,42 +28,33 @@ import (
 	"github.com/doordash/oapi-codegen/v2/pkg/util"
 )
 
-type SecurityDefinition struct {
-	ProviderName string
-	Scopes       []string
-}
-
 // OperationDefinition describes an Operation
 type OperationDefinition struct {
 	OperationId string // The operation_id description from Swagger, used to generate function names
 
-	PathParams          []ParameterDefinition // Parameters in the path, eg, /path/:param
-	HeaderParams        []ParameterDefinition // Parameters in HTTP headers
-	QueryParams         []ParameterDefinition // Parameters in the query, /path?param
-	CookieParams        []ParameterDefinition // Parameters in cookies
-	TypeDefinitions     []TypeDefinition      // These are all the types we need to define for this operation
-	SecurityDefinitions []SecurityDefinition  // These are the security providers
-	BodyRequired        bool
-	Bodies              []RequestBodyDefinition // The list of bodies for which to generate handlers.
-	Responses           []ResponseDefinition    // The list of responses that can be accepted by handlers.
-	Summary             string                  // Summary string from Swagger, used to generate a comment
-	Method              string                  // GET, POST, DELETE, etc.
-	Path                string                  // The Swagger path for the operation, like /resource/{id}
-	Spec                *openapi3.Operation
+	PathParams      []ParameterDefinition // Parameters in the path, eg, /path/:param
+	HeaderParams    []ParameterDefinition // Parameters in HTTP headers
+	QueryParams     []ParameterDefinition // Parameters in the query, /path?param
+	TypeDefinitions []TypeDefinition      // These are all the types we need to define for this operation
+	BodyRequired    bool
+	Bodies          []RequestBodyDefinition // The list of bodies for which to generate handlers.
+	Responses       []ResponseDefinition    // The list of responses that can be accepted by handlers.
+	Summary         string                  // Summary string from Swagger, used to generate a comment
+	Method          string                  // GET, POST, DELETE, etc.
+	Path            string                  // The Swagger path for the operation, like /resource/{id}
+	Spec            *openapi3.Operation
 }
 
 // Params returns the list of all parameters except Path parameters. Path parameters
 // are handled differently from the rest, since they're mandatory.
 func (o *OperationDefinition) Params() []ParameterDefinition {
 	result := append(o.QueryParams, o.HeaderParams...)
-	result = append(result, o.CookieParams...)
 	return result
 }
 
 // AllParams returns all parameters
 func (o *OperationDefinition) AllParams() []ParameterDefinition {
 	result := append(o.QueryParams, o.HeaderParams...)
-	result = append(result, o.CookieParams...)
 	result = append(result, o.PathParams...)
 	return result
 }
@@ -438,7 +429,6 @@ func OperationDefinitions(swagger *openapi3.T, initialismOverrides bool) ([]Oper
 				PathParams:   pathParams,
 				HeaderParams: FilterParameterDefinitionByType(allParams, "header"),
 				QueryParams:  FilterParameterDefinitionByType(allParams, "query"),
-				CookieParams: FilterParameterDefinitionByType(allParams, "cookie"),
 				OperationId:  nameNormalizer(op.OperationID),
 				// Replace newlines in summary.
 				Summary:         op.Summary,
@@ -699,7 +689,6 @@ func GenerateParamsTypes(op OperationDefinition) []TypeDefinition {
 
 	objectParams := op.QueryParams
 	objectParams = append(objectParams, op.HeaderParams...)
-	objectParams = append(objectParams, op.CookieParams...)
 
 	typeName := op.OperationId + "Params"
 

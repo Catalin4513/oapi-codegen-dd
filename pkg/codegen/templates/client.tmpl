@@ -260,38 +260,6 @@ func New{{$opid}}Request{{if .HasBody}}WithBody{{end}}(server string{{genParamAr
     {{end}}
     }
 {{- end }}{{/* if .HeaderParams */}}
-
-{{ if .CookieParams }}
-    if params != nil {
-    {{range $paramIdx, $param := .CookieParams}}
-        {{if not .Required}} if params.{{.GoName}} != nil { {{end}}
-        var cookieParam{{$paramIdx}} string
-        {{if .IsPassThrough}}
-        cookieParam{{$paramIdx}} = {{if not .Required}}*{{end}}params.{{.GoName}}
-        {{end}}
-        {{if .IsJson}}
-        var cookieParamBuf{{$paramIdx}} []byte
-        cookieParamBuf{{$paramIdx}}, err = json.Marshal({{if not .Required}}*{{end}}params.{{.GoName}})
-        if err != nil {
-            return nil, err
-        }
-        cookieParam{{$paramIdx}} = url.QueryEscape(string(cookieParamBuf{{$paramIdx}}))
-        {{end}}
-        {{if .IsStyled}}
-        cookieParam{{$paramIdx}}, err = runtime.StyleParamWithLocation("simple", {{.Explode}}, "{{.ParamName}}", runtime.ParamLocationCookie, {{if not .Required}}*{{end}}params.{{.GoName}})
-        if err != nil {
-            return nil, err
-        }
-        {{end}}
-        cookie{{$paramIdx}} := &http.Cookie{
-            Name:"{{.ParamName}}",
-            Value:cookieParam{{$paramIdx}},
-        }
-        req.AddCookie(cookie{{$paramIdx}})
-        {{if not .Required}}}{{end}}
-    {{ end -}}
-    }
-{{- end }}{{/* if .CookieParams */}}
     return req, nil
 }
 

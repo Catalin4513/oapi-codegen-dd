@@ -138,11 +138,6 @@ func Generate(spec *openapi3.T, opts Configuration) (string, error) {
 		return "", fmt.Errorf("error generating type definitions: %w", err)
 	}
 
-	constantDefinitions, err = GenerateConstants(t, ops)
-	if err != nil {
-		return "", fmt.Errorf("error generating constants: %w", err)
-	}
-
 	imprts, err := GetTypeDefinitionsImports(spec)
 	if err != nil {
 		return "", fmt.Errorf("error getting type definition imports: %w", err)
@@ -280,32 +275,6 @@ func GenerateTypeDefinitions(t *template.Template, swagger *openapi3.T, ops []Op
 
 	typeDefinitions := strings.Join([]string{enumsOut, typesOut, operationsOut, allOfBoilerplate, unionBoilerplate, unionAndAdditionalBoilerplate}, "")
 	return typeDefinitions, nil
-}
-
-// GenerateConstants generates operation ids, context keys, paths, etc. to be exported as constants
-func GenerateConstants(t *template.Template, ops []OperationDefinition) (string, error) {
-	constants := Constants{
-		SecuritySchemeProviderNames: []string{},
-	}
-
-	providerNameMap := map[string]struct{}{}
-	for _, op := range ops {
-		for _, def := range op.SecurityDefinitions {
-			providerName := SanitizeGoIdentity(def.ProviderName)
-			providerNameMap[providerName] = struct{}{}
-		}
-	}
-
-	var providerNames []string
-	for providerName := range providerNameMap {
-		providerNames = append(providerNames, providerName)
-	}
-
-	sort.Strings(providerNames)
-
-	constants.SecuritySchemeProviderNames = append(constants.SecuritySchemeProviderNames, providerNames...)
-
-	return GenerateTemplates([]string{"constants.tmpl"}, t, constants)
 }
 
 // GenerateTypesForSchemas generates type definitions for any custom types defined in the
