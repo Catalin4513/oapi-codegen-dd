@@ -149,8 +149,6 @@ func (e *EnumDefinition) GetValues() map[string]string {
 }
 
 type Constants struct {
-	// SecuritySchemeProviderNames holds all provider names for security schemes.
-	SecuritySchemeProviderNames []string
 	// EnumDefinitions holds type and value information for all enums
 	EnumDefinitions []EnumDefinition
 }
