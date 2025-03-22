@@ -59,35 +59,17 @@ type Property struct {
 	Description   string
 	JsonFieldName string
 	Schema        GoSchema
-	Required      bool
-	Nullable      bool
-	ReadOnly      bool
-	WriteOnly     bool
 	NeedsFormTag  bool
 	Extensions    map[string]any
 	Deprecated    bool
 	Constraints   Constraints
 }
 
-func (p Property) GoFieldName() string {
-	goFieldName := p.JsonFieldName
-	if extension, ok := p.Extensions[extGoName]; ok {
-		if extGoFieldName, err := extParseGoFieldName(extension); err == nil {
-			goFieldName = extGoFieldName
-		}
-	}
-
-	return SchemaNameToTypeName(goFieldName)
-}
-
 func (p Property) GoTypeDef() string {
 	typeDef := p.Schema.TypeDecl()
 
-	if !p.Schema.SkipOptionalPointer &&
-		(!p.Required || p.Nullable ||
-			(p.ReadOnly && !p.Required) ||
-			p.WriteOnly) {
-		typeDef = "*" + typeDef
+	if !p.Schema.SkipOptionalPointer && p.Constraints.Nullable {
+		typeDef = "*" + strings.TrimPrefix(typeDef, "*")
 	}
 	return typeDef
 }
@@ -108,14 +90,14 @@ func createPropertyGoFieldName(jsonName string, extensions map[string]any) strin
 	return SchemaNameToTypeName(goFieldName)
 }
 
-// GenFieldsFromProperties produce corresponding field names with JSON annotations,
+// genFieldsFromProperties produce corresponding field names with JSON annotations,
 // given a list of schema descriptors
-func GenFieldsFromProperties(props []Property) []string {
+func genFieldsFromProperties(props []Property) []string {
 	var fields []string
+
 	for i, p := range props {
 		field := ""
-
-		goFieldName := p.GoFieldName()
+		goFieldName := p.GoName
 
 		// Add a comment to a field in case we have one, otherwise skip.
 		if p.Description != "" {
@@ -124,7 +106,7 @@ func GenFieldsFromProperties(props []Property) []string {
 			if i != 0 {
 				field += "\n"
 			}
-			field += fmt.Sprintf("%s\n", StringWithTypeNameToGoComment(p.Description, p.GoFieldName()))
+			field += fmt.Sprintf("%s\n", StringWithTypeNameToGoComment(p.Description, p.GoName))
 		}
 
 		if p.Deprecated {
@@ -149,10 +131,11 @@ func GenFieldsFromProperties(props []Property) []string {
 
 		field += fmt.Sprintf("    %s %s", goFieldName, p.GoTypeDef())
 
-		shouldOmitEmpty := (!p.Required || p.ReadOnly || p.WriteOnly) &&
-			(!p.Required || !p.ReadOnly)
-
-		omitEmpty := !p.Nullable && shouldOmitEmpty
+		c := p.Constraints
+		omitEmpty := c.Nullable
+		if p.Schema.SkipOptionalPointer {
+			omitEmpty = false
+		}
 
 		// Support x-omitempty
 		if extOmitEmptyValue, ok := p.Extensions[extPropOmitEmpty]; ok {
@@ -162,6 +145,12 @@ func GenFieldsFromProperties(props []Property) []string {
 		}
 
 		fieldTags := make(map[string]string)
+
+		if validateTags := p.Constraints.ValidateTags(); validateTags != nil {
+			for k, v := range validateTags {
+				fieldTags[k] = v
+			}
+		}
 
 		if !omitEmpty {
 			fieldTags["json"] = p.JsonFieldName
@@ -194,11 +183,12 @@ func GenFieldsFromProperties(props []Property) []string {
 		// Convert the fieldTags map into Go field annotations.
 		keys := SortedMapKeys(fieldTags)
 		tags := make([]string, len(keys))
-		for i, k := range keys {
-			tags[i] = fmt.Sprintf(`%s:"%s"`, k, fieldTags[k])
+		for j, k := range keys {
+			tags[j] = fmt.Sprintf(`%s:"%s"`, k, fieldTags[k])
 		}
 		field += "`" + strings.Join(tags, " ") + "`"
 		fields = append(fields, field)
 	}
+
 	return fields
 }

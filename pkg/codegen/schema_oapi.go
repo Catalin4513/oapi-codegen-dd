@@ -177,13 +177,14 @@ func getSchemaConstraints(schema *openapi3.Schema, opts ConstraintsContext) Cons
 	}
 
 	nullable := false
-	if hasNilType {
+	if !required || hasNilType {
 		nullable = true
 	} else if schema.Nullable {
 		nullable = schema.Nullable
 	}
+
 	if required && nullable {
-		nullable = false
+		nullable = true
 	}
 
 	readOnly := false

@@ -223,14 +223,19 @@ func generateParamsTypes(objectParams []ParameterDefinition, typeName string) ([
 		}
 
 		typeDefs = append(typeDefs, pSchema.AdditionalTypes...)
+		exts := param.Spec.Extensions
 
 		properties = append(properties, Property{
+			GoName:        createPropertyGoFieldName(param.ParamName, exts),
 			Description:   param.Spec.Description,
 			JsonFieldName: param.ParamName,
-			Required:      param.Required,
 			Schema:        pSchema,
 			NeedsFormTag:  param.Style() == "form",
 			Extensions:    param.Spec.Extensions,
+			Constraints: getSchemaConstraints(param.Spec.Schema.Value, ConstraintsContext{
+				name:     param.ParamName,
+				required: param.Required,
+			}),
 		})
 		imports = append(imports, pSchema)
 	}
@@ -238,7 +243,7 @@ func generateParamsTypes(objectParams []ParameterDefinition, typeName string) ([
 	s := GoSchema{
 		Properties: properties,
 	}
-	fields := GenFieldsFromProperties(properties)
+	fields := genFieldsFromProperties(properties)
 	s.GoType = s.createGoStruct(fields)
 
 	td := TypeDefinition{

@@ -141,13 +141,10 @@ func createObjectSchema(schema *openapi3.Schema, ref string, path []string) (GoS
 				GoName:        createPropertyGoFieldName(pName, extensions),
 				JsonFieldName: pName,
 				Schema:        pSchema,
-				Required:      required,
 				Description:   description,
-				Nullable:      p.Value.Nullable,
-				ReadOnly:      p.Value.ReadOnly,
-				WriteOnly:     p.Value.WriteOnly,
 				Extensions:    p.Value.Extensions,
 				Deprecated:    p.Value.Deprecated,
+				Constraints:   constraints,
 			}
 			outSchema.Properties = append(outSchema.Properties, prop)
 			if len(pSchema.AdditionalTypes) > 0 {

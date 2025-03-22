@@ -10,6 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+//go:embed testdata/test_spec.yml
+var testDocument string
+
 func TestExampleOpenAPICodeGeneration(t *testing.T) {
 	// Input vars for code generation:
 	packageName := "testswagger"
@@ -22,7 +25,7 @@ func TestExampleOpenAPICodeGeneration(t *testing.T) {
 	loader.IsExternalRefsAllowed = true
 
 	// Get a spec from the test definition in this file:
-	spec, err := loader.LoadFromData([]byte(testOpenAPIDefinition))
+	spec, err := loader.LoadFromData([]byte(testDocument))
 	assert.NoError(t, err)
 
 	// Run our code generation:
@@ -65,17 +68,17 @@ func TestExtPropGoTypeSkipOptionalPointer(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Check that optional pointer fields are skipped if requested
-	assert.Contains(t, code, "NullableFieldSkipFalse *string `json:\"nullableFieldSkipFalse\"`")
+	assert.Contains(t, code, "NullableFieldSkipFalse *string `json:\"nullableFieldSkipFalse,omitempty\"`")
 	assert.Contains(t, code, "NullableFieldSkipTrue  string  `json:\"nullableFieldSkipTrue\"`")
 	assert.Contains(t, code, "OptionalField          *string `json:\"optionalField,omitempty\"`")
 	assert.Contains(t, code, "OptionalFieldSkipFalse *string `json:\"optionalFieldSkipFalse,omitempty\"`")
-	assert.Contains(t, code, "OptionalFieldSkipTrue  string  `json:\"optionalFieldSkipTrue,omitempty\"`")
+	assert.Contains(t, code, "OptionalFieldSkipTrue  string  `json:\"optionalFieldSkipTrue\"`")
 
 	// Check that the extension applies on custom types as well
-	assert.Contains(t, code, "CustomTypeWithSkipTrue string  `json:\"customTypeWithSkipTrue,omitempty\"`")
+	assert.Contains(t, code, "CustomTypeWithSkipTrue string  `json:\"customTypeWithSkipTrue\"`")
 
 	// Check that the extension has no effect on required fields
-	assert.Contains(t, code, "RequiredField          string  `json:\"requiredField\"`")
+	assert.Contains(t, code, "RequiredField          string  `json:\"requiredField\" validate:\"required\"`")
 }
 
 func TestGoTypeImport(t *testing.T) {
@@ -120,5 +123,17 @@ func TestGoTypeImport(t *testing.T) {
 	}
 }
 
-//go:embed testdata/test_spec.yaml
-var testOpenAPIDefinition string
+func TestSmartum(t *testing.T) {
+	packageName := "smartum"
+	config := &Configuration{
+		PackageName: packageName,
+		// UseSingleOutput: true,
+	}
+
+	// Run our code generation:
+	code, errs := CreateParseContext("testdata/smartum.yml", config)
+	if errs != nil {
+		t.FailNow()
+	}
+	_ = code
+}

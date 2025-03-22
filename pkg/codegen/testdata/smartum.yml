@@ -1,0 +1,290 @@
+openapi: 3.0.3
+info:
+  title: Smartum API
+  version: 1.0.0
+servers:
+  - url: http://localhost:2200/smartum/api/v1/delivery-order-price
+paths:
+  /checkout:
+    post:
+      summary: Initiate a checkout
+      operationId: initiateCheckout
+      tags:
+        - Checkout
+      parameters:
+        - $ref: "#/components/parameters/AcceptHeader"
+        - $ref: "#/components/parameters/ContentTypeHeader"
+        - $ref: "#/components/parameters/VersionHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+      responses:
+        "200":
+          description: Checkout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      foo_id:
+                        type: string
+                      url:
+                        type: string
+                        example: "https://checkout.smartum.fi/5f7b3b3b"
+        "400":
+          $ref: "#/components/responses/ApiErrorResponse"
+
+  /partner/transactions/{transaction_id}/refund:
+    post:
+      summary: Refund a transaction
+      operationId: refundTransaction
+      tags:
+        - Transactions
+      parameters:
+        - name: transaction_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "5f7b3b3b"
+        - $ref: "#/components/parameters/AuthorizationHeader"
+        - $ref: "#/components/parameters/AcceptHeader"
+        - $ref: "#/components/parameters/ContentTypeHeader"
+        - $ref: "#/components/parameters/VersionHeader"
+      responses:
+        "204":
+          description: Refund successful, no content returned
+        "400":
+          $ref: "#/components/responses/ApiErrorResponse"
+
+  /partner/payments/status:
+    get:
+      summary: Get payment status
+      operationId: getPaymentStatus
+      tags:
+        - Payments
+      parameters:
+        - name: idempotency_id
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "a1b2c3d4"
+        - name: venue_id
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "vf7b3b3v"
+        - $ref: "#/components/parameters/AuthorizationHeader"
+        - $ref: "#/components/parameters/AcceptHeader"
+        - $ref: "#/components/parameters/ContentTypeHeader"
+        - $ref: "#/components/parameters/VersionHeader"
+      responses:
+        "200":
+          description: Payment status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      transaction_id:
+                        type: string
+        "400":
+          $ref: "#/components/responses/ApiErrorResponse"
+
+  /oauth2/token:
+    post:
+      summary: Obtain OAuth2 token
+      operationId: obtainToken
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                client_id:
+                  type: string
+                  example: "client-id"
+                client_secret:
+                  type: string
+                  example: secret
+                grant_type:
+                  type: string
+                  enum: [client_credentials]
+                scope:
+                  type: string
+      responses:
+        "200":
+          description: Token retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: ta3b3b3b
+                  token_type:
+                    type: string
+                    example: "Bearer"
+                  expires_in:
+                    type: integer
+                    example: 3600
+                  scope:
+                    type: array
+                    items:
+                      type: string
+                      example: "partner"
+                  expires_at:
+                    type: number
+                    format: float
+                    example: 1600000000
+        "400":
+          $ref: "#/components/responses/ApiErrorResponse"
+
+components:
+  parameters:
+    AuthorizationHeader:
+      name: Authorization
+      in: header
+      required: true
+      schema:
+        type: string
+        example: "Bearer your-token"
+    AcceptHeader:
+      name: Accept
+      in: header
+      required: true
+      schema:
+        type: string
+        example: "application/json"
+    ContentTypeHeader:
+      name: Content-Type
+      in: header
+      required: true
+      schema:
+        type: string
+        example: "application/json;charset=UTF-8"
+    VersionHeader:
+      name: Smartum-Version
+      in: header
+      required: true
+      schema:
+        type: string
+        example: "2020-04-02"
+        enum:
+          - "2020-04-02"
+
+  responses:
+    ApiErrorResponse:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                    nullable: true
+                  param:
+                    type: string
+                    nullable: true
+
+  schemas:
+    CheckoutRequest:
+      type: object
+      properties:
+        venue:
+          type: string
+          example: "5f7b3b3b"
+        amount:
+          type: integer
+          example: 2000
+        benefit:
+          $ref: "#/components/schemas/BenefitType"
+        product_name:
+          type: string
+          example: "The name of the product being purchased."
+        success_url:
+          type: string
+          format: uri
+        cancel_url:
+          type: string
+          format: uri
+        idempotency_id:
+          type: string
+          example: "a1b2c3d4"
+          maxLength: 128
+          description: |
+            An optional string used as a cache key. 
+            Using an idempotency ID will enable cache in Checkout and the subsequent payment process.
+        product_description:
+          type: string
+          example: "An optional description of the product."
+          maxLength: 256
+        product_image_url:
+          type: string
+          format: uri
+          description: "An optional URL to a small thumbnail image of the product."
+        nonce:
+          type: string
+          example: "fake-valid-nonce"
+          description: "An optional nonce value that is included in the signed JWT of a successful payment response."
+          maxLength: 128
+        timeout:
+          type: integer
+          example: 300
+          description: |
+            An optional number of seconds after which the checkout flow will expire, 
+            and the beneficiary is redirected to the cancel_url.
+        max_benefit_amount:
+          type: integer
+          example: 1000
+          description: |
+            Default: 0
+            Amount of benefits deducted from Beneficiary's Smartum account (in cents). 
+            Rest of the amount is then deducted from Beneficiary's personal card by Stripe.
+            
+            If benefit type is lunch, then minimum amount is 
+            PAYMENT_LIMIT_LUNCH_MIN_CENTS and maximum is PAYMENT_LIMIT_LUNCH_MAX_CENTS. 
+            You can check the current values from /configuration/smartum endpoint.
+        stripe_account:
+          type: string
+          example: "acct_1Hqj3v2eZvKYlo2C"
+        # TODO: error_url is not present in the original spec
+        error_url:
+          type: string
+          format: uri
+
+      required:
+        - venue
+        - amount
+        - benefit
+        - success_url
+        - cancel_url
+
+    BenefitType:
+      description: Benefit type for the product being purchased.
+      type: string
+      enum: ["exercise", "culture", "lunch", "commuter", "massage"]
+      example: "lunch"

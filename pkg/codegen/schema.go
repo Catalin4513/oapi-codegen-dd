@@ -205,7 +205,7 @@ func GenerateGoSchema(sref *openapi3.SchemaRef, path []string) (GoSchema, error)
 }
 
 func PropertiesEqual(a, b Property) bool {
-	return a.JsonFieldName == b.JsonFieldName && a.Schema.TypeDecl() == b.Schema.TypeDecl() && a.Required == b.Required
+	return a.JsonFieldName == b.JsonFieldName && a.Schema.TypeDecl() == b.Schema.TypeDecl() && a.Constraints == b.Constraints
 }
 
 // SchemaDescriptor describes a GoSchema, a type definition.
@@ -238,7 +238,7 @@ func GenStructFromSchema(schema GoSchema) string {
 	// Start out with struct {
 	objectParts := []string{"struct {"}
 	// Append all the field definitions
-	objectParts = append(objectParts, GenFieldsFromProperties(schema.Properties)...)
+	objectParts = append(objectParts, genFieldsFromProperties(schema.Properties)...)
 	// Close the struct
 	if schema.HasAdditionalProperties {
 		objectParts = append(objectParts,

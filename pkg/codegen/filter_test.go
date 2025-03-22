@@ -24,7 +24,7 @@ func TestFilterOperationsByTag(t *testing.T) {
 		loader.IsExternalRefsAllowed = true
 
 		// Get a spec from the test definition in this file:
-		doc, err := loader.LoadFromData([]byte(testOpenAPIDefinition))
+		doc, err := loader.LoadFromData([]byte(testDocument))
 		assert.NoError(t, err)
 
 		// Run our code generation:
@@ -49,7 +49,7 @@ func TestFilterOperationsByTag(t *testing.T) {
 		loader.IsExternalRefsAllowed = true
 
 		// Get a spec from the test definition in this file:
-		doc, err := loader.LoadFromData([]byte(testOpenAPIDefinition))
+		doc, err := loader.LoadFromData([]byte(testDocument))
 		assert.NoError(t, err)
 
 		// Run our code generation:
@@ -76,7 +76,7 @@ func TestFilterOperationsByOperationID(t *testing.T) {
 		loader := openapi3.NewLoader()
 
 		// Get a spec from the test definition in this file:
-		doc, err := loader.LoadFromData([]byte(testOpenAPIDefinition))
+		doc, err := loader.LoadFromData([]byte(testDocument))
 		assert.NoError(t, err)
 
 		// Run our code generation:
@@ -100,7 +100,7 @@ func TestFilterOperationsByOperationID(t *testing.T) {
 		loader.IsExternalRefsAllowed = true
 
 		// Get a spec from the test definition in this file:
-		doc, err := loader.LoadFromData([]byte(testOpenAPIDefinition))
+		doc, err := loader.LoadFromData([]byte(testDocument))
 		assert.NoError(t, err)
 
 		// Run our code generation:
