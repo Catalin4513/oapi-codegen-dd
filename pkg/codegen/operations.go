@@ -52,8 +52,6 @@ type OperationDefinition struct {
 
 	Body     *RequestBodyDefinition
 	Response ResponseDefinition
-
-	Spec *openapi3.Operation
 }
 
 // Params returns the list of all parameters except Path parameters. Path parameters
@@ -192,7 +190,6 @@ func OperationDefinitions(swagger *openapi3.T) ([]OperationDefinition, error) {
 				QueryParams:  FilterParameterDefinitionByType(allParams, "query"),
 				Method:       opName,
 				Path:         requestPath,
-				Spec:         op,
 				Response:     *responseDef,
 
 				Body:            bodyDefinition,
