@@ -22,8 +22,6 @@ import (
 	"text/template"
 
 	"github.com/getkin/kin-openapi/openapi3"
-
-	"github.com/doordash/oapi-codegen/v2/pkg/util"
 )
 
 // OperationDefinition describes an Operation
@@ -40,19 +38,22 @@ import (
 // Path The Swagger path for the operation, like /resource/{id}
 // Spec The OpenAPI3 Operation object
 type OperationDefinition struct {
-	ID string
+	ID          string
+	Summary     string
+	Description string
+	Method      string
+	Path        string
 
 	PathParams      []ParameterDefinition
 	HeaderParams    []ParameterDefinition
 	QueryParams     []ParameterDefinition
 	TypeDefinitions []TypeDefinition
 	BodyRequired    bool
-	Bodies          []RequestBodyDefinition
-	Responses       []ResponseDefinition
-	Summary         string
-	Method          string
-	Path            string
-	Spec            *openapi3.Operation
+
+	Body     *RequestBodyDefinition
+	Response ResponseDefinition
+
+	Spec *openapi3.Operation
 }
 
 // Params returns the list of all parameters except Path parameters. Path parameters
@@ -76,13 +77,6 @@ func (o OperationDefinition) RequiresParamObject() bool {
 	return len(o.Params()) > 0
 }
 
-// HasBody is called by the template engine to determine whether to generate body
-// marshaling code on the client. This is true for all body types, whether
-// we generate types for them.
-func (o OperationDefinition) HasBody() bool {
-	return o.Spec.RequestBody != nil
-}
-
 // SummaryAsComment returns the Operations summary as a multi line comment
 func (o OperationDefinition) SummaryAsComment() string {
 	if o.Summary == "" {
@@ -94,100 +88,6 @@ func (o OperationDefinition) SummaryAsComment() string {
 		parts[i] = "// " + p
 	}
 	return strings.Join(parts, "\n")
-}
-
-// GetResponseTypeDefinitions produces a list of type definitions for a given Operation for the response
-// types which we know how to parse. These will be turned into fields on a
-// response object for automatic deserialization of responses in the generated
-// Client code. See "client-with-responses.tmpl".
-func (o OperationDefinition) GetResponseTypeDefinitions() ([]ResponseTypeDefinition, error) {
-	var tds []ResponseTypeDefinition
-
-	if o.Spec == nil || o.Spec.Responses == nil {
-		return tds, nil
-	}
-
-	sortedResponsesKeys := SortedMapKeys(o.Spec.Responses.Map())
-	for _, responseName := range sortedResponsesKeys {
-		responseRef := o.Spec.Responses.Value(responseName)
-
-		// We can only generate a type if we have a value:
-		if responseRef.Value != nil {
-			jsonCount := 0
-			for mediaType := range responseRef.Value.Content {
-				if util.IsMediaTypeJson(mediaType) {
-					jsonCount++
-				}
-			}
-
-			sortedContentKeys := SortedMapKeys(responseRef.Value.Content)
-			for _, contentTypeName := range sortedContentKeys {
-				contentType := responseRef.Value.Content[contentTypeName]
-				// We can only generate a type if we have a schema:
-				if contentType.Schema != nil {
-					responseSchema, err := GenerateGoSchema(contentType.Schema, []string{o.ID, responseName})
-					if err != nil {
-						return nil, fmt.Errorf("Unable to determine Go type for %s.%s: %w", o.ID, contentTypeName, err)
-					}
-
-					var typeName string
-					switch {
-
-					// HAL+JSON:
-					case StringInArray(contentTypeName, contentTypesHalJSON):
-						typeName = fmt.Sprintf("HALJSON%s", nameNormalizer(responseName))
-					case "application/json" == contentTypeName:
-						// if it's the standard application/json
-						typeName = fmt.Sprintf("JSON%s", nameNormalizer(responseName))
-					// Vendored JSON
-					case StringInArray(contentTypeName, contentTypesJSON) || util.IsMediaTypeJson(contentTypeName):
-						baseTypeName := fmt.Sprintf("%s%s", nameNormalizer(contentTypeName), nameNormalizer(responseName))
-
-						typeName = strings.ReplaceAll(baseTypeName, "Json", "JSON")
-					// YAML:
-					case StringInArray(contentTypeName, contentTypesYAML):
-						typeName = fmt.Sprintf("YAML%s", nameNormalizer(responseName))
-					// XML:
-					case StringInArray(contentTypeName, contentTypesXML):
-						typeName = fmt.Sprintf("XML%s", nameNormalizer(responseName))
-					default:
-						continue
-					}
-
-					td := ResponseTypeDefinition{
-						TypeDefinition: TypeDefinition{
-							TypeName: typeName,
-							Schema:   responseSchema,
-						},
-						ResponseName:              responseName,
-						ContentTypeName:           contentTypeName,
-						AdditionalTypeDefinitions: responseSchema.GetAdditionalTypeDefs(),
-					}
-					if IsGoTypeReference(responseRef.Ref) {
-						refType, err := RefPathToGoType(responseRef.Ref)
-						if err != nil {
-							return nil, fmt.Errorf("error dereferencing response Ref: %w", err)
-						}
-						if jsonCount > 1 && util.IsMediaTypeJson(contentTypeName) {
-							refType += mediaTypeToCamelCase(contentTypeName)
-						}
-						td.Schema.RefType = refType
-					}
-					tds = append(tds, td)
-				}
-			}
-		}
-	}
-	return tds, nil
-}
-
-func (o OperationDefinition) HasMaskedRequestContentTypes() bool {
-	for _, body := range o.Bodies {
-		if !body.IsFixedContentType() {
-			return true
-		}
-	}
-	return false
 }
 
 // FilterParameterDefinitionByType returns the subset of the specified parameters which are of the
@@ -239,6 +139,8 @@ func OperationDefinitions(swagger *openapi3.T) ([]OperationDefinition, error) {
 			}
 			op.OperationID = typeNamePrefix(op.OperationID) + op.OperationID
 
+			var typeDefs []TypeDefinition
+
 			// These are parameters defined for the specific path method that
 			// we're iterating over.
 			localParams, err := DescribeParameters(op.Parameters, []string{op.OperationID + "Params"})
@@ -262,29 +164,39 @@ func OperationDefinitions(swagger *openapi3.T) ([]OperationDefinition, error) {
 				return nil, err
 			}
 
-			bodyDefinitions, typeDefinitions, err := GenerateBodyDefinitions(op.OperationID, op.RequestBody)
+			bodyDefinition, bodyTypeDef, err := createBodyDefinition(op.OperationID, op.RequestBody)
 			if err != nil {
 				return nil, fmt.Errorf("error generating body definitions: %w", err)
 			}
 
-			responseDefinitions, err := GenerateResponseDefinitions(op.OperationID, op.Responses.Map())
-			if err != nil {
-				return nil, fmt.Errorf("error generating response definitions: %w", err)
+			if bodyTypeDef != nil {
+				typeDefs = append(typeDefs, *bodyTypeDef)
+			}
+			if bodyDefinition != nil {
+				typeDefs = append(typeDefs, bodyDefinition.Schema.AdditionalTypes...)
 			}
 
+			responseDef, responseTypes, err := getOperationResponses(op.OperationID, op.Responses.Map())
+			if err != nil {
+				return nil, fmt.Errorf("error getting operation responses: %w", err)
+			}
+			typeDefs = append(typeDefs, responseTypes...)
+
 			opDef := OperationDefinition{
+				ID: nameNormalizer(op.OperationID),
+				// Replace newlines in summary.
+				Summary:      op.Summary,
+				Description:  op.Description,
 				PathParams:   pathParams,
 				HeaderParams: FilterParameterDefinitionByType(allParams, "header"),
 				QueryParams:  FilterParameterDefinitionByType(allParams, "query"),
-				ID:           nameNormalizer(op.OperationID),
-				// Replace newlines in summary.
-				Summary:         op.Summary,
-				Method:          opName,
-				Path:            requestPath,
-				Spec:            op,
-				Bodies:          bodyDefinitions,
-				Responses:       responseDefinitions,
-				TypeDefinitions: typeDefinitions,
+				Method:       opName,
+				Path:         requestPath,
+				Spec:         op,
+				Response:     *responseDef,
+
+				Body:            bodyDefinition,
+				TypeDefinitions: typeDefs,
 			}
 
 			if op.RequestBody != nil {
@@ -332,9 +244,6 @@ func GenerateTypeDefsForOperation(op OperationDefinition) []TypeDefinition {
 		typeDefs = append(typeDefs, param.Schema.AdditionalTypes...)
 	}
 
-	for _, body := range op.Bodies {
-		typeDefs = append(typeDefs, body.Schema.AdditionalTypes...)
-	}
 	return typeDefs
 }
 
@@ -371,7 +280,7 @@ func GenerateParamsTypes(op OperationDefinition) []TypeDefinition {
 		s.Properties = append(s.Properties, prop)
 	}
 
-	s.Description = op.Spec.Description
+	s.Description = op.Description
 	s.GoType = GenStructFromSchema(s)
 
 	td := TypeDefinition{

@@ -142,22 +142,28 @@ func OperationImports(ops []OperationDefinition) (map[string]goImport, error) {
 			}
 		}
 
-		for _, b := range op.Bodies {
-			imprts, err := OperationSchemaImports(&b.Schema)
+		if op.Body != nil {
+			imprts, err := OperationSchemaImports(&op.Body.Schema)
 			if err != nil {
 				return nil, err
 			}
 			MergeImports(res, imprts)
 		}
 
-		for _, b := range op.Responses {
-			for _, c := range b.Contents {
-				imprts, err := OperationSchemaImports(&c.Schema)
-				if err != nil {
-					return nil, err
-				}
-				MergeImports(res, imprts)
+		if op.Response.Success != nil {
+			imprts, err := OperationSchemaImports(&op.Response.Success.Schema)
+			if err != nil {
+				return nil, err
 			}
+			MergeImports(res, imprts)
+		}
+
+		if op.Response.Error != nil {
+			imprts, err := OperationSchemaImports(&op.Response.Error.Schema)
+			if err != nil {
+				return nil, err
+			}
+			MergeImports(res, imprts)
 		}
 
 	}

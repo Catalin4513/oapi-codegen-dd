@@ -29,20 +29,7 @@ type TypeDefinition struct {
 	SpecLocation SpecLocation
 }
 
-// ResponseTypeDefinition is an extension of TypeDefinition, specifically for
-// response unmarshaling in ClientWithResponses.
-type ResponseTypeDefinition struct {
-	TypeDefinition
-	// The content type name where this is used, eg, application/json
-	ContentTypeName string
-
-	// The type name of a response model.
-	ResponseName string
-
-	AdditionalTypeDefinitions []TypeDefinition
-}
-
-func (t *TypeDefinition) IsAlias() bool {
+func (t TypeDefinition) IsAlias() bool {
 	return t.Schema.DefineViaAlias
 }
 

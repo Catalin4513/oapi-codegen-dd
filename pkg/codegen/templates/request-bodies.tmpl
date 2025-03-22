@@ -1,8 +1,9 @@
-{{range .}}{{$opid := .ID}}
-{{range .Bodies}}
-{{if .IsSupported -}}
-{{$contentType := .ContentType -}}
-{{with .TypeDef $opid}}
+{{range .}}{{$opid := .ID}}{{$body := .Body}}
+
+{{if $body -}}
+{{if $body.IsSupported -}}
+{{$contentType := $body.ContentType -}}
+{{with $body.TypeDef $opid}}
 // {{.TypeName}} defines body for {{$opid}} for {{$contentType}} ContentType.
 type {{.TypeName}} {{if .IsAlias}}={{end}} {{.Schema.TypeDecl}}
 {{end}}

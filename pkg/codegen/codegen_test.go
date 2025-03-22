@@ -35,6 +35,9 @@ func TestExampleOpenAPICodeGeneration(t *testing.T) {
 	// Run our code generation:
 	code, err := Generate(swagger, opts)
 	assert.NoError(t, err)
+	if err != nil {
+		t.FailNow()
+	}
 	assert.NotEmpty(t, code)
 
 	// Check that we have valid (formattable) code:
@@ -51,13 +54,10 @@ func TestExampleOpenAPICodeGeneration(t *testing.T) {
 	// Here an invalid array with no items.
 	assert.Contains(t, code, `
 type GetTestByNameResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]Test
-	XML200       *[]Test
-	JSON422      *[]interface{}
-	XML422       *[]interface{}
-	JSONDefault  *Error
+	Body                       []byte
+	HTTPResponse               *http.Response
+	GetTestByNameResponse      *[]Test
+	GetTestByNameErrorResponse *[]interface{}
 }`)
 
 	// Check that the helper methods are generated correctly:
@@ -122,6 +122,9 @@ func TestGoTypeImport(t *testing.T) {
 	// Run our code generation:
 	code, err := Generate(swagger, opts)
 	assert.NoError(t, err)
+	if err != nil {
+		t.FailNow()
+	}
 	assert.NotEmpty(t, code)
 
 	// Check that we have valid (formattable) code:
