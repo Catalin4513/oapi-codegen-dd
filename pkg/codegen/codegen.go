@@ -60,7 +60,13 @@ func Generate(spec *openapi3.T, cfg *Configuration) (string, error) {
 		return "", fmt.Errorf("error parsing: %w", err)
 	}
 
+	// original behavior is single file output
 	res := ""
+	if header, ok := codes["header"]; ok {
+		res += header + "\n"
+		delete(codes, "header")
+	}
+
 	for _, code := range codes {
 		res += code + "\n"
 	}
@@ -157,7 +163,7 @@ func createParseContextFromDocument(doc *openapi3.T, cfg *Configuration) (*Parse
 			importSchemas = append(importSchemas, headerSchemas...)
 
 			// Process Request Body
-			bodyDefinition, bodyTypeDef, err := createBodyDefinition(op.OperationID, op.RequestBody)
+			bodyDefinition, bodyTypeDef, err := createBodyDefinition(operationID, op.RequestBody)
 			if err != nil {
 				return nil, fmt.Errorf("error generating body definitions: %w", err)
 			}
@@ -170,7 +176,7 @@ func createParseContextFromDocument(doc *openapi3.T, cfg *Configuration) (*Parse
 			}
 
 			// Process Responses
-			responseDef, responseTypes, err := getOperationResponses(op.OperationID, op.Responses.Map())
+			responseDef, responseTypes, err := getOperationResponses(operationID, op.Responses.Map())
 			if err != nil {
 				return nil, fmt.Errorf("error getting operation responses: %w", err)
 			}

@@ -50,7 +50,8 @@ func TestExampleOpenAPICodeGeneration(t *testing.T) {
 func TestExtPropGoTypeSkipOptionalPointer(t *testing.T) {
 	packageName := "api"
 	opts := &Configuration{
-		PackageName: packageName,
+		PackageName:     packageName,
+		UseSingleOutput: true,
 	}
 	spec := "test_specs/x-go-type-skip-optional-pointer.yaml"
 	swagger, err := util.LoadSwagger(spec)
@@ -82,7 +83,8 @@ func TestExtPropGoTypeSkipOptionalPointer(t *testing.T) {
 func TestGoTypeImport(t *testing.T) {
 	packageName := "api"
 	opts := &Configuration{
-		PackageName: packageName,
+		PackageName:     packageName,
+		UseSingleOutput: true,
 	}
 	spec := "test_specs/x-go-type-import-pet.yaml"
 	swagger, err := util.LoadSwagger(spec)
