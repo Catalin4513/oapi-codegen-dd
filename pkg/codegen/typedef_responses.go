@@ -10,11 +10,6 @@ import (
 
 // ResponseDefinition describes a response.
 type ResponseDefinition struct {
-	StatusCode  string
-	Description string
-	Contents    []ResponseContentDefinition
-	Ref         string
-
 	SuccessStatusCode int
 	Success           *ResponseContentDefinition
 	Error             *ResponseContentDefinition
