@@ -9,7 +9,7 @@ import (
 func TestFilterOperationsByTag(t *testing.T) {
 	packageName := "testswagger"
 	t.Run("include tags", func(t *testing.T) {
-		cfg := &Configuration{
+		cfg := Configuration{
 			PackageName: packageName,
 			Filter: FilterConfig{
 				Include: FilterParamsConfig{
@@ -31,7 +31,7 @@ func TestFilterOperationsByTag(t *testing.T) {
 	})
 
 	t.Run("exclude tags", func(t *testing.T) {
-		opts := &Configuration{
+		opts := Configuration{
 			PackageName: packageName,
 			Filter: FilterConfig{
 				Exclude: FilterParamsConfig{
@@ -57,7 +57,7 @@ func TestFilterOperationsByOperationID(t *testing.T) {
 	packageName := "testswagger"
 
 	t.Run("include operation ids", func(t *testing.T) {
-		opts := &Configuration{
+		opts := Configuration{
 			PackageName: packageName,
 			Filter: FilterConfig{
 				Include: FilterParamsConfig{
@@ -79,7 +79,7 @@ func TestFilterOperationsByOperationID(t *testing.T) {
 	})
 
 	t.Run("exclude operation ids", func(t *testing.T) {
-		opts := &Configuration{
+		opts := Configuration{
 			PackageName: packageName,
 			Filter: FilterConfig{
 				Exclude: FilterParamsConfig{

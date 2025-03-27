@@ -20,7 +20,7 @@ type ParseContext struct {
 
 // Generate uses the Go templating engine to generate all of our server wrappers from
 // the descriptions we've built up above from the schema objects.
-func Generate(doc libopenapi.Document, cfg *Configuration) (string, error) {
+func Generate(doc libopenapi.Document, cfg Configuration) (string, error) {
 	parseCtx, err := createParseContextFromDocument(doc, cfg)
 	if err != nil {
 		return "", fmt.Errorf("error creating parse context: %w", err)
@@ -41,8 +41,9 @@ func Generate(doc libopenapi.Document, cfg *Configuration) (string, error) {
 }
 
 // CreateParseContext creates a ParseContext from an OpenAPI contents and a ParseConfig.
-func CreateParseContext(docContents []byte, cfg *Configuration) (*ParseContext, []error) {
-	if cfg == nil {
+func CreateParseContext(docContents []byte, cfg Configuration) (*ParseContext, []error) {
+	// TODO: merge config with default values
+	if cfg.PackageName == "" {
 		cfg = NewDefaultConfiguration()
 	}
 
@@ -59,7 +60,7 @@ func CreateParseContext(docContents []byte, cfg *Configuration) (*ParseContext, 
 	return res, nil
 }
 
-func createParseContextFromDocument(doc libopenapi.Document, cfg *Configuration) (*ParseContext, error) {
+func createParseContextFromDocument(doc libopenapi.Document, cfg Configuration) (*ParseContext, error) {
 	doc, err := filterOutDocument(doc, cfg.Filter)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering document: %w", err)

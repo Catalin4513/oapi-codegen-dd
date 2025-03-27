@@ -23,13 +23,13 @@ var templates embed.FS
 type Parser struct {
 	tpl *template.Template
 	ctx *ParseContext
-	cfg *Configuration
+	cfg Configuration
 }
 
 type EnumContext struct {
 	Enums      []EnumDefinition
 	Imports    []string
-	Config     *Configuration
+	Config     Configuration
 	WithHeader bool
 }
 
@@ -38,12 +38,12 @@ type TplTypeContext struct {
 	Types        []TypeDefinition
 	Imports      []string
 	SpecLocation string
-	Config       *Configuration
+	Config       Configuration
 	WithHeader   bool
 }
 
 // NewParser creates a new Parser with the provided ParseConfig and ParseContext.
-func NewParser(cfg *Configuration, ctx *ParseContext) (*Parser, error) {
+func NewParser(cfg Configuration, ctx *ParseContext) (*Parser, error) {
 	tpl, err := loadTemplates()
 	if err != nil {
 		return nil, fmt.Errorf("loading templates: %w", err)

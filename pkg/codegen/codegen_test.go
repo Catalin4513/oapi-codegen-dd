@@ -16,7 +16,7 @@ var testDocument string
 func TestExampleOpenAPICodeGeneration(t *testing.T) {
 	// Input vars for code generation:
 	packageName := "testswagger"
-	opts := &Configuration{
+	cfg := Configuration{
 		PackageName:     packageName,
 		UseSingleOutput: true,
 	}
@@ -26,7 +26,7 @@ func TestExampleOpenAPICodeGeneration(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Run our code generation:
-	code, err := Generate(spec, opts)
+	code, err := Generate(spec, cfg)
 	assert.NoError(t, err)
 	if err != nil {
 		t.FailNow()
@@ -47,7 +47,7 @@ func TestExampleOpenAPICodeGeneration(t *testing.T) {
 
 func TestExtPropGoTypeSkipOptionalPointer(t *testing.T) {
 	packageName := "api"
-	opts := &Configuration{
+	cfg := Configuration{
 		PackageName:     packageName,
 		UseSingleOutput: true,
 	}
@@ -56,7 +56,7 @@ func TestExtPropGoTypeSkipOptionalPointer(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run our code generation:
-	code, err := Generate(doc, opts)
+	code, err := Generate(doc, cfg)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, code)
 
@@ -80,7 +80,7 @@ func TestExtPropGoTypeSkipOptionalPointer(t *testing.T) {
 
 func TestGoTypeImport(t *testing.T) {
 	packageName := "api"
-	opts := &Configuration{
+	cfg := Configuration{
 		PackageName:     packageName,
 		UseSingleOutput: true,
 	}
@@ -89,7 +89,7 @@ func TestGoTypeImport(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run our code generation:
-	code, err := Generate(doc, opts)
+	code, err := Generate(doc, cfg)
 	assert.NoError(t, err)
 	if err != nil {
 		t.FailNow()
@@ -122,7 +122,7 @@ func TestGoTypeImport(t *testing.T) {
 
 func TestSmartum(t *testing.T) {
 	packageName := "smartum"
-	config := &Configuration{
+	config := Configuration{
 		PackageName: packageName,
 		// UseSingleOutput: true,
 	}
