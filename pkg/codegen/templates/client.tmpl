@@ -7,7 +7,11 @@ Do(context context.Context, req *http.Request) *http.Response
 }
 {{- end -}}
 
-{{- define "logOutgoingRequest" -}}
+{{- define "executeRequest" -}}
+resp, err := c.httpClient.Do(ctx, req)
+if err != nil {
+    return nil, fmt.Errorf("error sending request: %w", err)
+}
 {{- end -}}
 
 {{- define "logReceivedResponse" -}}
@@ -90,11 +94,7 @@ func (c *Client) {{$op.ID}}(ctx context.Context{{ if $op.HasRequestOptions }}, o
         return nil, fmt.Errorf("error applying request editors: %w", err)
     }
 
-    logOutgoingRequest(ctx, req)
-    resp, err := c.httpClient.Do(ctx, req).Await()
-    if err != nil {
-        return nil, fmt.Errorf("error sending request: %w", err)
-    }
+    {{ template "executeRequest" $ }}
 
     var bodyBytes []byte
     if resp.Body != nil {
@@ -234,10 +234,6 @@ func replacePathPlaceholders(url string, pathParams map[string]any) string {
         url = strings.Replace(url, fmt.Sprintf("{%s}", k), fmt.Sprintf("%v", v), -1)
     }
     return url
-}
-
-func logOutgoingRequest(ctx context.Context, req *http.Request) {
-    {{ template "logOutgoingRequest" $ }}
 }
 
 var _ ClientInterface = (*Client)(nil)
