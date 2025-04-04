@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pb33f/libopenapi"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
@@ -291,13 +292,14 @@ func collectOperationDefinitions(model *v3high.Document) (*operationsCollection,
 				ID:          operationID,
 				Summary:     operation.Summary,
 				Description: operation.Description,
-				Method:      method,
-				Path:        path,
-				PathParams:  pathParamsDef,
-				Header:      headerDef,
-				Query:       queryDef,
-				Response:    *responseDef,
-				Body:        bodyDefinition,
+				// https://datatracker.ietf.org/doc/html/rfc7231
+				Method:     strings.ToUpper(method),
+				Path:       path,
+				PathParams: pathParamsDef,
+				Header:     headerDef,
+				Query:      queryDef,
+				Response:   *responseDef,
+				Body:       bodyDefinition,
 			})
 		}
 	}
