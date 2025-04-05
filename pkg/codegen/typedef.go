@@ -107,6 +107,19 @@ func (t TypeDefinition) GetErrorResponse(errTypes map[string]string, alias strin
 	return strings.Join(res, "\n")
 }
 
+// TypeRegistry is a registry of type names.
+type TypeRegistry map[string]int
+
+// GetName returns a unique name for the given type name.
+func (tr TypeRegistry) GetName(name string) string {
+	if cnt, found := tr[name]; found {
+		next := cnt + 1
+		tr[name] = next
+		return fmt.Sprintf("%s%d", name, next)
+	}
+	return name
+}
+
 func checkDuplicates(types []TypeDefinition) ([]TypeDefinition, error) {
 	m := map[string]TypeDefinition{}
 	var ts []TypeDefinition

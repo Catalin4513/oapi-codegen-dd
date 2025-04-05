@@ -1,0 +1,39 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: naming-conflict
+components:
+  schemas:
+    source_type:
+      type: string
+      enum:
+        - ach_credit_transfer
+        # creates SourceTypeAlipay which conflicts with another schema type
+        - alipay
+
+    payment:
+      type: object
+      properties:
+        source:
+          properties:
+            type:
+              type: string
+              enum:
+                - ach_credit_transfer
+                - alipay
+
+    choice:
+      $ref: "#/components/schemas/source_type"
+
+    # This is a schema that has the same name as the enum value.
+    source_type_alipay:
+      properties:
+        data_string:
+          nullable: true
+          type: string
+        native_url:
+          nullable: true
+          type: string
+        statement_descriptor:
+          nullable: true
+          type: string

@@ -27,6 +27,10 @@ var TemplateFunctions = template.FuncMap{
 	"hasSuffix":   strings.HasSuffix,
 	"str":         str,
 	"dict":        dict,
+	"slice":       func() []any { return []any{} },
+	"append": func(slice []any, val any) []any {
+		return append(slice, val)
+	},
 }
 
 // uppercaseFirstCharacter Uppercases the first character in a string.

@@ -35,10 +35,11 @@ type Parser struct {
 }
 
 type EnumContext struct {
-	Enums      []EnumDefinition
-	Imports    []string
-	Config     Configuration
-	WithHeader bool
+	Enums        []EnumDefinition
+	Imports      []string
+	Config       Configuration
+	WithHeader   bool
+	TypeRegistry TypeRegistry
 }
 
 // TplTypeContext is the context passed to templates to generate code for type definitions.
@@ -124,10 +125,11 @@ func (p *Parser) Parse() (GeneratedCode, error) {
 
 	if len(p.ctx.Enums) > 0 {
 		out, err := p.ParseTemplates([]string{"enums.tmpl"}, EnumContext{
-			Enums:      p.ctx.Enums,
-			Imports:    p.ctx.Imports,
-			Config:     p.cfg,
-			WithHeader: withHeader,
+			Enums:        p.ctx.Enums,
+			Imports:      p.ctx.Imports,
+			Config:       p.cfg,
+			WithHeader:   withHeader,
+			TypeRegistry: p.ctx.TypeRegistry,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error generating code for type enums: %w", err)

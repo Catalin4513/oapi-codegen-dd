@@ -28,6 +28,7 @@ func (e *EnumDefinition) GetValues() map[string]string {
 	if !e.PrefixTypeName {
 		return e.Schema.EnumValues
 	}
+
 	// If we do have conflicts, we will prefix the enum's typename to the values.
 	newValues := make(map[string]string, len(e.Schema.EnumValues))
 	for k, v := range e.Schema.EnumValues {
@@ -137,16 +138,16 @@ func sanitizeEnumNames(enumNames, enumValues []string) map[string]string {
 	return sanitizedDeDup
 }
 
-func filterOutEnums(types []TypeDefinition) ([]EnumDefinition, []TypeDefinition) {
+func filterOutEnums(types []TypeDefinition) ([]EnumDefinition, []TypeDefinition, TypeRegistry) {
 	var enums []EnumDefinition
 	var rest []TypeDefinition
 
 	// Keep track of which enums we've generated
-	m := map[string]bool{}
+	m := map[string]int{}
 
 	// These are all types defined globally
 	for _, td := range types {
-		if found := m[td.Name]; found {
+		if cnt := m[td.Name]; cnt > 0 {
 			continue
 		}
 
@@ -160,7 +161,7 @@ func filterOutEnums(types []TypeDefinition) ([]EnumDefinition, []TypeDefinition)
 				name = p.GoName
 			}
 
-			if found := m[name]; found {
+			if cnt := m[name]; cnt > 0 {
 				continue
 			}
 
@@ -174,7 +175,7 @@ func filterOutEnums(types []TypeDefinition) ([]EnumDefinition, []TypeDefinition)
 				Name:         name,
 				ValueWrapper: wrapper,
 			})
-			m[name] = true
+			m[name] = 1
 		}
 
 		if len(td.Schema.EnumValues) > 0 {
@@ -187,10 +188,10 @@ func filterOutEnums(types []TypeDefinition) ([]EnumDefinition, []TypeDefinition)
 				Name:         td.Name,
 				ValueWrapper: wrapper,
 			})
-			m[td.Name] = true
 		} else {
 			rest = append(rest, td)
 		}
+		m[td.Name] = 1
 	}
 
 	// Now, go through all the enums, and figure out if we have conflicts with any others.
@@ -226,7 +227,6 @@ func filterOutEnums(types []TypeDefinition) ([]EnumDefinition, []TypeDefinition)
 			}
 		}
 
-		// Another edge case is that an enum value can conflict with its own type name.
 		_, found := e1.GetValues()[e1.Name]
 		if found {
 			e1.PrefixTypeName = true
@@ -234,5 +234,5 @@ func filterOutEnums(types []TypeDefinition) ([]EnumDefinition, []TypeDefinition)
 		}
 	}
 
-	return enums, rest
+	return enums, rest, m
 }

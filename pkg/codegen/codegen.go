@@ -17,6 +17,7 @@ type ParseContext struct {
 	AdditionalTypes          []TypeDefinition
 	UnionWithAdditionalTypes []TypeDefinition
 	Imports                  []string
+	TypeRegistry             TypeRegistry
 }
 
 type operationsCollection struct {
@@ -128,7 +129,7 @@ func createParseContextFromDocument(doc libopenapi.Document, cfg Configuration) 
 		return nil, fmt.Errorf("error checking for duplicate type definitions: %w", err)
 	}
 
-	enums, typeDefs := filterOutEnums(typeDefs)
+	enums, typeDefs, registry := filterOutEnums(typeDefs)
 
 	groupedTypeDefs := make(map[SpecLocation][]TypeDefinition)
 	var (
@@ -178,6 +179,7 @@ func createParseContextFromDocument(doc libopenapi.Document, cfg Configuration) 
 		AdditionalTypes:          additionalTypes,
 		UnionWithAdditionalTypes: unionWithAdditionalTypes,
 		Imports:                  importMap(imprts).GoImports(),
+		TypeRegistry:             registry,
 	}, nil
 }
 

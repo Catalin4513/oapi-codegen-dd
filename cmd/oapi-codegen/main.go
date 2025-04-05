@@ -69,6 +69,10 @@ func main() {
 			destFile = filepath.Join(destDir, cfg.Output.Filename)
 		} else {
 			destDir = filepath.Join(destDir, cfg.PackageName)
+			err = os.MkdirAll(destDir, os.ModePerm)
+			if err != nil {
+				errExit("Error creating directory: %v", err)
+			}
 		}
 	}
 

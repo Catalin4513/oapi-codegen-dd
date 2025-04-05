@@ -1,21 +1,24 @@
 {{ template "header" $ }}
 
+{{- $root := . }}
 {{range $Enum := .Enums}}
   {{- if $Enum.Schema.Description}}{{ toGoComment $Enum.Schema.Description $Enum.Name }}{{- end}}
     type {{$Enum.Name}} {{$Enum.Schema.GoType}}
     const (
+      {{- $safeNames := slice }}
       {{- range $name, $value := $Enum.GetValues}}
-        {{$name}} {{$Enum.Name}} = {{$Enum.ValueWrapper}}{{$value}}{{$Enum.ValueWrapper}}
+      {{- $safeName := $root.TypeRegistry.GetName $name}}
+      {{- $safeNames = append $safeNames $safeName }}
+        {{$safeName}} {{$Enum.Name}} = {{$Enum.ValueWrapper}}{{$value}}{{$Enum.ValueWrapper}}
       {{- end}}
     )
 
     // All returns all possible values for {{$Enum.Name}}.
     func ({{$Enum.Name | fst | lower}} {{$Enum.Name}}) All() []{{$Enum.Name}} {
       return []{{$Enum.Name}}{
-        {{- range $name, $value := $Enum.GetValues}}
-          {{$name}},
-        {{- end}}
+        {{- range $safeNames }}
+        {{ . }},
+        {{- end }}
       }
     }
 {{end}}
-
