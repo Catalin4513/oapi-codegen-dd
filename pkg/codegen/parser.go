@@ -61,6 +61,7 @@ type TplOperationsContext struct {
 
 // NewParser creates a new Parser with the provided ParseConfig and ParseContext.
 func NewParser(cfg Configuration, ctx *ParseContext) (*Parser, error) {
+	cfg = cfg.Merge(NewDefaultConfiguration())
 	tpl, err := loadTemplates()
 	if err != nil {
 		return nil, fmt.Errorf("loading templates: %w", err)
