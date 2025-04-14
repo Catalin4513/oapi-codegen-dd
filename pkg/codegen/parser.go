@@ -349,7 +349,7 @@ func sanitizeCode(src string) string {
 func optimizeImports(src []byte) ([]byte, error) {
 	outBytes, err := imports.Process("gen.go", src, nil)
 	if err != nil {
-		return src, err
+		return nil, err
 	}
 	return outBytes, nil
 }
