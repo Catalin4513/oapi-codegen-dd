@@ -19,6 +19,7 @@ func filterOutDocument(doc libopenapi.Document, cfg FilterConfig) (libopenapi.Do
 	}
 
 	filterOperations(&model.Model, cfg)
+	filterComponentSchemaProperties(&model.Model, cfg)
 
 	_, doc, _, errs = doc.RenderAndReload()
 	if errs != nil {
@@ -92,6 +93,57 @@ func filterOperations(model *v3high.Document, cfg FilterConfig) {
 				case "trace":
 					pathItem.Trace = nil
 				}
+			}
+		}
+	}
+}
+
+func filterComponentSchemaProperties(model *v3high.Document, cfg FilterConfig) {
+	if model.Components == nil || model.Components.Schemas == nil {
+		return
+	}
+
+	includeMode := len(cfg.Include.SchemaProperties) > 0
+	excludeMode := len(cfg.Exclude.SchemaProperties) > 0
+
+	var propsFilter map[string][]string
+	switch {
+	case includeMode:
+		propsFilter = cfg.Include.SchemaProperties
+	case excludeMode:
+		propsFilter = cfg.Exclude.SchemaProperties
+	default:
+		return
+	}
+
+	for schemaName, schemaProxy := range model.Components.Schemas.FromOldest() {
+		filteredProps, ok := propsFilter[schemaName]
+		if !ok {
+			continue
+		}
+
+		schema := schemaProxy.Schema()
+		if schema == nil || schema.Properties == nil {
+			continue
+		}
+
+		var copiedKeys []string
+		for prop := range schema.Properties.KeysFromOldest() {
+			copiedKeys = append(copiedKeys, prop)
+		}
+
+		for _, propName := range copiedKeys {
+			isRequired := slices.Contains(schema.Required, propName)
+			if isRequired {
+				continue
+			}
+
+			if includeMode && !slices.Contains(filteredProps, propName) {
+				schema.Properties.Delete(propName)
+			}
+
+			if excludeMode && slices.Contains(filteredProps, propName) {
+				schema.Properties.Delete(propName)
 			}
 		}
 	}

@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=../../configuration-schema.json
+package: filteringbyproperty
+output:
+  use-single-file: true
+error-mapping:
+  UpdateClientErrorResponse: code
+filter:
+  include:
+    schema-properties:
+      Person:
+        - name
+        - age
+  exclude:

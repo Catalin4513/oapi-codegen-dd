@@ -78,19 +78,23 @@ type AdditionalImport struct {
 
 // FilterConfig is the configuration for filtering the paths and operations to be parsed.
 type FilterConfig struct {
-	Include FilterParamsConfig
-	Exclude FilterParamsConfig
+	Include FilterParamsConfig `yaml:"include"`
+	Exclude FilterParamsConfig `yaml:"exclude"`
 }
 
 // FilterParamsConfig is the configuration for filtering the paths to be parsed.
 type FilterParamsConfig struct {
-	Paths        []string
-	Tags         []string
-	OperationIDs []string
+	Paths            []string            `yaml:"paths"`
+	Tags             []string            `yaml:"tags"`
+	OperationIDs     []string            `yaml:"operation-ids"`
+	SchemaProperties map[string][]string `yaml:"schema-properties"`
 }
 
 func (f FilterParamsConfig) isEmpty() bool {
-	return len(f.Paths) == 0 && len(f.Tags) == 0 && len(f.OperationIDs) == 0
+	return len(f.Paths) == 0 &&
+		len(f.Tags) == 0 &&
+		len(f.OperationIDs) == 0 &&
+		len(f.SchemaProperties) == 0
 }
 
 type GenerateOptions struct {
