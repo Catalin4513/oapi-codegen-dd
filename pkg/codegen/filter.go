@@ -103,25 +103,7 @@ func filterComponentSchemaProperties(model *v3high.Document, cfg FilterConfig) {
 		return
 	}
 
-	includeMode := len(cfg.Include.SchemaProperties) > 0
-	excludeMode := len(cfg.Exclude.SchemaProperties) > 0
-
-	var propsFilter map[string][]string
-	switch {
-	case includeMode:
-		propsFilter = cfg.Include.SchemaProperties
-	case excludeMode:
-		propsFilter = cfg.Exclude.SchemaProperties
-	default:
-		return
-	}
-
 	for schemaName, schemaProxy := range model.Components.Schemas.FromOldest() {
-		filteredProps, ok := propsFilter[schemaName]
-		if !ok {
-			continue
-		}
-
 		schema := schemaProxy.Schema()
 		if schema == nil || schema.Properties == nil {
 			continue
@@ -138,12 +120,16 @@ func filterComponentSchemaProperties(model *v3high.Document, cfg FilterConfig) {
 				continue
 			}
 
-			if includeMode && !slices.Contains(filteredProps, propName) {
-				schema.Properties.Delete(propName)
+			if include := cfg.Include.SchemaProperties[schemaName]; include != nil {
+				if !slices.Contains(include, propName) {
+					schema.Properties.Delete(propName)
+				}
 			}
 
-			if excludeMode && slices.Contains(filteredProps, propName) {
-				schema.Properties.Delete(propName)
+			if exclude := cfg.Exclude.SchemaProperties[schemaName]; exclude != nil {
+				if slices.Contains(exclude, propName) {
+					schema.Properties.Delete(propName)
+				}
 			}
 		}
 	}

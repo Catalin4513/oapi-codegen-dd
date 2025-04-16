@@ -8,6 +8,14 @@ filter:
   include:
     schema-properties:
       Person:
-        - name
+        # name is required and will be present regardless
+        # - name
         - age
+        - employment
   exclude:
+    schema-properties:
+      Job:
+        # title is required and won't be removed
+        - title
+        - experience
+        - created_at

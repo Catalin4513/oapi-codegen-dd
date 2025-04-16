@@ -327,8 +327,9 @@ var bodyTypesValidate = validator.New(validator.WithRequiredStructEnabled())
 type UpdateClientBody = Person
 
 type GetClientResponse struct {
-	Name string `json:"name" validate:"required"`
-	Age  *int   `json:"age,omitempty"`
+	Name       string `json:"name" validate:"required"`
+	Age        *int   `json:"age,omitempty"`
+	Employment *Job   `json:"employment,omitempty"`
 }
 
 type UpdateClientErrorResponse struct {
@@ -349,6 +350,11 @@ func (r UpdateClientErrorResponse) Error() string {
 }
 
 type Person struct {
-	Name string `json:"name" validate:"required"`
-	Age  *int   `json:"age,omitempty"`
+	Name       string `json:"name" validate:"required"`
+	Age        *int   `json:"age,omitempty"`
+	Employment *Job   `json:"employment,omitempty"`
+}
+
+type Job struct {
+	Title string `json:"title" validate:"required"`
 }
