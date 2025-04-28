@@ -48,11 +48,12 @@ type EnumContext struct {
 
 // TplTypeContext is the context passed to templates to generate code for type definitions.
 type TplTypeContext struct {
-	Types        []TypeDefinition
-	Imports      []string
-	SpecLocation string
-	Config       Configuration
-	WithHeader   bool
+	Types          []TypeDefinition
+	Imports        []string
+	SpecLocation   string
+	Config         Configuration
+	WithHeader     bool
+	ResponseErrors map[string]bool
 }
 
 // TplOperationsContext is the context passed to templates to generate client code.
@@ -156,16 +157,22 @@ func (p *Parser) Parse() (GeneratedCode, error) {
 		typesOut["enums"] = formatted
 	}
 
+	responseErrs := make(map[string]bool)
+	for _, respErr := range p.ctx.ResponseErrors {
+		responseErrs[respErr] = true
+	}
+
 	for sl, tds := range p.ctx.TypeDefinitions {
 		if len(tds) == 0 {
 			continue
 		}
 		typesCtx := &TplTypeContext{
-			Types:        tds,
-			SpecLocation: string(sl),
-			Imports:      p.ctx.Imports,
-			Config:       p.cfg,
-			WithHeader:   withHeader,
+			Types:          tds,
+			SpecLocation:   string(sl),
+			Imports:        p.ctx.Imports,
+			Config:         p.cfg,
+			WithHeader:     withHeader,
+			ResponseErrors: responseErrs,
 		}
 		out, err := p.ParseTemplates([]string{"types.tmpl"}, typesCtx)
 		if err != nil {
@@ -183,10 +190,11 @@ func (p *Parser) Parse() (GeneratedCode, error) {
 
 	if len(p.ctx.AdditionalTypes) > 0 {
 		out, err := p.ParseTemplates([]string{"additional-properties.tmpl"}, &TplTypeContext{
-			Types:      p.ctx.AdditionalTypes,
-			Imports:    p.ctx.Imports,
-			Config:     p.cfg,
-			WithHeader: withHeader,
+			Types:          p.ctx.AdditionalTypes,
+			Imports:        p.ctx.Imports,
+			Config:         p.cfg,
+			WithHeader:     withHeader,
+			ResponseErrors: responseErrs,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error generating code for additional properties: %w", err)
@@ -203,11 +211,12 @@ func (p *Parser) Parse() (GeneratedCode, error) {
 
 	if len(p.ctx.UnionTypes) > 0 {
 		out, err := p.ParseTemplates([]string{"types.tmpl", "union.tmpl"}, &TplTypeContext{
-			Types:        p.ctx.UnionTypes,
-			SpecLocation: "union",
-			Imports:      p.ctx.Imports,
-			Config:       p.cfg,
-			WithHeader:   withHeader,
+			Types:          p.ctx.UnionTypes,
+			SpecLocation:   "union",
+			Imports:        p.ctx.Imports,
+			Config:         p.cfg,
+			WithHeader:     withHeader,
+			ResponseErrors: responseErrs,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error generating code for union types: %w", err)
@@ -224,11 +233,12 @@ func (p *Parser) Parse() (GeneratedCode, error) {
 
 	if len(p.ctx.UnionWithAdditionalTypes) > 0 {
 		out, err := p.ParseTemplates([]string{"union-and-additional-properties.tmpl"}, &TplTypeContext{
-			Types:        p.ctx.UnionWithAdditionalTypes,
-			SpecLocation: "union_with_additional",
-			Imports:      p.ctx.Imports,
-			Config:       p.cfg,
-			WithHeader:   withHeader,
+			Types:          p.ctx.UnionWithAdditionalTypes,
+			SpecLocation:   "union_with_additional",
+			Imports:        p.ctx.Imports,
+			Config:         p.cfg,
+			WithHeader:     withHeader,
+			ResponseErrors: responseErrs,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error generating code for union types with additional properties: %w", err)

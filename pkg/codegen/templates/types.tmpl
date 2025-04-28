@@ -10,6 +10,7 @@ var {{.SpecLocation}}TypesValidate = validator.New(validator.WithRequiredStructE
 {{ $td := .type }}
 {{ $config := .config }}
 {{ $loc := .specLocation }}
+{{ $responseErrors := .responseErrors }}
 {{ $isParam := or (eq $loc "path") (eq $loc "query") (eq $loc "header") (eq $loc "body") }}
 
     {{ if not $config.Generate.OmitDescription}}{{ toGoComment $td.Schema.Description $td.Name }}{{ end }}
@@ -24,22 +25,29 @@ var {{.SpecLocation}}TypesValidate = validator.New(validator.WithRequiredStructE
     {{ end }}
     {{ end -}}
 
-    {{- $val := index $config.ErrorMapping $td.Name }}
-    {{ if and (eq $loc "response") $val }}
+    {{ if $responseErrors }}
+    {{- $isResponseError := index $responseErrors $td.Name }}
+    {{ if $isResponseError }}
     {{ $alias := $loc | fst | lower }}
     {{ if not $td.IsAlias }}
     {{ $alias := $loc | fst | lower }}
     func ({{$alias}} {{$td.Name}}) Error() string {
+        {{- if index $config.ErrorMapping $td.Name}}
         {{ $td.GetErrorResponse $config.ErrorMapping $alias }}
+        {{ else }}
+        return "unmapped client error"
+        {{ end -}}
     }
+    {{ end }}
     {{ end }}
     {{ end }}
 {{ end }}
 
 {{ $config := .Config }}
+{{ $responseErrors := .ResponseErrors }}
 
 {{- range .Types}}{{ $td := . }}
 {{ if not $td.Schema.UnionElements }}
-  {{ template "typeDef" (dict "type" $td "config" $config "specLocation" $loc) }}
+  {{ template "typeDef" (dict "type" $td "config" $config "specLocation" $loc "responseErrors" $responseErrors) }}
 {{ end }}
 {{ end }}

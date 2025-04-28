@@ -17,13 +17,15 @@ type ParseContext struct {
 	AdditionalTypes          []TypeDefinition
 	UnionWithAdditionalTypes []TypeDefinition
 	Imports                  []string
+	ResponseErrors           []string
 	TypeRegistry             TypeRegistry
 }
 
 type operationsCollection struct {
-	operations    []OperationDefinition
-	importSchemas []GoSchema
-	typeDefs      []TypeDefinition
+	operations     []OperationDefinition
+	importSchemas  []GoSchema
+	typeDefs       []TypeDefinition
+	responseErrors []string
 }
 
 // Generate creates Go code from an OpenAPI document and a configuration in single file output.
@@ -75,9 +77,10 @@ func CreateParseContextFromDocument(doc libopenapi.Document, cfg Configuration) 
 	model := &builtModel.Model
 
 	var (
-		operations    []OperationDefinition
-		importSchemas []GoSchema
-		typeDefs      []TypeDefinition
+		operations     []OperationDefinition
+		importSchemas  []GoSchema
+		typeDefs       []TypeDefinition
+		responseErrors []string
 	)
 
 	if model == nil {
@@ -93,6 +96,7 @@ func CreateParseContextFromDocument(doc libopenapi.Document, cfg Configuration) 
 		operations = opColl.operations
 		importSchemas = opColl.importSchemas
 		typeDefs = opColl.typeDefs
+		responseErrors = opColl.responseErrors
 	}
 
 	// Process Components
@@ -172,6 +176,7 @@ func CreateParseContextFromDocument(doc libopenapi.Document, cfg Configuration) 
 		AdditionalTypes:          additionalTypes,
 		UnionWithAdditionalTypes: unionWithAdditionalTypes,
 		Imports:                  importMap(imprts).GoImports(),
+		ResponseErrors:           responseErrors,
 		TypeRegistry:             registry,
 	}, nil
 }
@@ -182,9 +187,10 @@ func collectOperationDefinitions(model *v3high.Document, options ParseOptions) (
 	}
 
 	var (
-		operations    []OperationDefinition
-		importSchemas []GoSchema
-		typeDefs      []TypeDefinition
+		operations     []OperationDefinition
+		importSchemas  []GoSchema
+		typeDefs       []TypeDefinition
+		responseErrors []string
 	)
 
 	for path, pathItem := range model.Paths.PathItems.FromOldest() {
@@ -278,6 +284,9 @@ func collectOperationDefinitions(model *v3high.Document, options ParseOptions) (
 			for _, responseType := range responseTypes {
 				importSchemas = append(importSchemas, responseType.Schema)
 			}
+			if responseDef.Error != nil {
+				responseErrors = append(responseErrors, responseDef.Error.ResponseName)
+			}
 
 			operations = append(operations, OperationDefinition{
 				ID:          operationID,
@@ -296,9 +305,10 @@ func collectOperationDefinitions(model *v3high.Document, options ParseOptions) (
 	}
 
 	return &operationsCollection{
-		operations:    operations,
-		importSchemas: importSchemas,
-		typeDefs:      typeDefs,
+		operations:     operations,
+		importSchemas:  importSchemas,
+		typeDefs:       typeDefs,
+		responseErrors: responseErrors,
 	}, nil
 }
 
