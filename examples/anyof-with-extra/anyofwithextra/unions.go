@@ -74,8 +74,8 @@ func (c *ClientWithIDAndWithAddress) AsClient() (Client, error) {
 
 // FromClient overwrites any union data inside the ClientWithIDAndWithAddress as the provided Client
 func (c *ClientWithIDAndWithAddress) FromClient(v Client) error {
-	b, err := json.Marshal(v)
-	c.union = b
+	bts, err := json.Marshal(v)
+	c.union = bts
 	return err
 }
 
@@ -86,8 +86,8 @@ func (c *ClientWithIDAndWithAddress) AsClientID() (ClientID, error) {
 
 // FromClientID overwrites any union data inside the ClientWithIDAndWithAddress as the provided ClientID
 func (c *ClientWithIDAndWithAddress) FromClientID(v ClientID) error {
-	b, err := json.Marshal(v)
-	c.union = b
+	bts, err := json.Marshal(v)
+	c.union = bts
 	return err
 }
 
@@ -98,8 +98,8 @@ func (c *ClientWithIDAndWithAddress) AsString() (string, error) {
 
 // FromString overwrites any union data inside the ClientWithIDAndWithAddress as the provided string
 func (c *ClientWithIDAndWithAddress) FromString(v string) error {
-	b, err := json.Marshal(v)
-	c.union = b
+	bts, err := json.Marshal(v)
+	c.union = bts
 	return err
 }
 

@@ -67,8 +67,8 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
                     {{end -}}
                 {{end -}}
             {{end -}}
-            b, err := json.Marshal(v)
-            {{$alias}}.union = b
+            bts, err := json.Marshal(v)
+            {{$alias}}.union = bts
             return err
         }
         {{end}}{{/*// either type check*/}}
@@ -191,14 +191,14 @@ func ({{$args.alias}} *{{$args.name}}) UnmarshalJSON(data []byte) error {
 {{ define "marshalUnion" }}
 {{- $args := . -}}
 func ({{$args.alias}} {{$args.name}}) MarshalJSON() ([]byte, error) {
-    b, err := {{$args.alias}}.union.MarshalJSON()
+    bts, err := {{$args.alias}}.union.MarshalJSON()
 
     {{if ne 0 (len $args.schema.Properties) -}}
         if err != nil {
             return nil, err
         }
         object := make(map[string]json.RawMessage)
-        if err = json.Unmarshal(b, &object); err != nil {
+        if err = json.Unmarshal(bts, &object); err != nil {
             return nil, err
         }
 
@@ -210,23 +210,23 @@ func ({{$args.alias}} {{$args.name}}) MarshalJSON() ([]byte, error) {
                 }
                 {{if not .Constraints.Required}} }{{end}}
         {{end -}}
-        b, err = json.Marshal(object)
+        bts, err = json.Marshal(object)
     {{end -}}
-    return b, err
+    return bts, err
 }
 {{ end }}
 
 {{ define "unmarshalUnion" }}
 {{- $args := . -}}
-func ({{$args.alias}} *{{$args.name}}) UnmarshalJSON(b []byte) error {
-    err := {{$args.alias}}.union.UnmarshalJSON(b)
+func ({{$args.alias}} *{{$args.name}}) UnmarshalJSON(bts []byte) error {
+    err := {{$args.alias}}.union.UnmarshalJSON(bts)
 
     {{if ne 0 (len $args.schema.Properties) -}}
         if err != nil {
             return err
         }
         object := make(map[string]json.RawMessage)
-        if err = json.Unmarshal(b, &object); err != nil {
+        if err = json.Unmarshal(bts, &object); err != nil {
             return err
         }
 

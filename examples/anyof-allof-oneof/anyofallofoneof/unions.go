@@ -49,8 +49,8 @@ func (c *ClientAndMaybeIdentity_Entity) AsClient() (Client, error) {
 
 // FromClient overwrites any union data inside the ClientAndMaybeIdentity_Entity as the provided Client
 func (c *ClientAndMaybeIdentity_Entity) FromClient(v Client) error {
-	b, err := json.Marshal(v)
-	c.union = b
+	bts, err := json.Marshal(v)
+	c.union = bts
 	return err
 }
 
@@ -61,8 +61,8 @@ func (c *ClientAndMaybeIdentity_Entity) AsIdentity() (Identity, error) {
 
 // FromIdentity overwrites any union data inside the ClientAndMaybeIdentity_Entity as the provided Identity
 func (c *ClientAndMaybeIdentity_Entity) FromIdentity(v Identity) error {
-	b, err := json.Marshal(v)
-	c.union = b
+	bts, err := json.Marshal(v)
+	c.union = bts
 	return err
 }
 
@@ -73,19 +73,19 @@ func (c *ClientAndMaybeIdentity_Entity) AsClientWithID() (ClientWithID, error) {
 
 // FromClientWithID overwrites any union data inside the ClientAndMaybeIdentity_Entity as the provided ClientWithID
 func (c *ClientAndMaybeIdentity_Entity) FromClientWithID(v ClientWithID) error {
-	b, err := json.Marshal(v)
-	c.union = b
+	bts, err := json.Marshal(v)
+	c.union = bts
 	return err
 }
 
 func (c ClientAndMaybeIdentity_Entity) MarshalJSON() ([]byte, error) {
-	b, err := c.union.MarshalJSON()
+	bts, err := c.union.MarshalJSON()
 
-	return b, err
+	return bts, err
 }
 
-func (c *ClientAndMaybeIdentity_Entity) UnmarshalJSON(b []byte) error {
-	err := c.union.UnmarshalJSON(b)
+func (c *ClientAndMaybeIdentity_Entity) UnmarshalJSON(bts []byte) error {
+	err := c.union.UnmarshalJSON(bts)
 
 	return err
 }
