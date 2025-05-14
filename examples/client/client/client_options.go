@@ -11,9 +11,50 @@ import (
 
 var clientOptionsValidate = validator.New(validator.WithRequiredStructEnabled())
 
+// GetClientRequestOptions is the options needed to make a request to GetClient.
+type GetClientRequestOptions struct {
+	Header *GetClientHeaders
+}
+
+// Validate validates all the fields in the options.
+// Use it if fields validation was not run.
+func (o *GetClientRequestOptions) Validate() error {
+	var errors runtime.ValidationErrors
+
+	if err := clientOptionsValidate.Struct(o.Header); err != nil {
+		errors = append(errors, runtime.NewValidationErrorsFromErrors("Header", []error{err})...)
+	}
+	if len(errors) == 0 {
+		return nil
+	}
+
+	return errors
+}
+
+// GetPathParams returns the path params as a map.
+func (o *GetClientRequestOptions) GetPathParams() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetQuery returns the query params as a map.
+func (o *GetClientRequestOptions) GetQuery() (map[string]any, error) {
+	return nil, nil
+}
+
+// GetBody returns the payload in any type that can be marshalled to JSON by the client.
+func (o *GetClientRequestOptions) GetBody() any {
+	return nil
+}
+
+// GetHeader returns the headers as a map.
+func (o *GetClientRequestOptions) GetHeader() (map[string]string, error) {
+	return asMap[string](o.Header)
+}
+
 // UpdateClientRequestOptions is the options needed to make a request to UpdateClient.
 type UpdateClientRequestOptions struct {
-	Body *UpdateClientBody
+	Body   *UpdateClientBody
+	Header *UpdateClientHeaders
 }
 
 // Validate validates all the fields in the options.
@@ -23,6 +64,10 @@ func (o *UpdateClientRequestOptions) Validate() error {
 
 	if err := clientOptionsValidate.Struct(o.Body); err != nil {
 		errors = append(errors, runtime.NewValidationErrorsFromErrors("Body", []error{err})...)
+	}
+
+	if err := clientOptionsValidate.Struct(o.Header); err != nil {
+		errors = append(errors, runtime.NewValidationErrorsFromErrors("Header", []error{err})...)
 	}
 	if len(errors) == 0 {
 		return nil
@@ -48,7 +93,7 @@ func (o *UpdateClientRequestOptions) GetBody() any {
 
 // GetHeader returns the headers as a map.
 func (o *UpdateClientRequestOptions) GetHeader() (map[string]string, error) {
-	return nil, nil
+	return asMap[string](o.Header)
 }
 
 func asMap[V any](v any) (map[string]V, error) {

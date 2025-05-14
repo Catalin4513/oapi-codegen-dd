@@ -4,6 +4,8 @@ info:
   title: Generate models
 paths:
   /client:
+    parameters:
+      - $ref: "#/components/parameters/Merchant-Serial-Number"
     get:
       operationId: getClient
       description: "getClient description"
@@ -73,6 +75,15 @@ components:
         id:
           type: integer
 
+    MSN:
+      type: string
+      title: MSNType
+      pattern: ^[0-9]{4,7}$
+      minLength: 4
+      maxLength: 7
+      example: '1234567'
+      description: The merchant serial number (MSN) for the sales unit.
+
     error:
       type: object
       properties:
@@ -82,3 +93,11 @@ components:
         message:
           type: string
           description: "Error message description"
+
+  parameters:
+    Merchant-Serial-Number:
+      name: Merchant-Serial-Number
+      in: header
+      required: true
+      schema:
+        $ref: '#/components/schemas/MSN'

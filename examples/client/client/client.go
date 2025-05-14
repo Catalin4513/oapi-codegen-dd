@@ -75,15 +75,15 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // ClientInterface is the interface for the API client.
 type ClientInterface interface {
-	GetClient(ctx context.Context, reqEditors ...RequestEditorFn) (*GetClientResponse, error)
+	GetClient(ctx context.Context, options *GetClientRequestOptions, reqEditors ...RequestEditorFn) (*GetClientResponse, error)
 
 	UpdateClient(ctx context.Context, options *UpdateClientRequestOptions, reqEditors ...RequestEditorFn) (*struct{}, error)
 }
 
-func (c *Client) GetClient(ctx context.Context, reqEditors ...RequestEditorFn) (*GetClientResponse, error) {
+func (c *Client) GetClient(ctx context.Context, options *GetClientRequestOptions, reqEditors ...RequestEditorFn) (*GetClientResponse, error) {
 	var err error
 	reqURL := c.baseURL + "/client"
-	req, err := createRequest(ctx, reqURL, "GET", nil)
+	req, err := createRequest(ctx, reqURL, "GET", options)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

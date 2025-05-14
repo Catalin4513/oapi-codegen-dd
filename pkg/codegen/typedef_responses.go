@@ -134,7 +134,6 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 		}
 
 		tag := ""
-		// TODO: check if needed
 		switch {
 		case contentType == "application/json":
 			tag = "JSON"
@@ -149,6 +148,10 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 		}
 
 		responseName := operationID + typeSuffix
+		if responseName == contentSchema.RefType {
+			responseName = operationID + typeSuffix + tag
+		}
+
 		td := TypeDefinition{
 			Name:         responseName,
 			Schema:       contentSchema,

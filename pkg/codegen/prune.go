@@ -196,6 +196,29 @@ func findOperationRefs(model *v3high.Document) []string {
 				}
 			}
 		}
+
+		// collect path parameters< defined in the path item for all methods
+		for _, param := range pathItem.Parameters {
+			if param == nil {
+				continue
+			}
+			ref := param.GoLow().GetReference()
+			if ref != "" {
+				refSet[ref] = struct{}{}
+			}
+
+			if param.Schema != nil {
+				schemaRef := param.Schema.GoLow().GetReference()
+				if schemaRef != "" {
+					refSet[schemaRef] = struct{}{}
+				}
+			}
+			for _, mediaType := range param.Content.FromOldest() {
+				if mediaType.Schema != nil {
+					collectSchemaRefs(mediaType.Schema.Schema(), refSet)
+				}
+			}
+		}
 	}
 
 	refs := make([]string, 0, len(refSet))
