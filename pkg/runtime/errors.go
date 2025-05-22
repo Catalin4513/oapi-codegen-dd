@@ -107,6 +107,12 @@ func NewValidationErrorsFromErrors(prefix string, errs []error) ValidationErrors
 					Message: convertFieldErrorMessage(ve),
 				})
 			}
+			continue
+		}
+
+		var ve ValidationError
+		if errors.As(err, &ve) {
+			result = append(result, ve)
 		}
 	}
 

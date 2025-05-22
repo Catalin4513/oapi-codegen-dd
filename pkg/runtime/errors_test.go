@@ -89,8 +89,10 @@ func TestNewValidationErrorsFromErrors(t *testing.T) {
 	}
 	err := validate.Struct(foo)
 	validationErrors := NewValidationErrorsFromErrors("headers", []error{err})
+	validationErrors = append(validationErrors, NewValidationError("Foo", "is required"))
 
-	assert.Len(t, validationErrors, 2)
+	assert.Len(t, validationErrors, 3)
 	assert.Equal(t, ValidationError{"headers.Name", "is required"}, validationErrors[0])
 	assert.Equal(t, ValidationError{"headers.Email", "must be a valid email"}, validationErrors[1])
+	assert.Equal(t, ValidationError{"Foo", "is required"}, validationErrors[2])
 }
