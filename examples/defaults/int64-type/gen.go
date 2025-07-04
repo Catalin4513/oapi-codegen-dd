@@ -2,16 +2,10 @@
 
 package defaultsint64type
 
-import (
-	"github.com/go-playground/validator/v10"
-)
-
 type GetClientResponse struct {
 	ID  *int64 `json:"id,omitempty"`
 	Age *int32 `json:"age,omitempty"`
 }
-
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
 
 type Person struct {
 	ID  *int64 `json:"id,omitempty"`

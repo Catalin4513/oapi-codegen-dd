@@ -5,11 +5,7 @@ package anyofwithextra
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/go-playground/validator/v10"
 )
-
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
 
 type Client struct {
 	Name string `json:"name" validate:"required"`

@@ -69,19 +69,6 @@ func (s GoSchema) GetAdditionalTypeDefs() []TypeDefinition {
 	return s.AdditionalTypes
 }
 
-func (s GoSchema) HasValidationTags() bool {
-	if len(s.Constraints.ValidationTags) > 0 {
-		return true
-	}
-
-	for _, prop := range s.Properties {
-		if len(prop.Constraints.ValidationTags) > 0 {
-			return true
-		}
-	}
-	return false
-}
-
 func (s GoSchema) createGoStruct(fields []string) string {
 	// Start out with struct {
 	objectParts := []string{"struct {"}

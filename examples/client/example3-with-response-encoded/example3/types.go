@@ -2,12 +2,6 @@
 
 package example3
 
-import (
-	"github.com/go-playground/validator/v10"
-)
-
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
-
 type User struct {
 	ID      string  `json:"id" validate:"required"`
 	Name    *string `json:"name,omitempty"`

@@ -2,35 +2,17 @@
 
 package anyofallofoneof
 
-import (
-	"github.com/go-playground/validator/v10"
-)
-
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
-
 type Client struct {
 	Name string `json:"name" validate:"required"`
-}
-
-func (c Client) Validate() error {
-	return schemaTypesValidate.Struct(c)
 }
 
 type Identity struct {
 	Issuer string `json:"issuer" validate:"required"`
 }
 
-func (i Identity) Validate() error {
-	return schemaTypesValidate.Struct(i)
-}
-
 type ClientWithID struct {
 	Name string `json:"name" validate:"required"`
 	ID   int    `json:"id" validate:"required"`
-}
-
-func (c ClientWithID) Validate() error {
-	return schemaTypesValidate.Struct(c)
 }
 
 type IdentityWithDuplicateField struct {
@@ -39,15 +21,7 @@ type IdentityWithDuplicateField struct {
 	} `json:"issuer" validate:"required"`
 }
 
-func (i IdentityWithDuplicateField) Validate() error {
-	return schemaTypesValidate.Struct(i)
-}
-
 type ClientAndMaybeIdentity struct {
 	Entity *ClientAndMaybeIdentity_Entity `json:"entity,omitempty"`
 	Type   ClientAndMaybeIdentityType     `json:"type" validate:"required"`
-}
-
-func (c ClientAndMaybeIdentity) Validate() error {
-	return schemaTypesValidate.Struct(c)
 }

@@ -1,6 +1,6 @@
 {{ template "header" $ }}
 
-{{ $isParam := or (eq .SpecLocation "path") (eq .SpecLocation "query") (eq .SpecLocation "header") (eq .SpecLocation "body") (eq .SpecLocation "schema") }}
+{{ $isParam := or (eq .SpecLocation "path") (eq .SpecLocation "query") (eq .SpecLocation "header") (eq .SpecLocation "body") }}
 {{ $loc := str .SpecLocation }}
 {{ if $isParam }}
 var {{.SpecLocation}}TypesValidate = validator.New(validator.WithRequiredStructEnabled())
@@ -11,7 +11,7 @@ var {{.SpecLocation}}TypesValidate = validator.New(validator.WithRequiredStructE
 {{ $config := .config }}
 {{ $loc := .specLocation }}
 {{ $responseErrors := .responseErrors }}
-{{ $isParam := or (eq $loc "path") (eq $loc "query") (eq $loc "header") (eq $loc "body") (eq $loc "schema") }}
+{{ $isParam := or (eq $loc "path") (eq $loc "query") (eq $loc "header") (eq $loc "body") }}
 {{ $alias := .alias }}
 {{ if not $alias}}{{ $alias = $td.Name | fst | lower }}{{ end }}
 
@@ -19,7 +19,7 @@ var {{.SpecLocation}}TypesValidate = validator.New(validator.WithRequiredStructE
     type {{$td.Name}} {{if $td.IsAlias}}={{end}} {{$td.Schema.TypeDecl}}
 
     {{ if $isParam }}
-    {{ if and (not $td.IsAlias) ($td.Schema.HasValidationTags) }}
+    {{ if not $td.IsAlias }}
     func ({{$alias}} {{$td.Name}}) Validate() error {
     return {{$loc}}TypesValidate.Struct({{$alias}})
     }

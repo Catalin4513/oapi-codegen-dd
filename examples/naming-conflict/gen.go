@@ -2,18 +2,12 @@
 
 package namingconflict
 
-import (
-	"github.com/go-playground/validator/v10"
-)
-
 type Type string
 
 const (
 	TypeACHDebit                    Type = "ach_debit"
 	TypeSourceTypeACHCreditTransfer Type = "source_type_ach_credit_transfer"
 )
-
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
 
 type Source struct {
 	ACHCreditTransfer *SourceTypeACHCreditTransfer `json:"ach_credit_transfer,omitempty"`

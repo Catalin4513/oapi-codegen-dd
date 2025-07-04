@@ -2,12 +2,6 @@
 
 package xoapicodegenonlyhonourgoname
 
-import (
-	"github.com/go-playground/validator/v10"
-)
-
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
-
 // TypeWithUnexportedField A struct will be output where one of the fields is not exported
 type TypeWithUnexportedField struct {
 	Name              *string `json:"name,omitempty"`

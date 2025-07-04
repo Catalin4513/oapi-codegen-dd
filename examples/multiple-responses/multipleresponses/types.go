@@ -3,11 +3,8 @@
 package multipleresponses
 
 import (
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
-
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
 
 type LinksSelf struct {
 	Self *string `json:"self,omitempty"`

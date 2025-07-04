@@ -2,12 +2,6 @@
 
 package slicespointer
 
-import (
-	"github.com/go-playground/validator/v10"
-)
-
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
-
 type Payments []string
 
 type Data map[string]any
