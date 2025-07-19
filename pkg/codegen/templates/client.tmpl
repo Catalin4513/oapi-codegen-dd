@@ -143,7 +143,7 @@ func (c *{{$clientName}}) {{$op.ID}}(ctx context.Context{{ if $op.HasRequestOpti
         return nil, fmt.Errorf("error applying request editors: %w", err)
     }
 
-    {{ template "executeRequest" (dict "path" $op.Path ) }}
+    {{ template "executeRequest" (dict "operation" $op "config" $config "path" $op.Path ) }}
 
     var bodyBytes []byte
     if resp.Body != nil {
