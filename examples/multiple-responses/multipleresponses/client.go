@@ -105,16 +105,18 @@ func (c *Client) CreateBooking(ctx context.Context, options *CreateBookingReques
 
 	start := time.Now()
 	resp, err := c.httpClient.Do(ctx, req)
+	defer func() {
+		if c.httpCallRecorder != nil {
+			c.httpCallRecorder.Record(runtime.HTTPCall{
+				Method:  req.Method,
+				URL:     req.URL.String(),
+				Path:    "/bookings",
+				Latency: time.Since(start),
+			})
+		}
+	}()
 	if err != nil {
 		return nil, fmt.Errorf("error sending request: %w", err)
-	}
-	if c.httpCallRecorder != nil {
-		c.httpCallRecorder.Record(runtime.HTTPCall{
-			Method:  req.Method,
-			URL:     req.URL.String(),
-			Path:    "/bookings",
-			Latency: time.Since(start),
-		})
 	}
 
 	var bodyBytes []byte

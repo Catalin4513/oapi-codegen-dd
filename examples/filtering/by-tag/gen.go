@@ -106,16 +106,18 @@ func (c *Client) GetPurchases(ctx context.Context, reqEditors ...RequestEditorFn
 
 	start := time.Now()
 	resp, err := c.httpClient.Do(ctx, req)
+	defer func() {
+		if c.httpCallRecorder != nil {
+			c.httpCallRecorder.Record(runtime.HTTPCall{
+				Method:  req.Method,
+				URL:     req.URL.String(),
+				Path:    "/client/{id}/purchases",
+				Latency: time.Since(start),
+			})
+		}
+	}()
 	if err != nil {
 		return nil, fmt.Errorf("error sending request: %w", err)
-	}
-	if c.httpCallRecorder != nil {
-		c.httpCallRecorder.Record(runtime.HTTPCall{
-			Method:  req.Method,
-			URL:     req.URL.String(),
-			Path:    "/client/{id}/purchases",
-			Latency: time.Since(start),
-		})
 	}
 
 	var bodyBytes []byte
@@ -156,16 +158,18 @@ func (c *Client) GetPurchase(ctx context.Context, reqEditors ...RequestEditorFn)
 
 	start := time.Now()
 	resp, err := c.httpClient.Do(ctx, req)
+	defer func() {
+		if c.httpCallRecorder != nil {
+			c.httpCallRecorder.Record(runtime.HTTPCall{
+				Method:  req.Method,
+				URL:     req.URL.String(),
+				Path:    "/client/{id}/purchases/{purchaseId}",
+				Latency: time.Since(start),
+			})
+		}
+	}()
 	if err != nil {
 		return nil, fmt.Errorf("error sending request: %w", err)
-	}
-	if c.httpCallRecorder != nil {
-		c.httpCallRecorder.Record(runtime.HTTPCall{
-			Method:  req.Method,
-			URL:     req.URL.String(),
-			Path:    "/client/{id}/purchases/{purchaseId}",
-			Latency: time.Since(start),
-		})
 	}
 
 	var bodyBytes []byte

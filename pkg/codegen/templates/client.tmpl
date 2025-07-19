@@ -8,10 +8,25 @@ Do(context context.Context, req *http.Request) (*http.Response, error)
 {{- end -}}
 
 {{- define "executeRequest" -}}
+start := time.Now()
 resp, err := c.httpClient.Do(ctx, req)
+{{ template "emitMetrics" (dict "path" $.path ) }}
 if err != nil {
     return nil, fmt.Errorf("error sending request: %w", err)
 }
+{{- end -}}
+
+{{- define "emitMetrics" -}}
+defer func() {
+    if c.httpCallRecorder != nil {
+            c.httpCallRecorder.Record(runtime.HTTPCall{
+                Method: req.Method,
+                URL:    req.URL.String(),
+                Path: "{{ .path }}",
+                Latency: time.Since(start),
+            })
+        }
+}()
 {{- end -}}
 
 {{- define "logReceivedResponse" -}}
@@ -128,16 +143,7 @@ func (c *{{$clientName}}) {{$op.ID}}(ctx context.Context{{ if $op.HasRequestOpti
         return nil, fmt.Errorf("error applying request editors: %w", err)
     }
 
-    start := time.Now()
-    {{ template "executeRequest" (dict "operation" $op "config" $config) }}
-    if c.httpCallRecorder != nil {
-        c.httpCallRecorder.Record(runtime.HTTPCall{
-            Method: req.Method,
-            URL:    req.URL.String(),
-            Path: "{{$op.Path}}",
-            Latency: time.Since(start),
-        })
-    }
+    {{ template "executeRequest" (dict "path" $op.Path ) }}
 
     var bodyBytes []byte
     if resp.Body != nil {
