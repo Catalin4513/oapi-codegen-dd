@@ -19,10 +19,11 @@ if err != nil {
 {{- define "recordHttpCall" -}}
 if c.httpCallRecorder != nil {
     c.httpCallRecorder.Record(runtime.HTTPCall{
-            Method: req.Method,
-            URL:    req.URL.String(),
-            Path: "{{ .path }}",
             Latency: time.Since(start),
+            Method: req.Method,
+            Path: "{{ .path }}",
+            ResponseCode: resp.StatusCode,
+            URL:    req.URL.String(),
     })
 }
 {{- end -}}
