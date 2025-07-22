@@ -1,0 +1,50 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Generate models
+paths:
+  /client:
+    get:
+      operationId: getClient
+      x-audit-log: true
+      x-rate-limit:
+        limit: 100
+        interval: minute
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+
+components:
+  schemas:
+    Person:
+      type: object
+      x-examples:
+        PersonExample:
+          $ref: "#/components/examples/PersonExample"
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        age:
+          type: integer
+
+    Purchase:
+      type: object
+      x-display-name: "Order Object"
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+
+  examples:
+    PersonExample:
+      summary: Example of a person
+      value:
+        name: "John Doe"
+        age: 30

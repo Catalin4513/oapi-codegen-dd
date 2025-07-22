@@ -93,6 +93,7 @@ type FilterParamsConfig struct {
 	Tags             []string            `yaml:"tags"`
 	OperationIDs     []string            `yaml:"operation-ids"`
 	SchemaProperties map[string][]string `yaml:"schema-properties"`
+	Extensions       []string            `yaml:"extensions"`
 }
 
 type GenerateOptions struct {

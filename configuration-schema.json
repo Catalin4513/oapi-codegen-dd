@@ -150,6 +150,13 @@
               "type": "string"
             }
           }
+        },
+        "extensions": {
+          "type": "array",
+          "description": "List of extension names to include or exclude",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": []

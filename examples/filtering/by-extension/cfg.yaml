@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=../../../configuration-schema.json
+package: filteringbytag
+output:
+  use-single-file: true
+filter:
+  include:
+    extensions:
+      - x-audit-log
+      - x-display-name
+  exclude:
+    extensions:
+      - x-examples
+      - x-rate-limit

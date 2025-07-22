@@ -7,6 +7,8 @@ import (
 
 	"github.com/pb33f/libopenapi"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/pb33f/libopenapi/orderedmap"
+	"gopkg.in/yaml.v3"
 )
 
 func filterOutDocument(doc libopenapi.Document, cfg FilterConfig) (libopenapi.Document, error) {
@@ -114,10 +116,27 @@ func filterComponentSchemaProperties(model *v3high.Document, cfg FilterConfig) {
 		return
 	}
 
+	includeExts := sliceToBoolMap(cfg.Include.Extensions)
+	excludeExts := sliceToBoolMap(cfg.Exclude.Extensions)
+
 	for schemaName, schemaProxy := range model.Components.Schemas.FromOldest() {
 		schema := schemaProxy.Schema()
 		if schema == nil || schema.Properties == nil {
 			continue
+		}
+
+		if schema.Examples != nil {
+			schema.Examples = nil
+		}
+
+		if schema.Extensions.Len() > 0 && (len(includeExts) > 0 || len(excludeExts) > 0) {
+			newExtensions := orderedmap.New[string, *yaml.Node]()
+			for key, val := range schema.Extensions.FromOldest() {
+				if shouldIncludeExtension(key, includeExts, excludeExts) {
+					newExtensions.Set(key, val)
+				}
+			}
+			schema.Extensions = newExtensions
 		}
 
 		var copiedKeys []string
@@ -165,4 +184,24 @@ func removeOperationReferences(op *v3high.Operation) {
 	for _, param := range op.Parameters {
 		param.Examples = nil
 	}
+}
+
+func shouldIncludeExtension(ext string, includeExts, excludeExts map[string]bool) bool {
+	if len(includeExts) > 0 {
+		return includeExts[ext]
+	}
+
+	if len(excludeExts) > 0 {
+		return !excludeExts[ext]
+	}
+
+	return true
+}
+
+func sliceToBoolMap(slice []string) map[string]bool {
+	m := make(map[string]bool, len(slice))
+	for _, s := range slice {
+		m[s] = true
+	}
+	return m
 }
