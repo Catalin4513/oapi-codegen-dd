@@ -393,7 +393,7 @@ func TestMergeDocuments(t *testing.T) {
 		errorsProps := getPropertyKeys(errors)
 		assert.Equal(t, expectedErrorsProps, errorsProps)
 
-		errorData := errors.Schema().Properties.Value("error_data")
+		errorData := errors.Schema().Properties.Value("error_data").Schema().Items.A
 		require.NotNil(t, errorData)
 		expectedErrorDataProps := []string{"code", "message"}
 		errorDataProps := getPropertyKeys(errorData)

@@ -8,6 +8,7 @@ import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
+	"gopkg.in/yaml.v3"
 )
 
 const extSrcMergeRef = "x-src-merge-ref"
@@ -155,18 +156,32 @@ func mergeSchemaProxy(src *base.SchemaProxy, other *base.SchemaProxy, docModel *
 		for key, value := range other.Schema().Properties.FromOldest() {
 			srcKeySchema, exists := src.Schema().Properties.Get(key)
 			if !exists {
-				if setFromExtension(srcKeySchema, value, docModel) {
-					continue
-				}
+				resolveRefExtensions(value, docModel)
 				src.Schema().Properties.Set(key, value)
 				continue
 			}
 
-			if setFromExtension(srcKeySchema, value, docModel) {
+			if value == nil || value.Schema() == nil {
+				continue
+			}
+
+			if setFromExtension(srcKeySchema, value.Schema().Extensions, docModel) {
 				continue
 			}
 
 			mergeSchemaProxy(srcKeySchema, value, docModel)
+		}
+	}
+
+	if src.Schema().Items == nil {
+		src.Schema().Items = other.Schema().Items
+	} else {
+		if other.Schema().Items != nil && other.Schema().Items.IsA() && other.Schema().Items.A != nil {
+			srcItems := src.Schema().Items.A
+			if setFromExtension(srcItems, other.Schema().Items.A.Schema().Extensions, docModel) {
+				return
+			}
+			mergeSchemaProxy(srcItems, other.Schema().Items.A, docModel)
 		}
 	}
 
@@ -221,19 +236,12 @@ func mergeResponses(src, other *v3.Response, docModel *libopenapi.DocumentModel[
 	}
 }
 
-func setFromExtension(src, other *base.SchemaProxy, docModel *libopenapi.DocumentModel[v3.Document]) bool {
+func setFromExtension(src *base.SchemaProxy, valueExtensions *orderedmap.Map[string, *yaml.Node], docModel *libopenapi.DocumentModel[v3.Document]) bool {
 	if src == nil {
 		return false
 	}
 
-	// find the source for the extensions
-	extSrc := other
-	if extSrc == nil {
-		extSrc = src
-	}
-
 	// set source ref to the ref pointed to by the other schema
-	valueExtensions := extSrc.Schema().Extensions
 	exts := extractExtensions(valueExtensions)
 	if exts == nil || exts[extSrcMergeRef] == nil {
 		return false
@@ -259,4 +267,28 @@ func setFromExtension(src, other *base.SchemaProxy, docModel *libopenapi.Documen
 	}
 
 	return false
+}
+
+func resolveRefExtensions(src *base.SchemaProxy, docModel *libopenapi.DocumentModel[v3.Document]) bool {
+	if src == nil || src.Schema() == nil {
+		return false
+	}
+
+	if src.Schema().Properties != nil && src.Schema().Properties.Len() > 0 {
+		for _, prop := range src.Schema().Properties.FromOldest() {
+			resolveRefExtensions(prop, docModel)
+		}
+	}
+
+	if src.Schema().Items != nil && src.Schema().Items.IsA() && src.Schema().Items.A != nil {
+		resolveRefExtensions(src.Schema().Items.A, docModel)
+	}
+
+	// set source ref to the ref pointed to by the other schema
+	valueExtensions := src.Schema().Extensions
+	if valueExtensions == nil || valueExtensions.Len() == 0 {
+		return false
+	}
+
+	return setFromExtension(src, valueExtensions, docModel)
 }
