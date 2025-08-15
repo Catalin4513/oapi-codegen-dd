@@ -96,6 +96,12 @@ func (c *Client) CreateRequest(ctx context.Context, params RequestOptionsParamet
 		return nil, fmt.Errorf("error applying request editors: %w", err)
 	}
 
+	return req, nil
+}
+
+// ExecuteRequest sends the HTTP request and returns the response.
+// It records the HTTP call with latency if an HTTPCallRecorder is set.
+func (c *Client) ExecuteRequest(ctx context.Context, req *http.Request, operationPath string) (*Response, error) {
 	if c.logger != nil {
 		var body []byte
 		if req.Body != nil {
@@ -104,7 +110,7 @@ func (c *Client) CreateRequest(ctx context.Context, params RequestOptionsParamet
 		}
 
 		c.logger(ctx, LogEntry{
-			Message: "Outgoing request",
+			Message: "Outgoing request to " + operationPath,
 			Prefix:  "request.",
 			Data: &LogFields{
 				Headers: req.Header,
@@ -112,17 +118,12 @@ func (c *Client) CreateRequest(ctx context.Context, params RequestOptionsParamet
 				Extras: map[string]any{
 					"method": req.Method,
 					"url":    req.URL.String(),
+					"path":   operationPath,
 				},
 			},
 		})
 	}
 
-	return req, nil
-}
-
-// ExecuteRequest sends the HTTP request and returns the response.
-// It records the HTTP call with latency if an HTTPCallRecorder is set.
-func (c *Client) ExecuteRequest(ctx context.Context, req *http.Request, operationPath string) (*Response, error) {
 	start := time.Now()
 	resp, err := c.httpClient.Do(ctx, req)
 	if c.httpCallRecorder != nil {
