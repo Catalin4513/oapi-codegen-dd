@@ -143,12 +143,12 @@ func (c *Client) ExecuteRequest(ctx context.Context, req *http.Request, operatio
 		return nil, fmt.Errorf("error sending request: %w", err)
 	}
 
-	return c.createResponse(ctx, resp, operationPath)
+	return c.CreateResponse(ctx, resp, operationPath)
 }
 
-// createResponse creates a Response object from the HTTP response.
+// CreateResponse creates a Response object from the HTTP response.
 // It reads the response body and logs the response if a logger is set.
-func (c *Client) createResponse(ctx context.Context, resp *http.Response, operationPath string) (*Response, error) {
+func (c *Client) CreateResponse(ctx context.Context, resp *http.Response, operationPath string) (*Response, error) {
 	if resp == nil {
 		return nil, nil
 	}
