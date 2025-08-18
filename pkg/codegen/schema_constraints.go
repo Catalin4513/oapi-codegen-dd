@@ -47,6 +47,7 @@ func newConstraints(schema *base.Schema, opts ConstraintsContext) Constraints {
 
 	isInt := slices.Contains(schema.Type, "integer")
 	isFloat := slices.Contains(schema.Type, "number")
+	isBoolean := slices.Contains(schema.Type, "boolean")
 	var validationTags []string
 
 	name := opts.name
@@ -62,6 +63,12 @@ func newConstraints(schema *base.Schema, opts ConstraintsContext) Constraints {
 		nullable = true
 	} else if schema.Nullable != nil {
 		nullable = *schema.Nullable
+	}
+
+	if required && isBoolean {
+		// otherwise validation will always fail with `false` value.
+		required = false
+		nullable = hasNilType
 	}
 
 	if required && nullable {

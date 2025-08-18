@@ -88,4 +88,21 @@ func TestNewConstraints(t *testing.T) {
 			},
 		}, res)
 	})
+
+	t.Run("boolean type", func(t *testing.T) {
+		schema := &base.Schema{
+			Type:     []string{"boolean"},
+			Required: []string{"foo"},
+		}
+
+		res := newConstraints(schema, ConstraintsContext{
+			name:       "foo",
+			hasNilType: false,
+			required:   true,
+		})
+
+		assert.Equal(t, Constraints{
+			Required: false,
+		}, res)
+	})
 }
