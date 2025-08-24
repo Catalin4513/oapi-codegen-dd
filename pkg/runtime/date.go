@@ -12,6 +12,7 @@ type Date struct {
 }
 
 func (d Date) MarshalJSON() ([]byte, error) {
+	// nolint:staticcheck
 	return json.Marshal(d.Time.Format(DateFormat))
 }
 
@@ -30,6 +31,7 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 }
 
 func (d Date) String() string {
+	// nolint:staticcheck
 	return d.Time.Format(DateFormat)
 }
 

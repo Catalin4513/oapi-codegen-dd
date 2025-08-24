@@ -91,9 +91,10 @@ func extractExtensions(schemaExtensions *orderedmap.Map[string, *yaml.Node]) map
 		if node.Kind == yaml.SequenceNode {
 			seq := make([]any, len(node.Content))
 			for i, n := range node.Content {
-				if n.Kind == yaml.ScalarNode {
+				switch n.Kind {
+				case yaml.ScalarNode:
 					seq[i] = n.Value
-				} else if n.Kind == yaml.MappingNode {
+				case yaml.MappingNode:
 					mKey, mValue := n.Content[0].Value, n.Content[1].Value
 					seq[i] = keyValue[string, string]{mKey, mValue}
 				}

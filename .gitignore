@@ -4,3 +4,4 @@
 bin/
 .data/
 *.iml
+.go-version

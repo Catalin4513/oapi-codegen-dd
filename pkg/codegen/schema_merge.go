@@ -9,9 +9,12 @@ import (
 )
 
 // mergeSchemas merges all the fields in the schemas supplied into one giant schema.
-// The idea is that we merge all fields together into one schema.
+// The idea is that we merge all fields into one schema.
 func mergeSchemas(allOf []*base.SchemaProxy, path []string, options ParseOptions) (GoSchema, error) {
 	n := len(allOf)
+	if n == 0 {
+		return GoSchema{}, nil
+	}
 
 	if n == 1 {
 		ref := allOf[0].GoLow().GetReference()

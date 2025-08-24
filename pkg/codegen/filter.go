@@ -178,7 +178,6 @@ func removeOperationReferences(op *v3high.Operation) {
 				content.Examples = nil
 			}
 		}
-		resp.Headers = nil
 	}
 
 	for _, param := range op.Parameters {

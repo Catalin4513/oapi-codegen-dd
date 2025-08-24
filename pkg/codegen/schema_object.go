@@ -137,7 +137,7 @@ func createObjectSchema(schema *base.Schema, ref string, path []string, options 
 				// for them, which will be based on the field names we followed
 				// to get to the type.
 				typeName := pathToTypeName(propertyPath) // schemaNameToTypeName(pathToTypeName(propertyPath))
-				var specLocation SpecLocation = SpecLocationSchema
+				var specLocation = SpecLocationSchema
 				if len(pSchema.UnionElements) != 0 {
 					specLocation = SpecLocationUnion
 				}

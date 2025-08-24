@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"fmt"
+	"iter"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,7 @@ type ResponseDefinition struct {
 	SuccessStatusCode int
 	Success           *ResponseContentDefinition
 	Error             *ResponseContentDefinition
+	All               map[int]*ResponseContentDefinition
 }
 
 // ResponseContentDefinition describes Operation response.
@@ -32,27 +34,35 @@ type ResponseContentDefinition struct {
 	Description  string
 	Ref          string
 	IsSuccess    bool
+	StatusCode   int
+	Headers      map[string]GoSchema
 }
 
 func getOperationResponses(operationID string, responses *v3high.Responses, options ParseOptions) (*ResponseDefinition, []TypeDefinition, error) {
 	var (
-		successDefinition *ResponseContentDefinition
-		errorDefinition   *ResponseContentDefinition
-		successCode       int
+		successCode int
+		errorCode   int
 	)
 
 	var typeDefinitions []TypeDefinition
 
 	defaultResponse := responses.Default
+	all := make(map[int]*ResponseContentDefinition)
 
 	// we just need success and error responses
 	for statusCode, response := range responses.Codes.FromOldest() {
 		if response == nil {
 			continue
 		}
+
 		isSuccess := false
 		refType := ""
 		var err error
+
+		headers, err := generateResponseHeadersSchema(response.Headers.FromOldest(), operationID, options)
+		if err != nil {
+			return nil, nil, err
+		}
 
 		status, err := strconv.Atoi(statusCode)
 		if err != nil {
@@ -70,16 +80,8 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 			successCode = status
 		} else if status >= 300 && status < 600 {
 			isSuccess = false
+			errorCode = status
 		} else {
-			continue
-		}
-
-		// pick one schema
-		// TODO: prefer json content type
-		if isSuccess && successDefinition != nil {
-			continue
-		}
-		if !isSuccess && errorDefinition != nil {
 			continue
 		}
 
@@ -105,11 +107,14 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 
 		if content == nil {
 			if isSuccess {
-				successDefinition = &ResponseContentDefinition{
+				successDefinition := &ResponseContentDefinition{
 					IsSuccess:    isSuccess,
 					Description:  response.Description,
 					ResponseName: "struct{}",
+					StatusCode:   status,
+					Headers:      headers,
 				}
+				all[status] = successDefinition
 			}
 			continue
 		}
@@ -168,25 +173,26 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 			Ref:          refType,
 			ContentType:  contentType,
 			NameTag:      tag,
+			StatusCode:   status,
+			Headers:      headers,
 		}
-
-		if isSuccess {
-			successDefinition = rcd
-		} else {
-			errorDefinition = rcd
-		}
+		all[status] = rcd
 	}
 
-	if successDefinition == nil {
-		successDefinition = &ResponseContentDefinition{
+	if successCode == 0 {
+		successCode = 204
+		successDefinition := &ResponseContentDefinition{
 			IsSuccess:    true,
 			Description:  "No Content",
 			ResponseName: "struct{}",
+			StatusCode:   successCode,
 		}
-		successCode = 204
+
+		all[successCode] = successDefinition
 	}
 
-	if errorDefinition == nil && defaultResponse != nil {
+	if errorCode == 0 && defaultResponse != nil {
+		errorCode = 500
 		typeSuffix := "ErrorResponse"
 		content := defaultResponse.Content.First()
 		contentType, contentVal := content.Key(), content.Value()
@@ -218,22 +224,43 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 			typeDefinitions = append(typeDefinitions, td)
 			typeDefinitions = append(typeDefinitions, contentSchema.AdditionalTypes...)
 
-			errorDefinition = &ResponseContentDefinition{
+			errHeaders, err := generateResponseHeadersSchema(defaultResponse.Headers.FromOldest(), operationID, options)
+			if err != nil {
+				return nil, nil, fmt.Errorf("error generating response headers schema: %w", err)
+			}
+
+			errorDefinition := &ResponseContentDefinition{
 				ResponseName: responseName,
 				IsSuccess:    false,
 				Description:  defaultResponse.Description,
 				Schema:       contentSchema,
 				Ref:          refType,
 				ContentType:  contentType,
+				StatusCode:   errorCode,
+				Headers:      errHeaders,
 			}
+			all[errorCode] = errorDefinition
 		}
 	}
 
 	res := &ResponseDefinition{
 		SuccessStatusCode: successCode,
-		Success:           successDefinition,
-		Error:             errorDefinition,
+		Success:           all[successCode],
+		Error:             all[errorCode],
+		All:               all,
 	}
 
 	return res, typeDefinitions, nil
+}
+
+func generateResponseHeadersSchema(headers iter.Seq2[string, *v3high.Header], operationID string, options ParseOptions) (map[string]GoSchema, error) {
+	res := make(map[string]GoSchema)
+	for hName, hdrs := range headers {
+		hSchema, err := GenerateGoSchema(hdrs.Schema, "", []string{operationID, "Header"}, options)
+		if err != nil {
+			return nil, err
+		}
+		res[hName] = hSchema
+	}
+	return res, nil
 }

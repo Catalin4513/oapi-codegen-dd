@@ -92,7 +92,7 @@ func (c *Client) ExecuteRequest(ctx context.Context, req *http.Request, operatio
 
 	var bodyBytes []byte
 	if resp.Body != nil {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		var err error
 		bodyBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
@@ -260,7 +260,7 @@ func createRequest(ctx context.Context, params RequestOptionsParameters) (*http.
 
 func replacePathPlaceholders(reqURL string, pathParams map[string]any) string {
 	for k, v := range pathParams {
-		reqURL = strings.Replace(reqURL, fmt.Sprintf("{%s}", k), fmt.Sprintf("%v", v), -1)
+		reqURL = strings.ReplaceAll(reqURL, fmt.Sprintf("{%s}", k), fmt.Sprintf("%v", v))
 	}
 	return reqURL
 }

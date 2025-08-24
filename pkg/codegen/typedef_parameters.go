@@ -123,11 +123,12 @@ func describeOperationParameters(params []*v3high.Parameter, path []string, opti
 		}
 
 		inSuffix := "Param"
-		if param.In == "query" {
+		switch param.In {
+		case "query":
 			inSuffix = "Query"
-		} else if param.In == "path" {
+		case "path":
 			inSuffix = "Path"
-		} else if param.In == "header" {
+		case "header":
 			inSuffix = "Header"
 		}
 
