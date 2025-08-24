@@ -124,9 +124,7 @@ func asMap[V any](v any) (map[string]V, error) {
 	return m, nil
 }
 
-type GetPurchasesResponse []struct {
-	ID int `json:"id" validate:"required"`
-}
+type GetPurchasesResponse []Purchase
 
 type GetPurchaseResponse struct {
 	ID int `json:"id" validate:"required"`

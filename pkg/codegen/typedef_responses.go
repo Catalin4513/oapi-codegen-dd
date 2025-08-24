@@ -195,20 +195,31 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 		errorCode = 500
 		typeSuffix := "ErrorResponse"
 		content := defaultResponse.Content.First()
-		contentType, contentVal := content.Key(), content.Value()
-		ref := contentVal.Schema.GetReference()
-		var refType string
-		var err error
+
+		ref := ""
+		contentType := "application/json"
+		var (
+			contentSchema GoSchema
+			err           error
+			refType       string
+			contentVal    *v3high.MediaType
+		)
+
+		if content != nil {
+			contentType, contentVal = content.Key(), content.Value()
+			ref = contentVal.Schema.GetReference()
+
+			contentSchema, err = GenerateGoSchema(contentVal.Schema, ref, []string{operationID, typeSuffix}, options)
+			if err != nil {
+				return nil, nil, fmt.Errorf("error generating request body definition: %w", err)
+			}
+		}
+
 		if ref != "" {
 			refType, err = refPathToGoType(ref)
 			if err != nil {
 				return nil, nil, fmt.Errorf("error turning reference (%s) into a Go type: %w", ref, err)
 			}
-		}
-
-		contentSchema, err := GenerateGoSchema(contentVal.Schema, ref, []string{operationID, typeSuffix}, options)
-		if err != nil {
-			return nil, nil, fmt.Errorf("error generating request body definition: %w", err)
 		}
 
 		if !contentSchema.IsZero() {

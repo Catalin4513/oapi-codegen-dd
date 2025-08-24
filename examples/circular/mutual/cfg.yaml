@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=../../../configuration-schema.json
+package: circularmutual
+generate:
+  client: false
+output:
+  use-single-file: true

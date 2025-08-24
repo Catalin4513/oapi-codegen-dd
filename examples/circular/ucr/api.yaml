@@ -1,0 +1,40 @@
+openapi: 3.0.1
+info:
+  title: UC Riverside Organization Structure API
+  version: v1
+paths:
+  /api/org-api/v1/organization:
+    get:
+      operationId: acctstructure
+      responses:
+        200:
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgByIdResponseWrapperModel'
+components:
+  schemas:
+    OrgByIdResponseWrapperModel:
+      type: object
+      properties:
+        response:
+          $ref: '#/components/schemas/OrgModel'
+        success:
+          type: boolean
+    OrgModel:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Structure type
+          enum:
+            - Department
+            - Division
+            - Organization
+        parent:
+          $ref: '#/components/schemas/OrgModel'
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrgModel'

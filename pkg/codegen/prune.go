@@ -106,19 +106,19 @@ func removeOrphanedComponents(model *v3high.Document, refs []string) int {
 }
 
 func findOperationRefs(model *v3high.Document) []string {
-	refSet := make(map[string]struct{})
+	refSet := make(map[string]bool)
 
 	for _, pathItem := range model.Paths.PathItems.FromOldest() {
 		for _, op := range pathItem.GetOperations().FromOldest() {
 			if op.RequestBody != nil {
 				ref := op.RequestBody.GoLow().GetReference()
 				if ref != "" {
-					refSet[ref] = struct{}{}
+					refSet[ref] = true
 				}
 				for _, mediaType := range op.RequestBody.Content.FromOldest() {
 					medRef := mediaType.Schema.GetReference()
 					if medRef != "" {
-						refSet[medRef] = struct{}{}
+						refSet[medRef] = true
 					}
 					if mediaType.Schema != nil {
 						collectSchemaRefs(mediaType.Schema.Schema(), refSet)
@@ -132,7 +132,7 @@ func findOperationRefs(model *v3high.Document) []string {
 				}
 				ref := param.GoLow().GetReference()
 				if ref != "" {
-					refSet[ref] = struct{}{}
+					refSet[ref] = true
 				}
 				for _, mediaType := range param.Content.FromOldest() {
 					if mediaType.Schema != nil {
@@ -144,13 +144,13 @@ func findOperationRefs(model *v3high.Document) []string {
 			if op.Responses.Default != nil {
 				ref := op.Responses.Default.GoLow().GetReference()
 				if ref != "" {
-					refSet[ref] = struct{}{}
+					refSet[ref] = true
 				}
 				for _, mediaType := range op.Responses.Default.Content.FromOldest() {
 					if mediaType.Schema != nil {
 						mRef := mediaType.Schema.GoLow().GetReference()
 						if mRef != "" {
-							refSet[mRef] = struct{}{}
+							refSet[mRef] = true
 						}
 						collectSchemaRefs(mediaType.Schema.Schema(), refSet)
 					}
@@ -163,14 +163,14 @@ func findOperationRefs(model *v3high.Document) []string {
 				}
 				ref := resp.GoLow().GetReference()
 				if ref != "" {
-					refSet[ref] = struct{}{}
+					refSet[ref] = true
 				}
 
 				for _, mediaType := range resp.Content.FromOldest() {
 					if mediaType.Schema != nil {
 						mRef := mediaType.Schema.GoLow().GetReference()
 						if mRef != "" {
-							refSet[mRef] = struct{}{}
+							refSet[mRef] = true
 						}
 						collectSchemaRefs(mediaType.Schema.Schema(), refSet)
 					}
@@ -182,13 +182,13 @@ func findOperationRefs(model *v3high.Document) []string {
 					}
 					hRef := header.GoLow().GetReference()
 					if hRef != "" {
-						refSet[hRef] = struct{}{}
+						refSet[hRef] = true
 					}
 					for _, mediaType := range header.Content.FromOldest() {
 						if mediaType.Schema != nil {
 							mRef := mediaType.Schema.GoLow().GetReference()
 							if mRef != "" {
-								refSet[mRef] = struct{}{}
+								refSet[mRef] = true
 							}
 							collectSchemaRefs(mediaType.Schema.Schema(), refSet)
 						}
@@ -204,13 +204,13 @@ func findOperationRefs(model *v3high.Document) []string {
 			}
 			ref := param.GoLow().GetReference()
 			if ref != "" {
-				refSet[ref] = struct{}{}
+				refSet[ref] = true
 			}
 
 			if param.Schema != nil {
 				schemaRef := param.Schema.GoLow().GetReference()
 				if schemaRef != "" {
-					refSet[schemaRef] = struct{}{}
+					refSet[schemaRef] = true
 				}
 			}
 			for _, mediaType := range param.Content.FromOldest() {
@@ -229,84 +229,90 @@ func findOperationRefs(model *v3high.Document) []string {
 	return refs
 }
 
-func collectSchemaRefs(schema *base.Schema, refSet map[string]struct{}) {
-	visited := make(map[*base.Schema]struct{})
-	collectSchemaRefsInternal(schema, refSet, visited)
+func collectSchemaRefs(schema *base.Schema, refSet map[string]bool) {
+	collectSchemaRefsInternal(schema, refSet)
 }
 
-func collectSchemaRefsInternal(schema *base.Schema, refSet map[string]struct{}, visited map[*base.Schema]struct{}) {
+func collectSchemaRefsInternal(schema *base.Schema, refSet map[string]bool) {
 	if schema == nil {
 		return
 	}
 
-	// stop if already visited
-	if _, ok := visited[schema]; ok {
-		return
-	}
-	visited[schema] = struct{}{}
-
-	ref := schema.GoLow().GetReference()
-	if ref != "" {
-		refSet[ref] = struct{}{}
-		return
+	// Check if this schema is a $ref
+	if ref := schema.GoLow().GetReference(); ref != "" {
+		if refSet[ref] {
+			return
+		}
+		refSet[ref] = true
 	}
 
+	// Traverse object properties
 	if schema.Properties != nil {
 		for _, prop := range schema.Properties.FromOldest() {
-			pRef := prop.GoLow().GetReference()
-			if pRef != "" {
-				refSet[pRef] = struct{}{}
-			}
-			collectSchemaRefsInternal(prop.Schema(), refSet, visited)
-		}
-	}
-
-	items := schema.Items
-	if items != nil && items.IsA() && items.A != nil {
-		iRef := items.A.GoLow().GetReference()
-		if iRef != "" {
-			refSet[iRef] = struct{}{}
-		}
-		collectSchemaRefsInternal(items.A.Schema(), refSet, visited)
-	}
-
-	if schema.AdditionalProperties != nil && schema.AdditionalProperties.IsA() && schema.AdditionalProperties.A != nil {
-		aRef := schema.AdditionalProperties.A.GoLow().GetReference()
-		if aRef != "" {
-			refSet[aRef] = struct{}{}
-		}
-		collectSchemaRefsInternal(schema.AdditionalProperties.A.Schema(), refSet, visited)
-	}
-
-	for _, schemaProxies := range [][]*base.SchemaProxy{schema.AllOf, schema.OneOf, schema.AnyOf, {schema.Not}} {
-		for _, schemaProxy := range schemaProxies {
-			if schemaProxy == nil {
+			if prop == nil {
 				continue
 			}
-			sRef := schemaProxy.GoLow().GetReference()
-			if sRef != "" {
-				refSet[sRef] = struct{}{}
-			}
-			if schemaProxy.Schema() != nil {
-				sRef := schemaProxy.Schema().GoLow().GetReference()
-				if sRef != "" {
-					refSet[sRef] = struct{}{}
+			// Check for $ref on the property itself
+			if pRef := prop.GoLow().GetReference(); pRef != "" {
+				if !refSet[pRef] {
+					refSet[pRef] = true
+					// Don't return — we still want to walk its schema if possible
+				} else {
+					continue
 				}
 			}
-			collectSchemaRefsInternal(schemaProxy.Schema(), refSet, visited)
+			collectSchemaRefsInternal(prop.Schema(), refSet)
 		}
 	}
 
-	extensions := extractExtensions(schema.Extensions)
-	for _, extValue := range extensions {
-		switch extValue.(type) {
-		case []any:
-			for _, v := range extValue.([]any) {
-				switch m := v.(type) {
-				case keyValue[string, string]:
-					if m.key == "$ref" {
-						refSet[m.value] = struct{}{}
-					}
+	// Traverse array items
+	if items := schema.Items; items != nil && items.IsA() && items.A != nil {
+		if iRef := items.A.GoLow().GetReference(); iRef != "" {
+			if !refSet[iRef] {
+				refSet[iRef] = true
+				// keep walking
+			} else {
+				return
+			}
+		}
+		collectSchemaRefsInternal(items.A.Schema(), refSet)
+	}
+
+	// Traverse additionalProperties
+	if ap := schema.AdditionalProperties; ap != nil && ap.IsA() && ap.A != nil {
+		if aRef := ap.A.GoLow().GetReference(); aRef != "" {
+			if !refSet[aRef] {
+				refSet[aRef] = true
+			} else {
+				return
+			}
+		}
+		collectSchemaRefsInternal(ap.A.Schema(), refSet)
+	}
+
+	// allOf / oneOf / anyOf / not
+	for _, group := range [][]*base.SchemaProxy{schema.AllOf, schema.OneOf, schema.AnyOf, {schema.Not}} {
+		for _, sp := range group {
+			if sp == nil {
+				continue
+			}
+			if sRef := sp.GoLow().GetReference(); sRef != "" {
+				if !refSet[sRef] {
+					refSet[sRef] = true
+				} else {
+					continue
+				}
+			}
+			collectSchemaRefsInternal(sp.Schema(), refSet)
+		}
+	}
+
+	// x-extensions
+	for _, extValue := range extractExtensions(schema.Extensions) {
+		if extSlice, ok := extValue.([]any); ok {
+			for _, v := range extSlice {
+				if kv, ok := v.(keyValue[string, string]); ok && kv.key == "$ref" {
+					refSet[kv.value] = true
 				}
 			}
 		}

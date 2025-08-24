@@ -1,0 +1,132 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Files
+paths:
+  /files:
+    get:
+      operationId: getFiles
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - type: string
+                    - $ref: '#/components/schemas/file'
+          description:
+        default:
+          description: unexpected error
+components:
+  schemas:
+    file:
+      properties:
+        filename:
+          maxLength: 5000
+          nullable: true
+          type: string
+        id:
+          maxLength: 5000
+          type: string
+        author:
+          anyOf:
+            - $ref: '#/components/schemas/user'
+            - maxLength: 50
+              type: string
+        links:
+          nullable: true
+          properties:
+            data:
+              items:
+                $ref: '#/components/schemas/file_link'
+              type: array
+            has_more:
+              type: boolean
+            object:
+              enum:
+                - list
+              type: string
+            url:
+              maxLength: 5000
+              pattern: ^/v1/file_links
+              type: string
+          required:
+            - data
+            - has_more
+            - object
+            - url
+          type: object
+        object:
+          enum:
+            - file
+          type: string
+        purpose:
+          enum:
+            - account_requirement
+            - additional_verification
+            - business_icon
+          type: string
+        size:
+          type: integer
+        title:
+          maxLength: 5000
+          nullable: true
+          type: string
+      required:
+        - created
+        - id
+        - object
+        - purpose
+        - size
+      type: object
+
+    file_link:
+      properties:
+        created:
+          format: unix-time
+          type: integer
+        file:
+          anyOf:
+            - maxLength: 5000
+              type: string
+            - $ref: '#/components/schemas/file'
+        id:
+          maxLength: 5000
+          type: string
+        livemode:
+          type: boolean
+        metadata:
+          additionalProperties:
+            maxLength: 500
+            type: string
+          type: object
+        object:
+          enum:
+            - file_link
+          type: string
+        url:
+          maxLength: 5000
+          nullable: true
+          type: string
+      required:
+        - created
+        - expired
+        - file
+        - id
+      type: object
+
+    user:
+      properties:
+        id:
+          maxLength: 50
+          type: string
+        avatar:
+          anyOf:
+            - $ref: '#/components/schemas/file'
+            - maxLength: 50
+              type: string
+      required:
+        - id
+      type: object

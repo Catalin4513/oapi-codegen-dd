@@ -23,8 +23,9 @@ func oapiSchemaToGoType(schema *base.Schema, ref string, path []string, options 
 		// For arrays, we'll get the type of the Items and throw a
 		// [] in front of it.
 		var items *base.SchemaProxy
-		if schema != nil && schema.Items != nil && schema.Items.IsA() {
+		if schema.Items != nil && schema.Items.IsA() {
 			items = schema.Items.A
+			ref = items.GoLow().GetReference()
 		}
 		arrayType, err := GenerateGoSchema(items, ref, path, options)
 		if err != nil {
