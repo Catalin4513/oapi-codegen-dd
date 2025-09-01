@@ -279,18 +279,11 @@ func replaceInlineTypes(src GoSchema, options ParseOptions) (GoSchema, string) {
 		src.ArrayType = nil
 	}
 
-	needsMarshaler := false
-	for _, prop := range src.Properties {
-		if prop.JsonFieldName == "" {
-			needsMarshaler = true
-		}
-	}
-
 	td := TypeDefinition{
 		Name:           name,
 		Schema:         src,
 		SpecLocation:   SpecLocationSchema,
-		NeedsMarshaler: needsMarshaler,
+		NeedsMarshaler: needsMarshaler(src),
 		JsonName:       "-",
 	}
 	options.AddType(td)
@@ -346,4 +339,21 @@ func generateTypeName(currentTypes map[string]TypeDefinition, baseName string, s
 			}
 		}
 	}
+}
+
+func needsMarshaler(schema GoSchema) bool {
+	res := false
+	for _, p := range schema.Properties {
+		if p.JsonFieldName == "" {
+			res = true
+			break
+		}
+	}
+
+	if !res {
+		return false
+	}
+
+	// union types handled separately and they have marshaler.
+	return len(schema.UnionElements) == 0
 }

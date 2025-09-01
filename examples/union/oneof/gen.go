@@ -213,51 +213,6 @@ type Order_Product_OneOf_3 struct {
 	Description *Order_Product_OneOf_3_Description `json:"description,omitempty"`
 }
 
-func (o Order_Product_OneOf_3) MarshalJSON() ([]byte, error) {
-	// Collect each branch as an object JSON ({} if nil/null).
-	var parts []json.RawMessage
-
-	type _Alias_Order_Product_OneOf_3 Order_Product_OneOf_3
-	baseJSON, err := json.Marshal((_Alias_Order_Product_OneOf_3)(o))
-	if err != nil {
-		return nil, err
-	}
-	parts = append(parts, baseJSON)
-
-	return runtime.CoalesceOrMerge(parts...)
-}
-
-func (o *Order_Product_OneOf_3) UnmarshalJSON(data []byte) error {
-	trim := bytes.TrimSpace(data)
-	if bytes.Equal(trim, []byte("null")) {
-		// keep zero value (all branches nil)
-		return nil
-	}
-	if len(trim) == 0 {
-		return fmt.Errorf("JSON object expected, got %s", string(trim))
-	}
-
-	if len(trim) > 0 {
-		type _Alias_Order_Product_OneOf_3 Order_Product_OneOf_3
-		var tmp _Alias_Order_Product_OneOf_3
-		if err := json.Unmarshal(data, &tmp); err != nil {
-			return err
-		}
-		// copy named fields into receiver (unions stayed untouched)
-		*o = Order_Product_OneOf_3(tmp)
-	}
-
-	if o.Description == nil {
-		o.Description = &Order_Product_OneOf_3_Description{}
-	}
-
-	if err := runtime.UnmarshalJSON(data, o.Description); err != nil {
-		return fmt.Errorf("Description unmarshal: %w", err)
-	}
-
-	return nil
-}
-
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
 	err := json.Unmarshal(v, &res)

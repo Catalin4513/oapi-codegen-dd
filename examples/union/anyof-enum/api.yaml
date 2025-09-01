@@ -1,0 +1,38 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Using complex schemas
+  description: An example of `anyOf` with enum
+paths:
+  /foo:
+    get:
+      responses:
+        '200':
+          description: Foo
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  schemas:
+    Rendering:
+      type: object
+      properties:
+        options:
+          anyOf:
+            - properties:
+                amount_tax_display:
+                  enum:
+                    - ''
+                    - exclude_tax
+                    - include_inclusive_tax
+                  type: string
+                template:
+                  maxLength: 5000
+                  type: string
+              title: customer_rendering_options_param
+              type: object
+            - enum:
+                - ''
+              type: string
