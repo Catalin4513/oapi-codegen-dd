@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/doordash/oapi-codegen/v3/pkg/codegen"
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/codegen"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -1,11 +1,11 @@
-module github.com/doordash/oapi-codegen/v3/examples
+module github.com/doordash/oapi-codegen-dd/v3/examples
 
 go 1.24.2
 
-replace github.com/doordash/oapi-codegen/v3 => ../
+replace github.com/doordash/oapi-codegen-dd/v3 => ../
 
 require (
-	github.com/doordash/oapi-codegen/v3 v3.0.0-00010101000000-000000000000
+	github.com/doordash/oapi-codegen-dd/v3 v3.0.0-00010101000000-000000000000
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.10.0

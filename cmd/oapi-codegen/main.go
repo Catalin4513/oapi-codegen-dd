@@ -16,7 +16,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/doordash/oapi-codegen/v3/pkg/codegen"
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/codegen"
 	"gopkg.in/yaml.v3"
 )
 

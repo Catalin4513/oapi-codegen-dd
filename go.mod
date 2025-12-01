@@ -1,4 +1,4 @@
-module github.com/doordash/oapi-codegen/v3
+module github.com/doordash/oapi-codegen-dd/v3
 
 go 1.24.2
 
