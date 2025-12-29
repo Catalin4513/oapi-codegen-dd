@@ -481,3 +481,76 @@ components:
           enum: [car, cat, oldage]
 
 `
+
+func TestPruneParameterSchemaRefs(t *testing.T) {
+	// Test that schemas referenced by component parameters are not pruned
+	doc, err := LoadDocumentFromContents([]byte(pruneParameterSchemaTestFixture))
+	assert.NoError(t, err)
+
+	model, _ := doc.BuildV3Model()
+	m := &model.Model
+
+	// Before pruning: should have all schemas
+	assert.Equal(t, 3, m.Components.Schemas.Len(), "Should have 3 schemas before pruning")
+	assert.Equal(t, 2, m.Components.Parameters.Len(), "Should have 2 parameters before pruning")
+
+	// Prune the schema
+	doc, err = pruneSchema(doc)
+	assert.NoError(t, err)
+
+	model, _ = doc.BuildV3Model()
+	m = &model.Model
+
+	// After pruning: schemas referenced by parameters should be preserved
+	assert.Equal(t, 2, m.Components.Schemas.Len(), "Should have 2 schemas after pruning (DateProp and FormatProp)")
+	assert.Equal(t, 2, m.Components.Parameters.Len(), "Should have 2 parameters after pruning")
+
+	// Verify the specific schemas are preserved
+	assert.NotNil(t, m.Components.Schemas.GetOrZero("DateProp"), "DateProp schema should be preserved")
+	assert.NotNil(t, m.Components.Schemas.GetOrZero("FormatProp"), "FormatProp schema should be preserved")
+	assert.Nil(t, m.Components.Schemas.GetOrZero("UnusedSchema"), "UnusedSchema should be pruned")
+}
+
+const pruneParameterSchemaTestFixture = `
+openapi: 3.0.0
+info:
+  title: Parameter Schema Test
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - $ref: "#/components/parameters/DateStart"
+        - $ref: "#/components/parameters/Format"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  parameters:
+    DateStart:
+      name: f.datum.start
+      in: query
+      schema:
+        $ref: "#/components/schemas/DateProp"
+      example: "2021-06-13"
+    Format:
+      name: format
+      in: query
+      schema:
+        $ref: "#/components/schemas/FormatProp"
+  schemas:
+    DateProp:
+      type: string
+      format: date
+    FormatProp:
+      type: string
+      enum: [json, xml]
+    UnusedSchema:
+      type: string
+      description: This schema is not referenced and should be pruned
+`

@@ -147,6 +147,10 @@ func findOperationRefs(model *v3high.Document) []string {
 				if ref != "" {
 					refSet[ref] = true
 				}
+				// Collect schema refs from param.Schema
+				if param.Schema != nil {
+					collectSchemaRefs(param.Schema.Schema(), refSet)
+				}
 				for _, mediaType := range param.Content.FromOldest() {
 					if mediaType.Schema != nil {
 						collectSchemaRefs(mediaType.Schema.Schema(), refSet)
@@ -222,13 +226,93 @@ func findOperationRefs(model *v3high.Document) []string {
 				refSet[ref] = true
 			}
 
+			// Collect schema refs from param.Schema
+			if param.Schema != nil {
+				collectSchemaRefs(param.Schema.Schema(), refSet)
+			}
+			for _, mediaType := range param.Content.FromOldest() {
+				if mediaType.Schema != nil {
+					collectSchemaRefs(mediaType.Schema.Schema(), refSet)
+				}
+			}
+		}
+	}
+
+	// Collect schema refs from component parameters
+	if model.Components != nil && model.Components.Parameters != nil {
+		for _, param := range model.Components.Parameters.FromOldest() {
+			if param == nil {
+				continue
+			}
+			// Collect schema refs from param.Schema
 			if param.Schema != nil {
 				schemaRef := param.Schema.GoLow().GetReference()
 				if schemaRef != "" {
 					refSet[schemaRef] = true
 				}
+				collectSchemaRefs(param.Schema.Schema(), refSet)
 			}
+			// Collect schema refs from param.Content
 			for _, mediaType := range param.Content.FromOldest() {
+				if mediaType.Schema != nil {
+					collectSchemaRefs(mediaType.Schema.Schema(), refSet)
+				}
+			}
+		}
+	}
+
+	// Collect schema refs from component request bodies
+	if model.Components != nil && model.Components.RequestBodies != nil {
+		for _, reqBody := range model.Components.RequestBodies.FromOldest() {
+			if reqBody == nil {
+				continue
+			}
+			for _, mediaType := range reqBody.Content.FromOldest() {
+				if mediaType.Schema != nil {
+					collectSchemaRefs(mediaType.Schema.Schema(), refSet)
+				}
+			}
+		}
+	}
+
+	// Collect schema refs from component responses
+	if model.Components != nil && model.Components.Responses != nil {
+		for _, resp := range model.Components.Responses.FromOldest() {
+			if resp == nil {
+				continue
+			}
+			for _, mediaType := range resp.Content.FromOldest() {
+				if mediaType.Schema != nil {
+					collectSchemaRefs(mediaType.Schema.Schema(), refSet)
+				}
+			}
+			// Collect schema refs from response headers
+			for _, header := range resp.Headers.FromOldest() {
+				if header == nil {
+					continue
+				}
+				if header.Schema != nil {
+					collectSchemaRefs(header.Schema.Schema(), refSet)
+				}
+				for _, mediaType := range header.Content.FromOldest() {
+					if mediaType.Schema != nil {
+						collectSchemaRefs(mediaType.Schema.Schema(), refSet)
+					}
+				}
+			}
+		}
+	}
+
+	// Collect schema refs from component headers
+	if model.Components != nil && model.Components.Headers != nil {
+		for _, header := range model.Components.Headers.FromOldest() {
+			if header == nil {
+				continue
+			}
+			if header.Schema != nil {
+				collectSchemaRefs(header.Schema.Schema(), refSet)
+			}
+			for _, mediaType := range header.Content.FromOldest() {
 				if mediaType.Schema != nil {
 					collectSchemaRefs(mediaType.Schema.Schema(), refSet)
 				}
