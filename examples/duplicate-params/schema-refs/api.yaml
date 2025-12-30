@@ -73,3 +73,14 @@ components:
               type: string
             address:
               type: string
+
+    arrangements:
+      name: establishments
+      in: query
+      schema:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string

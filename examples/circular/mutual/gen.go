@@ -140,7 +140,12 @@ type File_Author struct {
 }
 
 func (f File_Author) Validate() error {
-	return schemaTypesValidate.Struct(f)
+	if f.File_Author_AnyOf != nil {
+		if err := f.File_Author_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("File_Author_AnyOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (f File_Author) MarshalJSON() ([]byte, error) {
@@ -207,7 +212,12 @@ type FileLink_File struct {
 }
 
 func (f FileLink_File) Validate() error {
-	return schemaTypesValidate.Struct(f)
+	if f.FileLink_File_AnyOf != nil {
+		if err := f.FileLink_File_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("FileLink_File_AnyOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (f FileLink_File) MarshalJSON() ([]byte, error) {
@@ -258,7 +268,12 @@ type User_Avatar struct {
 }
 
 func (u User_Avatar) Validate() error {
-	return schemaTypesValidate.Struct(u)
+	if u.User_Avatar_AnyOf != nil {
+		if err := u.User_Avatar_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("User_Avatar_AnyOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (u User_Avatar) MarshalJSON() ([]byte, error) {
@@ -295,12 +310,15 @@ func (u *User_Avatar) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type GetFiles_Response struct {
-	GetFiles_Response_OneOf *GetFiles_Response_OneOf `json:"-"`
-}
+type GetFiles_Response GetFiles_Response_Item
 
 func (g GetFiles_Response) Validate() error {
-	return schemaTypesValidate.Struct(g)
+	if g.GetFiles_Response_OneOf != nil {
+		if err := g.GetFiles_Response_OneOf.Validate(); err != nil {
+			return fmt.Errorf("GetFiles_Response_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (g GetFiles_Response) MarshalJSON() ([]byte, error) {
@@ -337,6 +355,21 @@ func (g *GetFiles_Response) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type GetFiles_Response_Item struct {
+	GetFiles_Response_OneOf *GetFiles_Response_OneOf `json:"-"`
+}
+
+func (g GetFiles_Response_Item) Validate() error {
+	if g.GetFiles_Response_OneOf != nil {
+		if err := g.GetFiles_Response_OneOf.Validate(); err != nil {
+			return fmt.Errorf("GetFiles_Response_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
+}
+
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
 	err := json.Unmarshal(v, &res)
@@ -364,14 +397,70 @@ type File_Author_AnyOf struct {
 	runtime.Either[User, string]
 }
 
+func (f *File_Author_AnyOf) Validate() error {
+	if f.IsA() {
+		if v, ok := any(f.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if f.IsB() {
+		if v, ok := any(f.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
+}
+
 type FileLink_File_AnyOf struct {
 	runtime.Either[string, File]
+}
+
+func (f *FileLink_File_AnyOf) Validate() error {
+	if f.IsA() {
+		if v, ok := any(f.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if f.IsB() {
+		if v, ok := any(f.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
 }
 
 type User_Avatar_AnyOf struct {
 	runtime.Either[File, string]
 }
 
+func (u *User_Avatar_AnyOf) Validate() error {
+	if u.IsA() {
+		if v, ok := any(u.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if u.IsB() {
+		if v, ok := any(u.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
+}
+
 type GetFiles_Response_OneOf struct {
 	runtime.Either[string, File]
+}
+
+func (g *GetFiles_Response_OneOf) Validate() error {
+	if g.IsA() {
+		if v, ok := any(g.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if g.IsB() {
+		if v, ok := any(g.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
 }

@@ -54,7 +54,12 @@ type ClientAndMaybeIdentity_Entity struct {
 }
 
 func (c ClientAndMaybeIdentity_Entity) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if c.ClientAndMaybeIdentity_Entity_AnyOf != nil {
+		if err := c.ClientAndMaybeIdentity_Entity_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("ClientAndMaybeIdentity_Entity_AnyOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (c ClientAndMaybeIdentity_Entity) MarshalJSON() ([]byte, error) {
@@ -96,7 +101,12 @@ type ClientOrID struct {
 }
 
 func (c ClientOrID) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if c.ClientOrID_OneOf != nil {
+		if err := c.ClientOrID_OneOf.Validate(); err != nil {
+			return fmt.Errorf("ClientOrID_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (c ClientOrID) MarshalJSON() ([]byte, error) {
@@ -138,7 +148,12 @@ type ClientOrIdentityWithDiscriminator struct {
 }
 
 func (c ClientOrIdentityWithDiscriminator) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if c.ClientOrIdentityWithDiscriminator_OneOf != nil {
+		if err := c.ClientOrIdentityWithDiscriminator_OneOf.Validate(); err != nil {
+			return fmt.Errorf("ClientOrIdentityWithDiscriminator_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (c ClientOrIdentityWithDiscriminator) MarshalJSON() ([]byte, error) {
@@ -175,6 +190,8 @@ func (c *ClientOrIdentityWithDiscriminator) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
 	err := json.Unmarshal(v, &res)
@@ -202,12 +219,54 @@ type ClientAndMaybeIdentity_Entity_AnyOf struct {
 	runtime.Either[Client, Identity]
 }
 
+func (c *ClientAndMaybeIdentity_Entity_AnyOf) Validate() error {
+	if c.IsA() {
+		if v, ok := any(c.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if c.IsB() {
+		if v, ok := any(c.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
+}
+
 type ClientOrID_OneOf struct {
 	runtime.Either[Client, string]
 }
 
+func (c *ClientOrID_OneOf) Validate() error {
+	if c.IsA() {
+		if v, ok := any(c.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if c.IsB() {
+		if v, ok := any(c.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
+}
+
 type ClientOrIdentityWithDiscriminator_OneOf struct {
 	runtime.Either[Client, Identity]
+}
+
+func (c *ClientOrIdentityWithDiscriminator_OneOf) Validate() error {
+	if c.IsA() {
+		if v, ok := any(c.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if c.IsB() {
+		if v, ok := any(c.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
 }
 
 func (c ClientOrIdentityWithDiscriminator_OneOf) discriminator(data []byte) (string, error) {

@@ -18,7 +18,12 @@ type ClientWithExtra struct {
 }
 
 func (c ClientWithExtra) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if c.ClientWithExtra_AnyOf != nil {
+		if err := c.ClientWithExtra_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("ClientWithExtra_AnyOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 // Getter for additional properties for ClientWithExtra. Returns the specified
@@ -86,8 +91,14 @@ func (c ClientWithExtra) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 type ClientWithExtra_AdditionalProperties struct {
 	Extra *string `json:"extra,omitempty"`
+}
+
+func (c ClientWithExtra_AdditionalProperties) Validate() error {
+	return unionTypesValidate.Struct(c)
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
@@ -115,4 +126,18 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
 
 type ClientWithExtra_AnyOf struct {
 	runtime.Either[string, bool]
+}
+
+func (c *ClientWithExtra_AnyOf) Validate() error {
+	if c.IsA() {
+		if v, ok := any(c.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if c.IsB() {
+		if v, ok := any(c.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
 }

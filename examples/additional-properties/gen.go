@@ -196,12 +196,27 @@ type Route = string
 
 type Reference = string
 
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 type Users_AdditionalProperties struct {
 	Address map[string]any `json:"address,omitempty"`
 }
 
+func (u Users_AdditionalProperties) Validate() error {
+	return unionTypesValidate.Struct(u)
+}
+
 type Pick1_AdditionalProperties struct {
 	Pick1_AdditionalProperties_OneOf *Pick1_AdditionalProperties_OneOf `json:"-"`
+}
+
+func (p Pick1_AdditionalProperties) Validate() error {
+	if p.Pick1_AdditionalProperties_OneOf != nil {
+		if err := p.Pick1_AdditionalProperties_OneOf.Validate(); err != nil {
+			return fmt.Errorf("Pick1_AdditionalProperties_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
@@ -229,4 +244,18 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
 
 type Pick1_AdditionalProperties_OneOf struct {
 	runtime.Either[string, float32]
+}
+
+func (p *Pick1_AdditionalProperties_OneOf) Validate() error {
+	if p.IsA() {
+		if v, ok := any(p.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if p.IsB() {
+		if v, ok := any(p.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
 }

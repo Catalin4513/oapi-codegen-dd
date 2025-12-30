@@ -16,8 +16,8 @@ pipeline:
               tty: true
               resources:
                 limits:
-                  memory: 4Gi
-                  cpu: 4
+                  memory: 8Gi
+                  cpu: 8
                 requests:
                   memory: 4Gi
                   cpu: 4

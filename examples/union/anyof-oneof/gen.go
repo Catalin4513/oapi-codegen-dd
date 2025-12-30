@@ -29,7 +29,17 @@ type Order_Client struct {
 }
 
 func (o Order_Client) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if o.Order_Client_AnyOf != nil {
+		if err := o.Order_Client_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("Order_Client_AnyOf validation failed: %w", err)
+		}
+	}
+	if o.Order_Client_OneOf != nil {
+		if err := o.Order_Client_OneOf.Validate(); err != nil {
+			return fmt.Errorf("Order_Client_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (o Order_Client) MarshalJSON() ([]byte, error) {
@@ -115,6 +125,8 @@ func (l Location) Validate() error {
 	return schemaTypesValidate.Struct(l)
 }
 
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
 	err := json.Unmarshal(v, &res)
@@ -142,6 +154,34 @@ type Order_Client_AnyOf struct {
 	runtime.Either[Identity, Verification]
 }
 
+func (o *Order_Client_AnyOf) Validate() error {
+	if o.IsA() {
+		if v, ok := any(o.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if o.IsB() {
+		if v, ok := any(o.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
+}
+
 type Order_Client_OneOf struct {
 	runtime.Either[Address, Location]
+}
+
+func (o *Order_Client_OneOf) Validate() error {
+	if o.IsA() {
+		if v, ok := any(o.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if o.IsB() {
+		if v, ok := any(o.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
 }

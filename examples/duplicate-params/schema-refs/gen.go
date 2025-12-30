@@ -3,6 +3,9 @@
 package schemarefs
 
 import (
+	"fmt"
+
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -19,14 +22,31 @@ func (h Headquarters) Validate() error {
 	return queryTypesValidate.Struct(h)
 }
 
-type Establishments []struct {
-	Name    *string `json:"name,omitempty"`
-	Phone   *string `json:"phone,omitempty"`
-	Email   *string `json:"email,omitempty"`
-	Address *string `json:"address,omitempty"`
-}
+type Establishments []Item
 
 func (e Establishments) Validate() error {
+	for i, item := range e {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return fmt.Errorf("invalid item at index %d: %w", i, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+type Arrangements []Item
+
+func (a Arrangements) Validate() error {
+	for i, item := range a {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return fmt.Errorf("invalid item at index %d: %w", i, err)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -43,4 +63,17 @@ func (u UpdateOrganizationQuery) Validate() error {
 
 type UpdateOrganizationResponse struct {
 	Message *string `json:"message,omitempty"`
+}
+
+var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
+type Item struct {
+	Name    *string `json:"name,omitempty"`
+	Phone   *string `json:"phone,omitempty"`
+	Email   *string `json:"email,omitempty"`
+	Address *string `json:"address,omitempty"`
+}
+
+func (i Item) Validate() error {
+	return schemaTypesValidate.Struct(i)
 }

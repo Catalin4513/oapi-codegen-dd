@@ -25,24 +25,41 @@ func (c CreateUserBody) Validate() error {
 var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
 
 type CreateUserBody_User struct {
-	ID    int      `json:"id" validate:"required"`
-	Score *float32 `json:"score,omitempty"`
+	ID    int      `json:"id" validate:"required,gte=1,lte=999999"`
+	Score *float32 `json:"score,omitempty" validate:"omitempty,gte=0,lte=100"`
 }
 
 func (c CreateUserBody_User) Validate() error {
 	return schemaTypesValidate.Struct(c)
 }
 
-type CreateUserBody_Pages struct {
-	Limit                      int                         `json:"limit" validate:"required"`
-	Tag1                       *string                     `json:"tag1,omitempty"`
-	Tag2                       *string                     `json:"tag2,omitempty"`
-	CreateUserBody_Pages_AnyOf *CreateUserBody_Pages_AnyOf `json:"-"`
-	CreateUserBody_Pages_OneOf *CreateUserBody_Pages_OneOf `json:"-"`
-}
+type CreateUserBody_Pages CreateUserBody_Pages_Item
 
 func (c CreateUserBody_Pages) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if err := schemaTypesValidate.Var(c.Limit, "required,gte=1,lte=1000"); err != nil {
+		return fmt.Errorf("Limit validation failed: %w", err)
+	}
+	if c.Tag1 != nil {
+		if err := schemaTypesValidate.Var(c.Tag1, "omitempty,max=50"); err != nil {
+			return fmt.Errorf("Tag1 validation failed: %w", err)
+		}
+	}
+	if c.Tag2 != nil {
+		if err := schemaTypesValidate.Var(c.Tag2, "omitempty,max=100,min=1"); err != nil {
+			return fmt.Errorf("Tag2 validation failed: %w", err)
+		}
+	}
+	if c.CreateUserBody_Pages_AnyOf != nil {
+		if err := c.CreateUserBody_Pages_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("CreateUserBody_Pages_AnyOf validation failed: %w", err)
+		}
+	}
+	if c.CreateUserBody_Pages_OneOf != nil {
+		if err := c.CreateUserBody_Pages_OneOf.Validate(); err != nil {
+			return fmt.Errorf("CreateUserBody_Pages_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (c CreateUserBody_Pages) MarshalJSON() ([]byte, error) {
@@ -111,21 +128,74 @@ func (c *CreateUserBody_Pages) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type CreateUserBody_Pages_Item struct {
+	Limit                      int                         `json:"limit" validate:"required,gte=1,lte=1000"`
+	Tag1                       *string                     `json:"tag1,omitempty" validate:"omitempty,max=50"`
+	Tag2                       *string                     `json:"tag2,omitempty" validate:"omitempty,max=100,min=1"`
+	CreateUserBody_Pages_AnyOf *CreateUserBody_Pages_AnyOf `json:"-"`
+	CreateUserBody_Pages_OneOf *CreateUserBody_Pages_OneOf `json:"-"`
+}
+
+func (c CreateUserBody_Pages_Item) Validate() error {
+	if err := schemaTypesValidate.Var(c.Limit, "required,gte=1,lte=1000"); err != nil {
+		return fmt.Errorf("Limit validation failed: %w", err)
+	}
+	if c.Tag1 != nil {
+		if err := schemaTypesValidate.Var(c.Tag1, "omitempty,max=50"); err != nil {
+			return fmt.Errorf("Tag1 validation failed: %w", err)
+		}
+	}
+	if c.Tag2 != nil {
+		if err := schemaTypesValidate.Var(c.Tag2, "omitempty,max=100,min=1"); err != nil {
+			return fmt.Errorf("Tag2 validation failed: %w", err)
+		}
+	}
+	if c.CreateUserBody_Pages_AnyOf != nil {
+		if err := c.CreateUserBody_Pages_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("CreateUserBody_Pages_AnyOf validation failed: %w", err)
+		}
+	}
+	if c.CreateUserBody_Pages_OneOf != nil {
+		if err := c.CreateUserBody_Pages_OneOf.Validate(); err != nil {
+			return fmt.Errorf("CreateUserBody_Pages_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
+}
+
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 type CreateUserBody_Pages_AnyOf_0 struct {
-	Offset int `json:"offset" validate:"required"`
+	Offset int `json:"offset" validate:"required,gte=0"`
+}
+
+func (c CreateUserBody_Pages_AnyOf_0) Validate() error {
+	return unionTypesValidate.Struct(c)
 }
 
 type CreateUserBody_Pages_AnyOf_1 struct {
-	Query string `json:"query" validate:"required"`
+	Query string `json:"query" validate:"required,max=200,min=1"`
+}
+
+func (c CreateUserBody_Pages_AnyOf_1) Validate() error {
+	return unionTypesValidate.Struct(c)
 }
 
 type CreateUserBody_Pages_OneOf_0 struct {
-	First  int `json:"first" validate:"required"`
-	Second int `json:"second" validate:"required"`
+	First  int `json:"first" validate:"required,gte=1"`
+	Second int `json:"second" validate:"required,gte=1"`
+}
+
+func (c CreateUserBody_Pages_OneOf_0) Validate() error {
+	return unionTypesValidate.Struct(c)
 }
 
 type CreateUserBody_Pages_OneOf_1 struct {
-	Last int `json:"last" validate:"required"`
+	Last int `json:"last" validate:"required,gte=1"`
+}
+
+func (c CreateUserBody_Pages_OneOf_1) Validate() error {
+	return unionTypesValidate.Struct(c)
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
@@ -155,6 +225,34 @@ type CreateUserBody_Pages_AnyOf struct {
 	runtime.Either[CreateUserBody_Pages_AnyOf_0, CreateUserBody_Pages_AnyOf_1]
 }
 
+func (c *CreateUserBody_Pages_AnyOf) Validate() error {
+	if c.IsA() {
+		if v, ok := any(c.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if c.IsB() {
+		if v, ok := any(c.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
+}
+
 type CreateUserBody_Pages_OneOf struct {
 	runtime.Either[CreateUserBody_Pages_OneOf_0, CreateUserBody_Pages_OneOf_1]
+}
+
+func (c *CreateUserBody_Pages_OneOf) Validate() error {
+	if c.IsA() {
+		if v, ok := any(c.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if c.IsB() {
+		if v, ok := any(c.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
 }

@@ -7,7 +7,10 @@ import (
 	"fmt"
 
 	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
+	"github.com/go-playground/validator/v10"
 )
+
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
@@ -34,6 +37,10 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
 
 type GetUserUnion1_Response_OneOf struct {
 	union json.RawMessage
+}
+
+func (g *GetUserUnion1_Response_OneOf) Validate() error {
+	return nil
 }
 
 // Raw returns the union data inside the GetUserUnion1_Response_OneOf as bytes
@@ -69,8 +76,26 @@ type GetUserUnion2_Response_OneOf struct {
 	runtime.Either[User, string]
 }
 
+func (g *GetUserUnion2_Response_OneOf) Validate() error {
+	if g.IsA() {
+		if v, ok := any(g.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if g.IsB() {
+		if v, ok := any(g.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
+}
+
 type GetUserUnion3_Response_OneOf struct {
 	union json.RawMessage
+}
+
+func (g *GetUserUnion3_Response_OneOf) Validate() error {
+	return nil
 }
 
 // Raw returns the union data inside the GetUserUnion3_Response_OneOf as bytes

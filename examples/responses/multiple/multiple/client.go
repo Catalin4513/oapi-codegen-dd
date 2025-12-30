@@ -56,7 +56,12 @@ func (c *Client) CreateBooking(ctx context.Context, options *CreateBookingReques
 			if err != nil {
 				return nil, fmt.Errorf("error decoding response: %w", err)
 			}
-			return nil, runtime.NewClientAPIError(*target, runtime.WithStatusCode(resp.StatusCode))
+
+			if errTarget, ok := any(*target).(error); ok {
+				return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+			}
+			return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+				runtime.WithStatusCode(resp.StatusCode))
 		}
 		target := new(CreateBookingResponse)
 		if err = json.Unmarshal(bodyBytes, target); err != nil {

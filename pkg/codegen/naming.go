@@ -347,6 +347,16 @@ func sanitizeGoIdentity(str string) string {
 }
 
 func typeNamePrefix(name string) (prefix string) {
+	return typeNamePrefixInternal(name, true)
+}
+
+// typeNamePrefixNonDigit is like typeNamePrefix but doesn't add "N" prefix for leading digits
+// This is used for path segments that are not the first segment
+func typeNamePrefixNonDigit(name string) (prefix string) {
+	return typeNamePrefixInternal(name, false)
+}
+
+func typeNamePrefixInternal(name string, handleDigits bool) (prefix string) {
 	if len(name) == 0 {
 		return "Empty"
 	}
@@ -386,8 +396,8 @@ func typeNamePrefix(name string) (prefix string) {
 		case '_':
 			prefix += "Underscore"
 		default:
-			// Prepend "N" to schemas starting with a number
-			if prefix == "" && unicode.IsDigit(r) {
+			// Prepend "N" to schemas starting with a number (only if handleDigits is true)
+			if handleDigits && prefix == "" && unicode.IsDigit(r) {
 				return "N"
 			}
 
@@ -409,7 +419,13 @@ func schemaNameToTypeName(name string) string {
 // type name.
 func pathToTypeName(path []string) string {
 	for i, p := range path {
-		path[i] = typeNamePrefix(p) + nameNormalizer(p)
+		// Only add prefix for special characters and digits at the start of the first segment
+		// For subsequent segments, only handle special characters, not leading digits
+		if i == 0 {
+			path[i] = typeNamePrefix(p) + nameNormalizer(p)
+		} else {
+			path[i] = typeNamePrefixNonDigit(p) + nameNormalizer(p)
+		}
 	}
 	return strings.Join(path, "_")
 }

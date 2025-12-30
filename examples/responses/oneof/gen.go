@@ -79,6 +79,8 @@ func (r ResponseC) Validate() error {
 	return schemaTypesValidate.Struct(r)
 }
 
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
 	err := json.Unmarshal(v, &res)
@@ -104,6 +106,10 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
 
 type ProcessPayment_Response_OneOf struct {
 	union json.RawMessage
+}
+
+func (p *ProcessPayment_Response_OneOf) Validate() error {
+	return nil
 }
 
 // Raw returns the union data inside the ProcessPayment_Response_OneOf as bytes

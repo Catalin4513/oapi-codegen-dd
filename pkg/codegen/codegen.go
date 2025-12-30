@@ -303,6 +303,9 @@ func collectOperationDefinitions(model *v3high.Document, options ParseOptions) (
 		}
 	}
 
+	// Deduplicate operation IDs
+	operations = deduplicateOperationIDs(operations)
+
 	allTypeDefs := extractAllTypeDefinitions(typeDefs)
 
 	return &operationsCollection{
@@ -311,6 +314,30 @@ func collectOperationDefinitions(model *v3high.Document, options ParseOptions) (
 		typeDefs:       allTypeDefs,
 		responseErrors: responseErrors,
 	}, nil
+}
+
+// deduplicateOperationIDs ensures all operation IDs are unique by appending a suffix to duplicates
+func deduplicateOperationIDs(operations []OperationDefinition) []OperationDefinition {
+	seen := make(map[string]int) // map of operation ID to count
+	result := make([]OperationDefinition, len(operations))
+
+	for i, op := range operations {
+		originalID := op.ID
+		count, exists := seen[originalID]
+
+		if exists {
+			// This is a duplicate, append a suffix
+			count++
+			seen[originalID] = count
+			op.ID = fmt.Sprintf("%s_%d", originalID, count)
+		} else {
+			seen[originalID] = 0
+		}
+
+		result[i] = op
+	}
+
+	return result
 }
 
 // collectComponentDefinitions collects all the components from the model and returns them as a list of TypeDefinition.

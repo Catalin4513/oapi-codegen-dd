@@ -22,7 +22,12 @@ type Payload struct {
 }
 
 func (p Payload) Validate() error {
-	return schemaTypesValidate.Struct(p)
+	if p.Payload_OneOf != nil {
+		if err := p.Payload_OneOf.Validate(); err != nil {
+			return fmt.Errorf("Payload_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (p Payload) MarshalJSON() ([]byte, error) {
@@ -83,6 +88,8 @@ func (p PayloadC) Validate() error {
 	return schemaTypesValidate.Struct(p)
 }
 
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
 	err := json.Unmarshal(v, &res)
@@ -108,6 +115,10 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
 
 type Payload_OneOf struct {
 	union json.RawMessage
+}
+
+func (p *Payload_OneOf) Validate() error {
+	return nil
 }
 
 // Raw returns the union data inside the Payload_OneOf as bytes

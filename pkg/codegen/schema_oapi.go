@@ -46,8 +46,8 @@ func oapiSchemaToGoType(schema *base.Schema, options ParseOptions) (GoSchema, er
 			return GoSchema{}, fmt.Errorf("error generating type for array: %w", err)
 		}
 
-		if (arrayType.HasAdditionalProperties || len(arrayType.UnionElements) != 0) && arrayType.RefType == "" {
-			// If we have items which have additional properties or union values,
+		if (arrayType.HasAdditionalProperties || len(arrayType.UnionElements) != 0 || len(arrayType.Properties) > 0) && arrayType.RefType == "" {
+			// If we have items which have additional properties, union values, or properties,
 			// but are not a pre-defined type, we need to define a type
 			// for them, which will be based on the field names we followed
 			// to get to the type.

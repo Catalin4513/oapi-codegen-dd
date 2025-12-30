@@ -406,12 +406,12 @@ func TestPathToTypeName(t *testing.T) {
 		{
 			name: "path with numeric component",
 			path: []string{"Response", "400"},
-			want: "Response_N400",
+			want: "Response_400",
 		},
 		{
 			name: "path with multiple numeric components",
 			path: []string{"Error", "400", "Issues"},
-			want: "Error_N400_Issues",
+			want: "Error_400_Issues",
 		},
 		{
 			name: "path starting with number",

@@ -31,7 +31,12 @@ type ProcessPaymentBody_C struct {
 }
 
 func (p ProcessPaymentBody_C) Validate() error {
-	return schemaTypesValidate.Struct(p)
+	if p.ProcessPaymentBody_C_OneOf != nil {
+		if err := p.ProcessPaymentBody_C_OneOf.Validate(); err != nil {
+			return fmt.Errorf("ProcessPaymentBody_C_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (p ProcessPaymentBody_C) MarshalJSON() ([]byte, error) {
@@ -73,7 +78,12 @@ type ProcessPaymentBody_D1 struct {
 }
 
 func (p ProcessPaymentBody_D1) Validate() error {
-	return schemaTypesValidate.Struct(p)
+	if p.ProcessPaymentBody_D_AllOf0 != nil {
+		if err := p.ProcessPaymentBody_D_AllOf0.Validate(); err != nil {
+			return fmt.Errorf("ProcessPaymentBody_D_AllOf0 validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (p ProcessPaymentBody_D1) MarshalJSON() ([]byte, error) {
@@ -110,8 +120,19 @@ func (p *ProcessPaymentBody_D1) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 type ProcessPaymentBody_D struct {
 	ProcessPaymentBody_D_AllOf0 *ProcessPaymentBody_D_AllOf0 `json:"-"`
+}
+
+func (p ProcessPaymentBody_D) Validate() error {
+	if p.ProcessPaymentBody_D_AllOf0 != nil {
+		if err := p.ProcessPaymentBody_D_AllOf0.Validate(); err != nil {
+			return fmt.Errorf("ProcessPaymentBody_D_AllOf0 validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (p ProcessPaymentBody_D) MarshalJSON() ([]byte, error) {
@@ -152,6 +173,15 @@ type ProcessPaymentBody_D_AllOf0 struct {
 	ProcessPaymentBody_D_AllOf0_OneOf *ProcessPaymentBody_D_AllOf0_OneOf `json:"-"`
 }
 
+func (p ProcessPaymentBody_D_AllOf0) Validate() error {
+	if p.ProcessPaymentBody_D_AllOf0_OneOf != nil {
+		if err := p.ProcessPaymentBody_D_AllOf0_OneOf.Validate(); err != nil {
+			return fmt.Errorf("ProcessPaymentBody_D_AllOf0_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
+}
+
 func (p ProcessPaymentBody_D_AllOf0) MarshalJSON() ([]byte, error) {
 	var parts []json.RawMessage
 
@@ -188,6 +218,15 @@ func (p *ProcessPaymentBody_D_AllOf0) UnmarshalJSON(data []byte) error {
 
 type ProcessPaymentBody_D_AllOf0_OneOf_0 struct {
 	ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf `json:"-"`
+}
+
+func (p ProcessPaymentBody_D_AllOf0_OneOf_0) Validate() error {
+	if p.ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf != nil {
+		if err := p.ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (p ProcessPaymentBody_D_AllOf0_OneOf_0) MarshalJSON() ([]byte, error) {
@@ -253,12 +292,44 @@ type ProcessPaymentBody_C_OneOf struct {
 	runtime.Either[string, bool]
 }
 
+func (p *ProcessPaymentBody_C_OneOf) Validate() error {
+	if p.IsA() {
+		if v, ok := any(p.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if p.IsB() {
+		if v, ok := any(p.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
+}
+
 type ProcessPaymentBody_D_AllOf0_OneOf struct {
 	runtime.Either[ProcessPaymentBody_D_AllOf0_OneOf_0, ProcessPaymentBody_D_AllOf0_OneOf_1]
 }
 
+func (p *ProcessPaymentBody_D_AllOf0_OneOf) Validate() error {
+	if p.IsA() {
+		if v, ok := any(p.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if p.IsB() {
+		if v, ok := any(p.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
+}
+
 type ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf struct {
 	union json.RawMessage
+}
+
+func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) Validate() error {
+	return nil
 }
 
 // Raw returns the union data inside the ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf as bytes

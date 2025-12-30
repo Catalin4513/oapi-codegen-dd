@@ -39,16 +39,36 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
 {{ $config := .Config }}
 
 {{range .Types}}
-{{/* make sure schema has union elements */}}
-{{ if .Schema.UnionElements }}
 {{$typeName := .Name -}}
 {{ $alias := $typeName | fst | lower }}
+
+{{/* Handle types with union elements */}}
+{{ if .Schema.UnionElements }}
     {{ template "typeDef" (dict "type" . "config" $config "specLocation" "union" "alias" $alias) }}
 
     {{$discriminator := .Schema.Discriminator}}
     {{$properties := .Schema.Properties -}}
 
     {{ $eitherType := eq (len .Schema.UnionElements) 2}}
+
+    {{/* Add Validate method for union types */}}
+    func ({{$alias}} *{{$typeName}}) Validate() error {
+        {{- if $eitherType }}
+        if {{$alias}}.IsA() {
+            if v, ok := any({{$alias}}.A).(runtime.Validator); ok {
+                return v.Validate()
+            }
+        }
+        if {{$alias}}.IsB() {
+            if v, ok := any({{$alias}}.B).(runtime.Validator); ok {
+                return v.Validate()
+            }
+        }
+        return nil
+        {{- else }}
+        return nil
+        {{- end }}
+    }
 
     {{ if not $eitherType }}
     // Raw returns the union data inside the {{$typeName}} as bytes
@@ -57,7 +77,7 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
     }
     {{ end }}
 
-{{range .Schema.UnionElements}}
+    {{range .Schema.UnionElements}}
         {{$element := . -}}
 
         {{ if not $eitherType }}
@@ -137,7 +157,7 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
             {{ template "unmarshalUnion" (dict "name" .Name "schema" .Schema "alias" $alias) }}
         {{ end }}
     {{end}}
-    {{end}}
+{{end}}
 {{end}}
 
 

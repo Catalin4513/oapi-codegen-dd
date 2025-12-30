@@ -23,8 +23,12 @@ paths:
                   properties:
                     id:
                       type: integer
+                      minimum: 1
+                      maximum: 999999
                     score:
                       type: number
+                      minimum: 0
+                      maximum: 100
                   required:
                     - id
                 pages:
@@ -36,25 +40,33 @@ paths:
                         properties:
                           limit:
                             type: integer
+                            minimum: 1
+                            maximum: 1000
                           tag1:
                             type: string
+                            maxLength: 50
                         required:
                           - limit
                       - type: object
                         properties:
                           tag2:
                             type: string
+                            minLength: 1
+                            maxLength: 100
                     anyOf:
                       - type: object
                         properties:
                           offset:
                             type: integer
+                            minimum: 0
                         required:
                           - offset
                       - type: object
                         properties:
                           query:
                             type: string
+                            minLength: 1
+                            maxLength: 200
                         required:
                           - query
                     oneOf:
@@ -62,8 +74,10 @@ paths:
                         properties:
                           first:
                             type: integer
+                            minimum: 1
                           second:
                             type: integer
+                            minimum: 1
                         required:
                           - first
                           - second
@@ -71,6 +85,7 @@ paths:
                         properties:
                           last:
                             type: integer
+                            minimum: 1
                         required:
                           - last
                     not:

@@ -29,7 +29,15 @@ type Order_Product1 struct {
 }
 
 func (o Order_Product1) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if o.Order_Product_AllOf0 != nil {
+		if err := o.Order_Product_AllOf0.Validate(); err != nil {
+			return fmt.Errorf("Order_Product_AllOf0 validation failed: %w", err)
+		}
+	}
+	if err := o.Base.Validate(); err != nil {
+		return fmt.Errorf("Base validation failed: %w", err)
+	}
+	return nil
 }
 
 func (o Order_Product1) MarshalJSON() ([]byte, error) {
@@ -102,9 +110,23 @@ func (v VariantB) Validate() error {
 	return schemaTypesValidate.Struct(v)
 }
 
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 type Order_Product struct {
 	Order_Product_AllOf0 *Order_Product_AllOf0 `json:"-"`
 	Base                 Base                  `json:"-"`
+}
+
+func (o Order_Product) Validate() error {
+	if o.Order_Product_AllOf0 != nil {
+		if err := o.Order_Product_AllOf0.Validate(); err != nil {
+			return fmt.Errorf("Order_Product_AllOf0 validation failed: %w", err)
+		}
+	}
+	if err := o.Base.Validate(); err != nil {
+		return fmt.Errorf("Base validation failed: %w", err)
+	}
+	return nil
 }
 
 func (o Order_Product) MarshalJSON() ([]byte, error) {
@@ -155,6 +177,15 @@ func (o *Order_Product) UnmarshalJSON(data []byte) error {
 
 type Order_Product_AllOf0 struct {
 	Order_Product_AllOf0_AnyOf *Order_Product_AllOf0_AnyOf `json:"-"`
+}
+
+func (o Order_Product_AllOf0) Validate() error {
+	if o.Order_Product_AllOf0_AnyOf != nil {
+		if err := o.Order_Product_AllOf0_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("Order_Product_AllOf0_AnyOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (o Order_Product_AllOf0) MarshalJSON() ([]byte, error) {
@@ -216,4 +247,18 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
 
 type Order_Product_AllOf0_AnyOf struct {
 	runtime.Either[VariantA, VariantB]
+}
+
+func (o *Order_Product_AllOf0_AnyOf) Validate() error {
+	if o.IsA() {
+		if v, ok := any(o.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if o.IsB() {
+		if v, ok := any(o.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
 }

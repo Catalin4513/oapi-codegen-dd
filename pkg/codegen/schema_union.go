@@ -110,9 +110,27 @@ func generateUnion(elements []*base.SchemaProxy, discriminator *base.Discriminat
 		outSchema.UnionElements = append(outSchema.UnionElements, UnionElement(elementSchema.GoType))
 	}
 
+	// Deduplicate union elements to avoid generating duplicate methods
+	outSchema.UnionElements = deduplicateUnionElements(outSchema.UnionElements)
+
 	if (outSchema.Discriminator != nil) && len(outSchema.Discriminator.Mapping) != len(elements) {
 		return GoSchema{}, ErrDiscriminatorNotAllMapped
 	}
 
 	return outSchema, nil
+}
+
+// deduplicateUnionElements removes duplicate union elements while preserving order
+func deduplicateUnionElements(elements []UnionElement) []UnionElement {
+	seen := make(map[UnionElement]bool)
+	result := make([]UnionElement, 0, len(elements))
+
+	for _, elem := range elements {
+		if !seen[elem] {
+			seen[elem] = true
+			result = append(result, elem)
+		}
+	}
+
+	return result
 }

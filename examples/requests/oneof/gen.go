@@ -18,7 +18,12 @@ type ProcessPaymentBody struct {
 }
 
 func (p ProcessPaymentBody) Validate() error {
-	return bodyTypesValidate.Struct(p)
+	if p.ProcessPaymentBody_OneOf != nil {
+		if err := p.ProcessPaymentBody_OneOf.Validate(); err != nil {
+			return fmt.Errorf("ProcessPaymentBody_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (p ProcessPaymentBody) MarshalJSON() ([]byte, error) {
@@ -81,6 +86,8 @@ func (p PayloadC) Validate() error {
 	return schemaTypesValidate.Struct(p)
 }
 
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
 	err := json.Unmarshal(v, &res)
@@ -106,6 +113,10 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
 
 type ProcessPaymentBody_OneOf struct {
 	union json.RawMessage
+}
+
+func (p *ProcessPaymentBody_OneOf) Validate() error {
+	return nil
 }
 
 // Raw returns the union data inside the ProcessPaymentBody_OneOf as bytes

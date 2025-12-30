@@ -121,6 +121,31 @@ func (t *Either[A, B]) UnmarshalJSON(data []byte) error {
 	}
 }
 
+// Validator is an interface for types that can be validated
+type Validator interface {
+	Validate() error
+}
+
+func (t *Either[A, B]) Validate() error {
+	if t.IsA() {
+		// Check if A implements Validate() error
+		if v, ok := any(t.A).(Validator); ok {
+			return v.Validate()
+		}
+		return nil
+	}
+
+	if t.IsB() {
+		// Check if B implements Validate() error
+		if v, ok := any(t.B).(Validator); ok {
+			return v.Validate()
+		}
+		return nil
+	}
+
+	return nil
+}
+
 type JSONNonZero interface {
 	JSONNonZero() bool
 }

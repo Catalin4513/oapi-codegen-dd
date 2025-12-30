@@ -138,3 +138,52 @@ func TestEither_UnmarshalJSON_with_wrapper(t *testing.T) {
 		})
 	}
 }
+
+type ValidatableStruct struct {
+	Name string `validate:"required"`
+	Age  int    `validate:"required,min=1"`
+}
+
+func (v ValidatableStruct) Validate() error {
+	if v.Name == "" {
+		return assert.AnError
+	}
+	if v.Age < 1 {
+		return assert.AnError
+	}
+	return nil
+}
+
+func TestEither_Validate(t *testing.T) {
+	t.Run("validates A variant when active", func(t *testing.T) {
+		valid := ValidatableStruct{Name: "John", Age: 30}
+		either := NewEitherFromA[ValidatableStruct, string](valid)
+
+		err := either.Validate()
+		assert.NoError(t, err)
+	})
+
+	t.Run("validates B variant when active", func(t *testing.T) {
+		either := NewEitherFromB[ValidatableStruct, string]("test")
+
+		err := either.Validate()
+		assert.NoError(t, err)
+	})
+
+	t.Run("fails validation for invalid A variant", func(t *testing.T) {
+		invalid := ValidatableStruct{Name: "", Age: 0}
+		either := NewEitherFromA[ValidatableStruct, string](invalid)
+
+		err := either.Validate()
+		assert.Error(t, err)
+	})
+
+	t.Run("does not validate inactive B variant", func(t *testing.T) {
+		valid := ValidatableStruct{Name: "John", Age: 30}
+		either := NewEitherFromA[ValidatableStruct, string](valid)
+		// B is inactive and would be invalid if checked (empty string)
+
+		err := either.Validate()
+		assert.NoError(t, err) // Should pass because only A is validated
+	})
+}

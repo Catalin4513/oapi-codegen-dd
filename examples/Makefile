@@ -19,7 +19,7 @@ tidy-ci:
 gosec:
 	gosec ./...
 
-fmt-check:
+check-fmt:
 	# for the root module, check if files are formatted
 	@UNFORMATTED=$$(find . -name '*.go' -not -path './.data/*' -not -path './examples/*' -exec gofmt -l {} \;); \
 	if [ -n "$$UNFORMATTED" ]; then \
@@ -28,4 +28,4 @@ fmt-check:
 		exit 1; \
 	fi
 	# then, for all child modules, use a module-managed `Makefile`
-	git ls-files '**/*go.mod' -z | xargs -0 -I{} bash -xc 'cd $$(dirname {}) && make fmt-check'
+	git ls-files '**/*go.mod' -z | xargs -0 -I{} bash -xc 'cd $$(dirname {}) && make check-fmt'

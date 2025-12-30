@@ -28,7 +28,12 @@ type Order_Product struct {
 }
 
 func (o Order_Product) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if o.Order_Product_OneOf != nil {
+		if err := o.Order_Product_OneOf.Validate(); err != nil {
+			return fmt.Errorf("Order_Product_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (o Order_Product) MarshalJSON() ([]byte, error) {
@@ -70,7 +75,12 @@ type Order_Product_OneOf_3_Description struct {
 }
 
 func (o Order_Product_OneOf_3_Description) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if o.Order_Product_OneOf_3_Description_OneOf != nil {
+		if err := o.Order_Product_OneOf_3_Description_OneOf.Validate(); err != nil {
+			return fmt.Errorf("Order_Product_OneOf_3_Description_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (o Order_Product_OneOf_3_Description) MarshalJSON() ([]byte, error) {
@@ -112,7 +122,12 @@ type Order_Description struct {
 }
 
 func (o Order_Description) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if o.Order_Description_OneOf != nil {
+		if err := o.Order_Description_OneOf.Validate(); err != nil {
+			return fmt.Errorf("Order_Description_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (o Order_Description) MarshalJSON() ([]byte, error) {
@@ -149,12 +164,15 @@ func (o *Order_Description) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type Order_Images struct {
-	Order_Images_OneOf *Order_Images_OneOf `json:"-"`
-}
+type Order_Images Order_Images_Item
 
 func (o Order_Images) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if o.Order_Images_OneOf != nil {
+		if err := o.Order_Images_OneOf.Validate(); err != nil {
+			return fmt.Errorf("Order_Images_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (o Order_Images) MarshalJSON() ([]byte, error) {
@@ -191,6 +209,19 @@ func (o *Order_Images) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type Order_Images_Item struct {
+	Order_Images_OneOf *Order_Images_OneOf `json:"-"`
+}
+
+func (o Order_Images_Item) Validate() error {
+	if o.Order_Images_OneOf != nil {
+		if err := o.Order_Images_OneOf.Validate(); err != nil {
+			return fmt.Errorf("Order_Images_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
+}
+
 type VersionA = string
 
 type VersionB = string
@@ -201,8 +232,14 @@ type VersionD = string
 
 type VersionE = string
 
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 type Order_Product_OneOf_3 struct {
 	Description *Order_Product_OneOf_3_Description `json:"description,omitempty"`
+}
+
+func (o Order_Product_OneOf_3) Validate() error {
+	return unionTypesValidate.Struct(o)
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
@@ -230,6 +267,10 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
 
 type Order_Product_OneOf struct {
 	union json.RawMessage
+}
+
+func (o *Order_Product_OneOf) Validate() error {
+	return nil
 }
 
 // Raw returns the union data inside the Order_Product_OneOf as bytes
@@ -301,10 +342,52 @@ type Order_Product_OneOf_3_Description_OneOf struct {
 	runtime.Either[VersionC, VersionD]
 }
 
+func (o *Order_Product_OneOf_3_Description_OneOf) Validate() error {
+	if o.IsA() {
+		if v, ok := any(o.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if o.IsB() {
+		if v, ok := any(o.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
+}
+
 type Order_Description_OneOf struct {
 	runtime.Either[bool, string]
 }
 
+func (o *Order_Description_OneOf) Validate() error {
+	if o.IsA() {
+		if v, ok := any(o.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if o.IsB() {
+		if v, ok := any(o.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
+}
+
 type Order_Images_OneOf struct {
 	runtime.Either[string, VersionE]
+}
+
+func (o *Order_Images_OneOf) Validate() error {
+	if o.IsA() {
+		if v, ok := any(o.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if o.IsB() {
+		if v, ok := any(o.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
 }

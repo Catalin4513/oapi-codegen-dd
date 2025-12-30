@@ -36,7 +36,12 @@ type Rendering_Options struct {
 }
 
 func (r Rendering_Options) Validate() error {
-	return schemaTypesValidate.Struct(r)
+	if r.Rendering_Options_AnyOf != nil {
+		if err := r.Rendering_Options_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("Rendering_Options_AnyOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (r Rendering_Options) MarshalJSON() ([]byte, error) {
@@ -73,9 +78,15 @@ func (r *Rendering_Options) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 type Rendering_Options_AnyOf_0 struct {
 	AmountTaxDisplay *RenderingOptionsAnyOf0AmountTaxDisplay `json:"amount_tax_display,omitempty"`
 	Template         *string                                 `json:"template,omitempty" validate:"omitempty,max=5000"`
+}
+
+func (r Rendering_Options_AnyOf_0) Validate() error {
+	return unionTypesValidate.Struct(r)
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
@@ -103,4 +114,18 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
 
 type Rendering_Options_AnyOf struct {
 	runtime.Either[Rendering_Options_AnyOf_0, string]
+}
+
+func (r *Rendering_Options_AnyOf) Validate() error {
+	if r.IsA() {
+		if v, ok := any(r.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if r.IsB() {
+		if v, ok := any(r.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
 }

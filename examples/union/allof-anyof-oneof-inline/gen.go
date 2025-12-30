@@ -33,16 +33,23 @@ func (c CreateUserBody_User) Validate() error {
 	return schemaTypesValidate.Struct(c)
 }
 
-type CreateUserBody_Pages struct {
-	Limit                      int                         `json:"limit" validate:"required"`
-	Tag1                       *string                     `json:"tag1,omitempty"`
-	Tag2                       *string                     `json:"tag2,omitempty"`
-	CreateUserBody_Pages_AnyOf *CreateUserBody_Pages_AnyOf `json:"-"`
-	CreateUserBody_Pages_OneOf *CreateUserBody_Pages_OneOf `json:"-"`
-}
+type CreateUserBody_Pages CreateUserBody_Pages_Item
 
 func (c CreateUserBody_Pages) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if err := schemaTypesValidate.Var(c.Limit, "required"); err != nil {
+		return fmt.Errorf("Limit validation failed: %w", err)
+	}
+	if c.CreateUserBody_Pages_AnyOf != nil {
+		if err := c.CreateUserBody_Pages_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("CreateUserBody_Pages_AnyOf validation failed: %w", err)
+		}
+	}
+	if c.CreateUserBody_Pages_OneOf != nil {
+		if err := c.CreateUserBody_Pages_OneOf.Validate(); err != nil {
+			return fmt.Errorf("CreateUserBody_Pages_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
 }
 
 func (c CreateUserBody_Pages) MarshalJSON() ([]byte, error) {
@@ -111,12 +118,47 @@ func (c *CreateUserBody_Pages) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type CreateUserBody_Pages_Item struct {
+	Limit                      int                         `json:"limit" validate:"required"`
+	Tag1                       *string                     `json:"tag1,omitempty"`
+	Tag2                       *string                     `json:"tag2,omitempty"`
+	CreateUserBody_Pages_AnyOf *CreateUserBody_Pages_AnyOf `json:"-"`
+	CreateUserBody_Pages_OneOf *CreateUserBody_Pages_OneOf `json:"-"`
+}
+
+func (c CreateUserBody_Pages_Item) Validate() error {
+	if err := schemaTypesValidate.Var(c.Limit, "required"); err != nil {
+		return fmt.Errorf("Limit validation failed: %w", err)
+	}
+	if c.CreateUserBody_Pages_AnyOf != nil {
+		if err := c.CreateUserBody_Pages_AnyOf.Validate(); err != nil {
+			return fmt.Errorf("CreateUserBody_Pages_AnyOf validation failed: %w", err)
+		}
+	}
+	if c.CreateUserBody_Pages_OneOf != nil {
+		if err := c.CreateUserBody_Pages_OneOf.Validate(); err != nil {
+			return fmt.Errorf("CreateUserBody_Pages_OneOf validation failed: %w", err)
+		}
+	}
+	return nil
+}
+
+var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+
 type CreateUserBody_Pages_AnyOf_0 struct {
 	Offset int `json:"offset" validate:"required"`
 }
 
+func (c CreateUserBody_Pages_AnyOf_0) Validate() error {
+	return unionTypesValidate.Struct(c)
+}
+
 type CreateUserBody_Pages_AnyOf_1 struct {
 	Query string `json:"query" validate:"required"`
+}
+
+func (c CreateUserBody_Pages_AnyOf_1) Validate() error {
+	return unionTypesValidate.Struct(c)
 }
 
 type CreateUserBody_Pages_OneOf_0 struct {
@@ -124,8 +166,16 @@ type CreateUserBody_Pages_OneOf_0 struct {
 	Second int `json:"second" validate:"required"`
 }
 
+func (c CreateUserBody_Pages_OneOf_0) Validate() error {
+	return unionTypesValidate.Struct(c)
+}
+
 type CreateUserBody_Pages_OneOf_1 struct {
 	Last int `json:"last" validate:"required"`
+}
+
+func (c CreateUserBody_Pages_OneOf_1) Validate() error {
+	return unionTypesValidate.Struct(c)
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
@@ -155,6 +205,34 @@ type CreateUserBody_Pages_AnyOf struct {
 	runtime.Either[CreateUserBody_Pages_AnyOf_0, CreateUserBody_Pages_AnyOf_1]
 }
 
+func (c *CreateUserBody_Pages_AnyOf) Validate() error {
+	if c.IsA() {
+		if v, ok := any(c.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if c.IsB() {
+		if v, ok := any(c.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
+}
+
 type CreateUserBody_Pages_OneOf struct {
 	runtime.Either[CreateUserBody_Pages_OneOf_0, CreateUserBody_Pages_OneOf_1]
+}
+
+func (c *CreateUserBody_Pages_OneOf) Validate() error {
+	if c.IsA() {
+		if v, ok := any(c.A).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	if c.IsB() {
+		if v, ok := any(c.B).(runtime.Validator); ok {
+			return v.Validate()
+		}
+	}
+	return nil
 }

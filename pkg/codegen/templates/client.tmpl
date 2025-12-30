@@ -119,8 +119,12 @@ var _ {{$clientName}}Interface = (*{{$clientName}})(nil)
 
 {{- define "responseParserFn" }}{{- $op := .op }}
 {{- $respName := $op.Response.Success.ResponseName }}
+{{- $hasErrorResponse := and $op.Response.Error $op.Response.Error.ResponseName }}
+{{- $needsBodyBytes := or (ne $op.Response.SuccessStatusCode 204) $hasErrorResponse }}
 responseParser := func(ctx context.Context, resp *runtime.Response) (*{{$op.Response.Success.ResponseName}}, error) {
+    {{- if $needsBodyBytes }}
     bodyBytes := resp.Content
+    {{- end }}
     if resp.StatusCode != {{$op.Response.SuccessStatusCode}} {
         {{- with $op.Response.Error }}
             {{- if .ResponseName }}
@@ -129,7 +133,12 @@ responseParser := func(ctx context.Context, resp *runtime.Response) (*{{$op.Resp
                 if err != nil {
                     return nil, fmt.Errorf("error decoding response: %w", err)
                 }
-                return nil, runtime.NewClientAPIError(*target, runtime.WithStatusCode(resp.StatusCode))
+
+                if errTarget, ok := any(*target).(error); ok {
+                    return nil, runtime.NewClientAPIError(errTarget, runtime.WithStatusCode(resp.StatusCode))
+                }
+                return nil, runtime.NewClientAPIError(fmt.Errorf("API error (status %d): %v", resp.StatusCode, *target),
+                    runtime.WithStatusCode(resp.StatusCode))
             {{- else }}
                 return nil, runtime.NewClientAPIError(fmt.Errorf("unexpected status code: %d", resp.StatusCode),
                         runtime.WithStatusCode(resp.StatusCode))

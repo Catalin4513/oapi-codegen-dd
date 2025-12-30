@@ -20,7 +20,10 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/doordash/oapi-codegen-dd/v3/pkg/codegen"
@@ -54,6 +57,14 @@ func TestIntegration(t *testing.T) {
 	}
 	cfg = cfg.Merge(codegen.NewDefaultConfiguration())
 
+	// Track results for summary
+	var (
+		mu     sync.Mutex
+		passed []string
+		failed []string
+		total  = len(specs)
+	)
+
 	for _, name := range specs {
 		t.Run(fmt.Sprintf("test-%s", name), func(t *testing.T) {
 			t.Parallel()
@@ -71,8 +82,87 @@ func TestIntegration(t *testing.T) {
 			assert.NotNil(t, res["package integration"])
 			assert.NotNil(t, res["type IntegrationClient struct {"])
 			assert.NotNil(t, res["RequestOptions struct {"])
+
+			// Save generated code to a temporary directory and build it
+			// Use os.MkdirTemp instead of t.TempDir() so we can control cleanup
+			tmpDir, err := os.MkdirTemp("", "oapi-codegen-test-*")
+			require.NoError(t, err, "failed to create temp dir")
+
+			// Clean up temp dir after test completes (unless test fails and we want to inspect)
+			defer func() {
+				if !t.Failed() {
+					os.RemoveAll(tmpDir)
+				}
+			}()
+
+			genFile := filepath.Join(tmpDir, "generated.go")
+
+			fmt.Printf("[%s] Saving generated code to %s\n", name, genFile)
+			err = os.WriteFile(genFile, []byte(res.GetCombined()), 0644)
+			require.NoError(t, err, "failed to write generated code")
+
+			// Initialize go module
+			fmt.Printf("[%s] Initializing go module\n", name)
+			cmd := exec.Command("go", "mod", "init", "integration")
+			cmd.Dir = tmpDir
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Logf("go mod init output: %s", string(output))
+			}
+			require.NoError(t, err, "failed to initialize go module")
+
+			// Add replace directive to use local version of the library BEFORE go mod tidy
+			fmt.Printf("[%s] Adding replace directive for local library\n", name)
+			// Get the absolute path to the project root (3 levels up from this file)
+			projectRoot, err := filepath.Abs(filepath.Join("..", "..", ".."))
+			require.NoError(t, err, "failed to get project root path")
+
+			cmd = exec.Command("go", "mod", "edit", "-replace", fmt.Sprintf("github.com/doordash/oapi-codegen-dd/v3=%s", projectRoot))
+			cmd.Dir = tmpDir
+			output, err = cmd.CombinedOutput()
+			if err != nil {
+				t.Logf("go mod edit output: %s", string(output))
+			}
+			require.NoError(t, err, "failed to add replace directive")
+
+			// Run go mod tidy to download dependencies (after replace directive is set)
+			fmt.Printf("[%s] Running go mod tidy\n", name)
+			cmd = exec.Command("go", "mod", "tidy")
+			cmd.Dir = tmpDir
+			output, err = cmd.CombinedOutput()
+			if err != nil {
+				t.Logf("go mod tidy output: %s", string(output))
+			}
+			require.NoError(t, err, "failed to run go mod tidy")
+
+			// Build the generated code
+			fmt.Printf("[%s] Building generated code\n", name)
+			cmd = exec.Command("go", "build", "-o", "/dev/null", genFile)
+			cmd.Dir = tmpDir
+			output, err = cmd.CombinedOutput()
+			if err != nil {
+				t.Logf("go build output: %s", string(output))
+			}
+			require.NoError(t, err, "failed to build generated code")
+
+			fmt.Printf("[%s] Successfully built generated code\n", name)
+			fmt.Printf("[%s] Generated code saved at: %s\n", name, tmpDir)
+
+			// Track result at the end of the test
+			mu.Lock()
+			defer mu.Unlock()
+			if t.Failed() {
+				failed = append(failed, name)
+			} else {
+				passed = append(passed, name)
+			}
 		})
 	}
+
+	// Wait for all subtests to complete before printing summary
+	t.Cleanup(func() {
+		printSummary(total, passed, failed)
+	})
 }
 
 func getFileContents(filePath string) ([]byte, error) {
@@ -123,4 +213,27 @@ func collectSpecs(t *testing.T, specPath string) []string {
 	}
 
 	return specs
+}
+
+func printSummary(total int, passed, failed []string) {
+	log.Println("\n" + strings.Repeat("=", 80))
+	log.Println("INTEGRATION TEST SUMMARY")
+	log.Println(strings.Repeat("=", 80))
+	log.Printf("Total specs tested: %d\n", total)
+	log.Printf("✅ Passed: %d\n", len(passed))
+	log.Printf("❌ Failed: %d\n", len(failed))
+	log.Println(strings.Repeat("-", 80))
+
+	if len(failed) > 0 {
+		log.Println("\nFailed specs:")
+		for _, spec := range failed {
+			log.Printf("  ❌ %s\n", spec)
+		}
+	}
+
+	if len(passed) > 0 && len(failed) == 0 {
+		log.Println("\n🎉 All specs passed!")
+	}
+
+	log.Println(strings.Repeat("=", 80))
 }
