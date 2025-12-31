@@ -79,7 +79,8 @@ func createObjectSchema(schema *base.Schema, options ParseOptions) (GoSchema, er
 		// early-out here and generate a map[string]<schema> instead of an object
 		// that contains this map. We skip over anyOf/oneOf here because they can
 		// introduce properties. allOf was handled above.
-		if (schema.Properties == nil || schema.Properties.Len() == 0) &&
+		if schema != nil &&
+			(schema.Properties == nil || schema.Properties.Len() == 0) &&
 			schema.AllOf == nil && schema.AnyOf == nil && schema.OneOf == nil {
 			// We have a dictionary here. Returns the goType to be just a map from
 			// string to the property type. HasAdditionalProperties=false means
@@ -87,106 +88,114 @@ func createObjectSchema(schema *base.Schema, options ParseOptions) (GoSchema, er
 			// since we don't need them for a simple map.
 			outSchema.HasAdditionalProperties = false
 			outSchema.GoType = fmt.Sprintf("map[string]%s", additionalPropertiesType(outSchema))
+			// Store the original OpenAPI schema so downstream tools can check if this
+			// came from additionalProperties
+			outSchema.OpenAPISchema = schema
 			return outSchema, nil
 		}
 
 		// We've got an object with some properties.
-		required := schema.Required
-		for pName, p := range schema.Properties.FromOldest() {
-			propertyPath := append(path, pName)
-			pRef := p.GoLow().GetReference()
-			opts := options.WithReference(pRef).WithPath(propertyPath)
-			pSchema, err := GenerateGoSchema(p, opts)
-			if err != nil {
-				return GoSchema{}, fmt.Errorf("error generating Go schema for property '%s': %w", pName, err)
-			}
-
-			hasNilType := false
-			if p.Schema() != nil {
-				hasNilType = slices.Contains(p.Schema().Type, "null")
-			}
-			constraints := newConstraints(p.Schema(), ConstraintsContext{
-				name:       pName,
-				hasNilType: hasNilType,
-				required:   slices.Contains(required, pName),
-			})
-			pSchema.Constraints = constraints
-
-			if (pSchema.HasAdditionalProperties || len(pSchema.UnionElements) != 0) && pSchema.RefType == "" {
-				// If we have fields present which have additional properties or union values,
-				// but are not a pre-defined type, we need to define a type
-				// for them, which will be based on the field names we followed
-				// to get to the type.
-				typeName := pathToTypeName(append(propertyPath, "AdditionalProperties"))
-
-				var specLocation = SpecLocationSchema
-				if len(pSchema.UnionElements) != 0 {
-					specLocation = SpecLocationUnion
+		var required []string
+		if schema != nil {
+			required = schema.Required
+		}
+		if schema != nil && schema.Properties != nil {
+			for pName, p := range schema.Properties.FromOldest() {
+				propertyPath := append(path, pName)
+				pRef := p.GoLow().GetReference()
+				opts := options.WithReference(pRef).WithPath(propertyPath)
+				pSchema, err := GenerateGoSchema(p, opts)
+				if err != nil {
+					return GoSchema{}, fmt.Errorf("error generating Go schema for property '%s': %w", pName, err)
 				}
 
-				typeDef := TypeDefinition{
-					Name:         typeName,
-					JsonName:     strings.Join(propertyPath, "."),
-					Schema:       pSchema,
-					SpecLocation: specLocation,
+				hasNilType := false
+				if p.Schema() != nil {
+					hasNilType = slices.Contains(p.Schema().Type, "null")
 				}
-				options.AddType(typeDef)
-				pSchema.AdditionalTypes = append(pSchema.AdditionalTypes, typeDef)
-			}
+				constraints := newConstraints(p.Schema(), ConstraintsContext{
+					name:       pName,
+					hasNilType: hasNilType,
+					required:   slices.Contains(required, pName),
+				})
+				pSchema.Constraints = constraints
 
-			description := ""
-			extensions := make(map[string]any)
-			deprecated := false
+				if (pSchema.HasAdditionalProperties || len(pSchema.UnionElements) != 0) && pSchema.RefType == "" {
+					// If we have fields present which have additional properties or union values,
+					// but are not a pre-defined type, we need to define a type
+					// for them, which will be based on the field names we followed
+					// to get to the type.
+					typeName := pathToTypeName(append(propertyPath, "AdditionalProperties"))
 
-			if p.Schema() != nil {
-				s := p.Schema()
-				description = s.Description
-				extensions = extractExtensions(s.Extensions)
-				if s.Deprecated != nil {
-					deprecated = *s.Deprecated
+					var specLocation = SpecLocationSchema
+					if len(pSchema.UnionElements) != 0 {
+						specLocation = SpecLocationUnion
+					}
+
+					typeDef := TypeDefinition{
+						Name:         typeName,
+						JsonName:     strings.Join(propertyPath, "."),
+						Schema:       pSchema,
+						SpecLocation: specLocation,
+					}
+					options.AddType(typeDef)
+					pSchema.AdditionalTypes = append(pSchema.AdditionalTypes, typeDef)
 				}
-			}
 
-			pSchema, _ = replaceInlineTypes(pSchema, opts)
+				description := ""
+				extensions := make(map[string]any)
+				deprecated := false
 
-			prop := Property{
-				GoName:        createPropertyGoFieldName(pName, extensions),
-				JsonFieldName: pName,
-				Schema:        pSchema,
-				Description:   description,
-				Extensions:    extensions,
-				Deprecated:    deprecated,
-				Constraints:   constraints,
-			}
-			outSchema.Properties = append(outSchema.Properties, prop)
-			if len(pSchema.AdditionalTypes) > 0 {
-				outSchema.AdditionalTypes = append(outSchema.AdditionalTypes, pSchema.AdditionalTypes...)
+				if p.Schema() != nil {
+					s := p.Schema()
+					description = s.Description
+					extensions = extractExtensions(s.Extensions)
+					if s.Deprecated != nil {
+						deprecated = *s.Deprecated
+					}
+				}
+
+				pSchema, _ = replaceInlineTypes(pSchema, opts)
+
+				prop := Property{
+					GoName:        createPropertyGoFieldName(pName, extensions),
+					JsonFieldName: pName,
+					Schema:        pSchema,
+					Description:   description,
+					Extensions:    extensions,
+					Deprecated:    deprecated,
+					Constraints:   constraints,
+				}
+				outSchema.Properties = append(outSchema.Properties, prop)
+				if len(pSchema.AdditionalTypes) > 0 {
+					outSchema.AdditionalTypes = append(outSchema.AdditionalTypes, pSchema.AdditionalTypes...)
+				}
 			}
 		}
 
 		fields := genFieldsFromProperties(outSchema.Properties, options)
 		outSchema.GoType = outSchema.createGoStruct(fields)
-	}
 
-	// Check for x-go-type-name. It behaves much like x-go-type, however, it will
-	// create a type definition for the named type, and use the named type in place
-	// of this schema.
-	if extension, ok := schemaExtensions[extGoTypeName]; ok {
-		typeName, err := parseString(extension)
-		if err != nil {
-			return outSchema, fmt.Errorf("invalid value for %q: %w", extGoTypeName, err)
-		}
+		// Check for x-go-type-name. It behaves much like x-go-type, however, it will
+		// create a type definition for the named type, and use the named type in place
+		// of this schema.
+		if extension, ok := schemaExtensions[extGoTypeName]; ok {
+			typeName, err := parseString(extension)
+			if err != nil {
+				return outSchema, fmt.Errorf("invalid value for %q: %w", extGoTypeName, err)
+			}
 
-		newTypeDef := TypeDefinition{
-			Name:   typeName,
-			Schema: outSchema,
-		}
-		options.AddType(newTypeDef)
-		outSchema = GoSchema{
-			Description:     newTypeDef.Schema.Description,
-			GoType:          typeName,
-			DefineViaAlias:  true,
-			AdditionalTypes: append(outSchema.AdditionalTypes, newTypeDef),
+			newTypeDef := TypeDefinition{
+				Name:   typeName,
+				Schema: outSchema,
+			}
+			options.AddType(newTypeDef)
+			outSchema = GoSchema{
+				Description:     newTypeDef.Schema.Description,
+				GoType:          typeName,
+				DefineViaAlias:  true,
+				AdditionalTypes: append(outSchema.AdditionalTypes, newTypeDef),
+			}
 		}
 	}
 
