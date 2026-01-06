@@ -1,0 +1,5 @@
+package: anytype
+skip-prune: true
+generate:
+  client: false
+  response-validators: true

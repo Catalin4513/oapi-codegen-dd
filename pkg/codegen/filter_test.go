@@ -204,4 +204,247 @@ func TestFilterOperationsByOperationID(t *testing.T) {
 		// components/examples should be empty
 		assert.Equal(t, 0, model.Model.Components.Examples.Len())
 	})
+
+	t.Run("empty filter does not remove operations", func(t *testing.T) {
+		opts := Configuration{
+			PackageName: packageName,
+			Filter: FilterConfig{
+				Include: FilterParamsConfig{
+					OperationIDs: []string{},
+				},
+				Exclude: FilterParamsConfig{
+					OperationIDs: []string{},
+				},
+			},
+			Generate: &GenerateOptions{
+				Client: true,
+			},
+			Output: &Output{
+				UseSingleFile: true,
+			},
+		}
+
+		// Run our code generation:
+		code, err := Generate([]byte(testDocument), opts)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		// Should contain operations since empty filters don't remove anything
+		combined := code.GetCombined()
+		assert.Contains(t, combined, `type CatDeadCause string`)
+		assert.Contains(t, combined, `"/cat"`)
+	})
+
+	t.Run("nil filter does not remove operations", func(t *testing.T) {
+		opts := Configuration{
+			PackageName: packageName,
+			Filter: FilterConfig{
+				Include: FilterParamsConfig{
+					OperationIDs: nil,
+				},
+				Exclude: FilterParamsConfig{
+					OperationIDs: nil,
+				},
+			},
+			Generate: &GenerateOptions{
+				Client: true,
+			},
+			Output: &Output{
+				UseSingleFile: true,
+			},
+		}
+
+		// Run our code generation:
+		code, err := Generate([]byte(testDocument), opts)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		// Should contain operations since nil filters don't remove anything
+		combined := code.GetCombined()
+		assert.Contains(t, combined, `type CatDeadCause string`)
+		assert.Contains(t, combined, `"/cat"`)
+	})
+
+	t.Run("default configuration does not filter operations", func(t *testing.T) {
+		opts := Configuration{
+			PackageName: packageName,
+			// Filter is zero value - should not filter anything
+			Generate: &GenerateOptions{
+				Client: true,
+			},
+			Output: &Output{
+				UseSingleFile: true,
+			},
+		}
+
+		// Run our code generation:
+		code, err := Generate([]byte(testDocument), opts)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		// Should contain all operations
+		combined := code.GetCombined()
+		assert.Contains(t, combined, `type CatDeadCause string`)
+		assert.Contains(t, combined, `"/cat"`)
+	})
+}
+
+func TestFilterOperationsByPath(t *testing.T) {
+	packageName := "testswagger"
+
+	t.Run("include paths", func(t *testing.T) {
+		opts := Configuration{
+			PackageName: packageName,
+			Filter: FilterConfig{
+				Include: FilterParamsConfig{
+					Paths: []string{"/cat"},
+				},
+			},
+			Generate: &GenerateOptions{
+				Client: true,
+			},
+			Output: &Output{
+				UseSingleFile: true,
+			},
+		}
+
+		code, err := Generate([]byte(testDocument), opts)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		combined := code.GetCombined()
+		assert.Contains(t, combined, `"/cat"`)
+		assert.NotContains(t, combined, `"/test/{name}"`)
+		assert.NotContains(t, combined, `"/enum"`)
+	})
+
+	t.Run("exclude paths", func(t *testing.T) {
+		opts := Configuration{
+			PackageName: packageName,
+			Filter: FilterConfig{
+				Exclude: FilterParamsConfig{
+					Paths: []string{"/cat", "/enum"},
+				},
+			},
+			Generate: &GenerateOptions{
+				Client: true,
+			},
+			Output: &Output{
+				UseSingleFile: true,
+			},
+		}
+
+		code, err := Generate([]byte(testDocument), opts)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		combined := code.GetCombined()
+		assert.NotContains(t, combined, `"/cat"`)
+		assert.NotContains(t, combined, `"/enum"`)
+		assert.Contains(t, combined, `"/test/{name}"`)
+	})
+
+	t.Run("empty include paths does not filter", func(t *testing.T) {
+		opts := Configuration{
+			PackageName: packageName,
+			Filter: FilterConfig{
+				Include: FilterParamsConfig{
+					Paths: []string{}, // Empty - should not filter
+				},
+			},
+			Generate: &GenerateOptions{
+				Client: true,
+			},
+			Output: &Output{
+				UseSingleFile: true,
+			},
+		}
+
+		code, err := Generate([]byte(testDocument), opts)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		combined := code.GetCombined()
+		assert.Contains(t, combined, `"/cat"`)
+		assert.Contains(t, combined, `"/test/{name}"`)
+		assert.Contains(t, combined, `"/enum"`)
+	})
+
+	t.Run("empty exclude paths does not filter", func(t *testing.T) {
+		opts := Configuration{
+			PackageName: packageName,
+			Filter: FilterConfig{
+				Exclude: FilterParamsConfig{
+					Paths: []string{}, // Empty - should not filter
+				},
+			},
+			Generate: &GenerateOptions{
+				Client: true,
+			},
+			Output: &Output{
+				UseSingleFile: true,
+			},
+		}
+
+		code, err := Generate([]byte(testDocument), opts)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		combined := code.GetCombined()
+		assert.Contains(t, combined, `"/cat"`)
+		assert.Contains(t, combined, `"/test/{name}"`)
+		assert.Contains(t, combined, `"/enum"`)
+	})
+
+	t.Run("nil include paths does not filter", func(t *testing.T) {
+		opts := Configuration{
+			PackageName: packageName,
+			Filter: FilterConfig{
+				Include: FilterParamsConfig{
+					Paths: nil, // Nil - should not filter
+				},
+			},
+			Generate: &GenerateOptions{
+				Client: true,
+			},
+			Output: &Output{
+				UseSingleFile: true,
+			},
+		}
+
+		code, err := Generate([]byte(testDocument), opts)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		combined := code.GetCombined()
+		assert.Contains(t, combined, `"/cat"`)
+		assert.Contains(t, combined, `"/test/{name}"`)
+		assert.Contains(t, combined, `"/enum"`)
+	})
+
+	t.Run("nil exclude paths does not filter", func(t *testing.T) {
+		opts := Configuration{
+			PackageName: packageName,
+			Filter: FilterConfig{
+				Exclude: FilterParamsConfig{
+					Paths: nil, // Nil - should not filter
+				},
+			},
+			Generate: &GenerateOptions{
+				Client: true,
+			},
+			Output: &Output{
+				UseSingleFile: true,
+			},
+		}
+
+		code, err := Generate([]byte(testDocument), opts)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		combined := code.GetCombined()
+		assert.Contains(t, combined, `"/cat"`)
+		assert.Contains(t, combined, `"/test/{name}"`)
+		assert.Contains(t, combined, `"/enum"`)
+	})
 }

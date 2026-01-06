@@ -33,7 +33,8 @@ func createObjectSchema(schema *base.Schema, options ParseOptions) (GoSchema, er
 		Description:   description,
 		OpenAPISchema: schema,
 		Constraints: newConstraints(schema, ConstraintsContext{
-			hasNilType: hasNilType,
+			hasNilType:   hasNilType,
+			specLocation: options.specLocation,
 		}),
 	}
 
@@ -109,14 +110,15 @@ func createObjectSchema(schema *base.Schema, options ParseOptions) (GoSchema, er
 					return GoSchema{}, fmt.Errorf("error generating Go schema for property '%s': %w", pName, err)
 				}
 
-				hasNilType := false
+				hasNilTyp := false
 				if p.Schema() != nil {
-					hasNilType = slices.Contains(p.Schema().Type, "null")
+					hasNilTyp = slices.Contains(p.Schema().Type, "null")
 				}
 				constraints := newConstraints(p.Schema(), ConstraintsContext{
-					name:       pName,
-					hasNilType: hasNilType,
-					required:   slices.Contains(required, pName),
+					name:         pName,
+					hasNilType:   hasNilTyp,
+					required:     slices.Contains(required, pName),
+					specLocation: options.specLocation,
 				})
 				pSchema.Constraints = constraints
 
@@ -127,9 +129,13 @@ func createObjectSchema(schema *base.Schema, options ParseOptions) (GoSchema, er
 					// to get to the type.
 					typeName := pathToTypeName(append(propertyPath, "AdditionalProperties"))
 
-					var specLocation = SpecLocationSchema
-					if len(pSchema.UnionElements) != 0 {
-						specLocation = SpecLocationUnion
+					// Use parent's SpecLocation if set, otherwise default to Schema or Union
+					var specLocation = options.specLocation
+					if specLocation == "" {
+						specLocation = SpecLocationSchema
+						if len(pSchema.UnionElements) != 0 {
+							specLocation = SpecLocationUnion
+						}
 					}
 
 					typeDef := TypeDefinition{
@@ -186,8 +192,9 @@ func createObjectSchema(schema *base.Schema, options ParseOptions) (GoSchema, er
 			}
 
 			newTypeDef := TypeDefinition{
-				Name:   typeName,
-				Schema: outSchema,
+				Name:         typeName,
+				Schema:       outSchema,
+				SpecLocation: SpecLocationSchema,
 			}
 			options.AddType(newTypeDef)
 			outSchema = GoSchema{

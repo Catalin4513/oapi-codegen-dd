@@ -1,0 +1,153 @@
+openapi: 3.0.0
+info:
+  title: ReadOnly/WriteOnly Comprehensive Test
+  version: 1.0.0
+  description: |
+    This example demonstrates handling of readOnly and writeOnly properties
+    in request and response bodies, covering all edge cases:
+    
+    1. ReadOnly fields that are required in the schema
+    2. ReadOnly fields that are optional in the schema
+    3. WriteOnly fields that are required
+    4. Same schema used in both request (POST) and response (GET)
+    5. PATCH operation where readOnly required fields should be optional
+    
+paths:
+  /users:
+    post:
+      operationId: createUser
+      summary: Create a new user
+      description: |
+        Creates a new user. The request body should NOT include readOnly fields
+        (id, createdAt) even though they are marked as required in the schema.
+        The writeOnly field (password) MUST be included.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    get:
+      operationId: listUsers
+      summary: List all users
+      description: |
+        Returns a list of users. The response includes readOnly fields
+        but NOT writeOnly fields (password).
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+  
+  /users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getUser
+      summary: Get a user by ID
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    
+    patch:
+      operationId: updateUser
+      summary: Update a user
+      description: |
+        Updates a user. The request body should NOT include readOnly fields
+        (id, createdAt) even though id is marked as required in the schema.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+components:
+  schemas:
+    User:
+      type: object
+      required:
+        - id          # readOnly + required: should be optional in request bodies
+        - name        # regular required field
+        - email       # regular required field
+        - password    # writeOnly + required: must be in requests, not in responses
+        - createdAt   # readOnly + required: should be optional in request bodies
+      properties:
+        id:
+          type: string
+          readOnly: true
+          description: |
+            Auto-generated user ID. This is readOnly AND required.
+            - In request bodies (POST, PATCH): should be optional (pointer with omitempty)
+            - In responses (GET): should be required (non-pointer)
+        
+        name:
+          type: string
+          description: User's full name (regular required field)
+        
+        email:
+          type: string
+          format: email
+          description: User's email address (regular required field)
+        
+        password:
+          type: string
+          writeOnly: true
+          description: |
+            User's password. This is writeOnly AND required.
+            - In request bodies (POST, PATCH): should be required
+            - In responses (GET): should not be present
+        
+        bio:
+          type: string
+          description: Optional user biography (not required, not readOnly/writeOnly)
+        
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: |
+            Auto-generated creation timestamp. This is readOnly AND required.
+            - In request bodies: should be optional (pointer with omitempty)
+            - In responses: should be required (non-pointer)
+        
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: |
+            Auto-generated update timestamp. This is readOnly but NOT required.
+            - In request bodies: should be optional (pointer with omitempty)
+            - In responses: should be optional (pointer with omitempty)
+        
+        lastLogin:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Optional last login timestamp (readOnly but not required)

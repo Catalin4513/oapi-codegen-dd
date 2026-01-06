@@ -9,7 +9,12 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var queryTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var queryTypesValidate *validator.Validate
+
+func init() {
+	queryTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(queryTypesValidate)
+}
 
 type Headquarters struct {
 	Name    *string `json:"name,omitempty"`
@@ -28,11 +33,10 @@ func (e Establishments) Validate() error {
 	for i, item := range e {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return fmt.Errorf("invalid item at index %d: %w", i, err)
+				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -42,11 +46,10 @@ func (a Arrangements) Validate() error {
 	for i, item := range a {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return fmt.Errorf("invalid item at index %d: %w", i, err)
+				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -58,14 +61,26 @@ type UpdateOrganizationQuery struct {
 }
 
 func (u UpdateOrganizationQuery) Validate() error {
-	return queryTypesValidate.Struct(u)
+	if u.Establishments != nil {
+		if v, ok := any(u.Establishments).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Establishments", err)
+			}
+		}
+	}
+	return nil
 }
 
 type UpdateOrganizationResponse struct {
 	Message *string `json:"message,omitempty"`
 }
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Item struct {
 	Name    *string `json:"name,omitempty"`

@@ -3,6 +3,9 @@
 package circularucr
 
 import (
+	"fmt"
+
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -15,12 +18,32 @@ const (
 	OrgModelTypeOrganization OrgModelType = "Organization"
 )
 
+// validOrgModelTypeValues is a map of valid values for OrgModelType
+var validOrgModelTypeValues = map[OrgModelType]bool{
+	OrgModelTypeDepartment:   true,
+	OrgModelTypeDivision:     true,
+	OrgModelTypeOrganization: true,
+}
+
+// Validate checks if the OrgModelType value is valid
+func (o OrgModelType) Validate() error {
+	if !validOrgModelTypeValues[o] {
+		return runtime.NewValidationError("", fmt.Sprintf("invalid OrgModelType value: %v", o))
+	}
+	return nil
+}
+
 type AcctstructureResponse struct {
 	Response *OrgModel `json:"response,omitempty"`
 	Success  *bool     `json:"success,omitempty"`
 }
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type OrgByIDResponseWrapperModel struct {
 	Response *OrgModel `json:"response,omitempty"`
@@ -28,7 +51,14 @@ type OrgByIDResponseWrapperModel struct {
 }
 
 func (o OrgByIDResponseWrapperModel) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if o.Response != nil {
+		if v, ok := any(o.Response).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Response", err)
+			}
+		}
+	}
+	return nil
 }
 
 type OrgModel struct {
@@ -39,5 +69,19 @@ type OrgModel struct {
 }
 
 func (o OrgModel) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if o.Type != nil {
+		if v, ok := any(o.Type).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Type", err)
+			}
+		}
+	}
+	if o.Parent != nil {
+		if v, ok := any(o.Parent).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Parent", err)
+			}
+		}
+	}
+	return nil
 }

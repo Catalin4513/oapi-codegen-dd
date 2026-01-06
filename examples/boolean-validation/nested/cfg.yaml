@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=../../../configuration-schema.json
+package: nested
+skip-prune: true
+generate:
+  response-validators: true
+

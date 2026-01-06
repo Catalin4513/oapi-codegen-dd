@@ -90,9 +90,14 @@ func asMap[V any](v any) (map[string]V, error) {
 	return m, nil
 }
 
-type GetFilesResponse []GetFiles_Response
+type GetFilesResponse GetFiles_Response
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type VariantA struct {
 	A *string `json:"a,omitempty"`
@@ -118,18 +123,35 @@ func (v VariantC) Validate() error {
 	return schemaTypesValidate.Struct(v)
 }
 
-type GetFiles_Response GetFiles_Response_Item
+type GetFiles_Response []GetFiles_Response_Item
 
 func (g GetFiles_Response) Validate() error {
-	if g.GetFiles_Response_OneOf != nil {
-		if err := g.GetFiles_Response_OneOf.Validate(); err != nil {
-			return fmt.Errorf("GetFiles_Response_OneOf validation failed: %w", err)
+	for i, item := range g {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+			}
 		}
 	}
 	return nil
 }
 
-func (g GetFiles_Response) MarshalJSON() ([]byte, error) {
+type GetFiles_Response_Item struct {
+	GetFiles_Response_OneOf *GetFiles_Response_OneOf `json:"-"`
+}
+
+func (g GetFiles_Response_Item) Validate() error {
+	if g.GetFiles_Response_OneOf != nil {
+		if v, ok := any(g.GetFiles_Response_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("GetFiles_Response_OneOf", err)
+			}
+		}
+	}
+	return nil
+}
+
+func (g GetFiles_Response_Item) MarshalJSON() ([]byte, error) {
 	var parts []json.RawMessage
 
 	{
@@ -143,7 +165,7 @@ func (g GetFiles_Response) MarshalJSON() ([]byte, error) {
 	return runtime.CoalesceOrMerge(parts...)
 }
 
-func (g *GetFiles_Response) UnmarshalJSON(data []byte) error {
+func (g *GetFiles_Response_Item) UnmarshalJSON(data []byte) error {
 	trim := bytes.TrimSpace(data)
 	if bytes.Equal(trim, []byte("null")) {
 		return nil
@@ -163,20 +185,12 @@ func (g *GetFiles_Response) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type GetFiles_Response_Item struct {
-	GetFiles_Response_OneOf *GetFiles_Response_OneOf `json:"-"`
-}
+var unionTypesValidate *validator.Validate
 
-func (g GetFiles_Response_Item) Validate() error {
-	if g.GetFiles_Response_OneOf != nil {
-		if err := g.GetFiles_Response_OneOf.Validate(); err != nil {
-			return fmt.Errorf("GetFiles_Response_OneOf validation failed: %w", err)
-		}
-	}
-	return nil
+func init() {
+	unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(unionTypesValidate)
 }
-
-var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
 
 type GetFiles_Response_OneOf_0 struct {
 	A *string `json:"a,omitempty"`

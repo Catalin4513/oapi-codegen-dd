@@ -13,15 +13,27 @@ import (
 
 type GetFooResponse = map[string]any
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Order struct {
-	Client  *Order_Client  `json:"client,omitempty"`
-	Address *Order_Address `json:"address,omitempty"`
+	Client  *Order_Client `json:"client,omitempty"`
+	Address *string       `json:"address,omitempty"`
 }
 
 func (o Order) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if o.Client != nil {
+		if v, ok := any(o.Client).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Client", err)
+			}
+		}
+	}
+	return nil
 }
 
 type Order_Client struct {
@@ -30,8 +42,10 @@ type Order_Client struct {
 
 func (o Order_Client) Validate() error {
 	if o.Order_Client_AnyOf != nil {
-		if err := o.Order_Client_AnyOf.Validate(); err != nil {
-			return fmt.Errorf("Order_Client_AnyOf validation failed: %w", err)
+		if v, ok := any(o.Order_Client_AnyOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Order_Client_AnyOf", err)
+			}
 		}
 	}
 	return nil
@@ -71,53 +85,6 @@ func (o *Order_Client) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type Order_Address struct {
-	Order_Address_AnyOf *Order_Address_AnyOf `json:"-"`
-}
-
-func (o Order_Address) Validate() error {
-	if o.Order_Address_AnyOf != nil {
-		if err := o.Order_Address_AnyOf.Validate(); err != nil {
-			return fmt.Errorf("Order_Address_AnyOf validation failed: %w", err)
-		}
-	}
-	return nil
-}
-
-func (o Order_Address) MarshalJSON() ([]byte, error) {
-	var parts []json.RawMessage
-
-	{
-		b, err := runtime.MarshalJSON(o.Order_Address_AnyOf)
-		if err != nil {
-			return nil, fmt.Errorf("Order_Address_AnyOf marshal: %w", err)
-		}
-		parts = append(parts, b)
-	}
-
-	return runtime.CoalesceOrMerge(parts...)
-}
-
-func (o *Order_Address) UnmarshalJSON(data []byte) error {
-	trim := bytes.TrimSpace(data)
-	if bytes.Equal(trim, []byte("null")) {
-		return nil
-	}
-	if len(trim) == 0 {
-		return fmt.Errorf("empty JSON input")
-	}
-
-	if o.Order_Address_AnyOf == nil {
-		o.Order_Address_AnyOf = &Order_Address_AnyOf{}
-	}
-
-	if err := runtime.UnmarshalJSON(data, o.Order_Address_AnyOf); err != nil {
-		return fmt.Errorf("Order_Address_AnyOf unmarshal: %w", err)
-	}
-
-	return nil
-}
-
 type Identity struct {
 	Issuer string `json:"issuer" validate:"required"`
 }
@@ -134,7 +101,12 @@ func (v Verification) Validate() error {
 	return schemaTypesValidate.Struct(v)
 }
 
-var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var unionTypesValidate *validator.Validate
+
+func init() {
+	unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(unionTypesValidate)
+}
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
@@ -175,41 +147,4 @@ func (o *Order_Client_AnyOf) Validate() error {
 		}
 	}
 	return nil
-}
-
-type Order_Address_AnyOf struct {
-	union json.RawMessage
-}
-
-func (o *Order_Address_AnyOf) Validate() error {
-	return nil
-}
-
-// Raw returns the union data inside the Order_Address_AnyOf as bytes
-func (o *Order_Address_AnyOf) Raw() json.RawMessage {
-	return o.union
-}
-
-// AsString returns the union data inside the Order_Address_AnyOf as a string
-func (o *Order_Address_AnyOf) AsString() (string, error) {
-	return UnmarshalAs[string](o.union)
-}
-
-// FromString overwrites any union data inside the Order_Address_AnyOf as the provided string
-func (o *Order_Address_AnyOf) FromString(v string) error {
-	bts, err := json.Marshal(v)
-	o.union = bts
-	return err
-}
-
-func (o Order_Address_AnyOf) MarshalJSON() ([]byte, error) {
-	bts, err := o.union.MarshalJSON()
-
-	return bts, err
-}
-
-func (o *Order_Address_AnyOf) UnmarshalJSON(bts []byte) error {
-	err := o.union.UnmarshalJSON(bts)
-
-	return err
 }

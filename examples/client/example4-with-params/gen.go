@@ -140,7 +140,12 @@ func asMap[V any](v any) (map[string]V, error) {
 	return m, nil
 }
 
-var pathTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var pathTypesValidate *validator.Validate
+
+func init() {
+	pathTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(pathTypesValidate)
+}
 
 type GetOrderPath struct {
 	ID string `json:"id" validate:"required"`
@@ -150,7 +155,12 @@ func (g GetOrderPath) Validate() error {
 	return pathTypesValidate.Struct(g)
 }
 
-var queryTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var queryTypesValidate *validator.Validate
+
+func init() {
+	queryTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(queryTypesValidate)
+}
 
 type GetOrderQuery struct {
 	ClientSecret *string  `json:"client_secret,omitempty"`

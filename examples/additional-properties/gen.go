@@ -10,24 +10,32 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Items []any
-
-func (i Items) Validate() error {
-	return nil
-}
 
 type Location map[string]any
 
 func (l Location) Validate() error {
-	return schemaTypesValidate.Struct(l)
+	return nil
 }
 
 type Users map[string]Users_AdditionalProperties
 
 func (u Users) Validate() error {
-	return schemaTypesValidate.Struct(u)
+	for k, v := range u {
+		if validator, ok := any(v).(runtime.Validator); ok {
+			if err := validator.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError(k, err)
+			}
+		}
+	}
+	return nil
 }
 
 type User struct {
@@ -41,7 +49,14 @@ func (u User) Validate() error {
 type Pick1 map[string]Pick1_AdditionalProperties
 
 func (p Pick1) Validate() error {
-	return schemaTypesValidate.Struct(p)
+	for k, v := range p {
+		if validator, ok := any(v).(runtime.Validator); ok {
+			if err := validator.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError(k, err)
+			}
+		}
+	}
+	return nil
 }
 
 type ReferenceWithRequiredExtra struct {
@@ -50,7 +65,14 @@ type ReferenceWithRequiredExtra struct {
 }
 
 func (r ReferenceWithRequiredExtra) Validate() error {
-	return schemaTypesValidate.Struct(r)
+	if r.Index != nil {
+		if v, ok := any(r.Index).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Index", err)
+			}
+		}
+	}
+	return nil
 }
 
 // Getter for additional properties for ReferenceWithRequiredExtra. Returns the specified
@@ -124,7 +146,14 @@ type RouteWithOptionalExtra struct {
 }
 
 func (r RouteWithOptionalExtra) Validate() error {
-	return schemaTypesValidate.Struct(r)
+	if r.Index != nil {
+		if v, ok := any(r.Index).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Index", err)
+			}
+		}
+	}
+	return nil
 }
 
 // Getter for additional properties for RouteWithOptionalExtra. Returns the specified
@@ -196,7 +225,99 @@ type Route = string
 
 type Reference = string
 
-var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+type ConfigWithMinProps map[string]string
+
+func (c ConfigWithMinProps) Validate() error {
+	if c == nil {
+		return nil
+	}
+	if len(c) < 1 {
+		return runtime.NewValidationError("", fmt.Sprintf("must have at least 1 properties, got %d", len(c)))
+	}
+	return nil
+}
+
+type ConfigWithMaxProps map[string]string
+
+func (c ConfigWithMaxProps) Validate() error {
+	if c == nil {
+		return nil
+	}
+	if len(c) > 5 {
+		return runtime.NewValidationError("", fmt.Sprintf("must have at most 5 properties, got %d", len(c)))
+	}
+	return nil
+}
+
+type ConfigWithBothProps map[string]int
+
+func (c ConfigWithBothProps) Validate() error {
+	if c == nil {
+		return nil
+	}
+	if len(c) < 2 {
+		return runtime.NewValidationError("", fmt.Sprintf("must have at least 2 properties, got %d", len(c)))
+	}
+	if len(c) > 10 {
+		return runtime.NewValidationError("", fmt.Sprintf("must have at most 10 properties, got %d", len(c)))
+	}
+	return nil
+}
+
+type UsersWithRequiredFields map[string]UsersWithRequiredFields_AdditionalProperties
+
+func (u UsersWithRequiredFields) Validate() error {
+	for k, v := range u {
+		if validator, ok := any(v).(runtime.Validator); ok {
+			if err := validator.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError(k, err)
+			}
+		}
+	}
+	return nil
+}
+
+type ArrayWithMinItems []string
+
+func (a ArrayWithMinItems) Validate() error {
+	if a == nil {
+		return nil
+	}
+	if len(a) < 1 {
+		return runtime.NewValidationError("", fmt.Sprintf("must have at least 1 items, got %d", len(a)))
+	}
+	if len(a) > 100 {
+		return runtime.NewValidationError("", fmt.Sprintf("must have at most 100 items, got %d", len(a)))
+	}
+	return nil
+}
+
+type Username string
+
+func (u Username) Validate() error {
+	return nil
+}
+
+type UserProfile struct {
+	Name string `json:"name" validate:"required,max=20,min=3"`
+}
+
+func (u UserProfile) Validate() error {
+	return schemaTypesValidate.Struct(u)
+}
+
+type TagsWithLength map[string]string
+
+func (t TagsWithLength) Validate() error {
+	return nil
+}
+
+var unionTypesValidate *validator.Validate
+
+func init() {
+	unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(unionTypesValidate)
+}
 
 type Users_AdditionalProperties struct {
 	Address map[string]any `json:"address,omitempty"`
@@ -212,11 +333,23 @@ type Pick1_AdditionalProperties struct {
 
 func (p Pick1_AdditionalProperties) Validate() error {
 	if p.Pick1_AdditionalProperties_OneOf != nil {
-		if err := p.Pick1_AdditionalProperties_OneOf.Validate(); err != nil {
-			return fmt.Errorf("Pick1_AdditionalProperties_OneOf validation failed: %w", err)
+		if v, ok := any(p.Pick1_AdditionalProperties_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Pick1_AdditionalProperties_OneOf", err)
+			}
 		}
 	}
 	return nil
+}
+
+type UsersWithRequiredFields_AdditionalProperties struct {
+	Name  string `json:"name" validate:"required"`
+	Email string `json:"email" validate:"required"`
+	Age   *int   `json:"age,omitempty"`
+}
+
+func (u UsersWithRequiredFields_AdditionalProperties) Validate() error {
+	return unionTypesValidate.Struct(u)
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {

@@ -3,6 +3,9 @@
 package notprefixed
 
 import (
+	"fmt"
+
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -14,12 +17,39 @@ const (
 	C ProductVariations = "C"
 )
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+// validProductVariationsValues is a map of valid values for ProductVariations
+var validProductVariationsValues = map[ProductVariations]bool{
+	A: true,
+	B: true,
+	C: true,
+}
+
+// Validate checks if the ProductVariations value is valid
+func (p ProductVariations) Validate() error {
+	if !validProductVariationsValues[p] {
+		return runtime.NewValidationError("", fmt.Sprintf("invalid ProductVariations value: %v", p))
+	}
+	return nil
+}
+
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Product struct {
 	Variations *ProductVariations `json:"variations,omitempty"`
 }
 
 func (p Product) Validate() error {
-	return schemaTypesValidate.Struct(p)
+	if p.Variations != nil {
+		if v, ok := any(p.Variations).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Variations", err)
+			}
+		}
+	}
+	return nil
 }

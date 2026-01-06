@@ -45,43 +45,154 @@ type Configuration struct {
 	UserContext   map[string]any    `yaml:"user-context,omitempty"`
 }
 
+// Merge combines two configurations, with the receiver (o) taking priority.
+// Empty fields in o are filled with values from other.
+// This operation is not commutative: a.Merge(b) != b.Merge(a).
+//
+// Deprecated: Use WithDefaults() instead for clearer intent.
 func (o Configuration) Merge(other Configuration) Configuration {
-	def := NewDefaultConfiguration()
+	return o.WithDefaults()
+}
 
-	if o.PackageName == "" && other.PackageName != "" {
+// WithDefaults fills empty fields in the configuration with sensible defaults.
+// The receiver takes priority - only empty/nil fields are filled with defaults from NewDefaultConfiguration().
+func (o Configuration) WithDefaults() Configuration {
+	defaults := NewDefaultConfiguration()
+
+	// Fill simple string fields
+	if o.PackageName == "" {
+		o.PackageName = defaults.PackageName
+	}
+	if o.CopyrightHeader == "" {
+		o.CopyrightHeader = defaults.CopyrightHeader
+	}
+
+	// Fill Output
+	if o.Output == nil {
+		o.Output = defaults.Output
+	} else if defaults.Output != nil {
+		if o.Output.Directory == "" {
+			o.Output.Directory = defaults.Output.Directory
+		}
+		if o.Output.Filename == "" {
+			o.Output.Filename = defaults.Output.Filename
+		}
+	}
+
+	// Fill Generate options
+	if o.Generate == nil {
+		o.Generate = defaults.Generate
+	} else if defaults.Generate != nil {
+		if o.Generate.DefaultIntType == "" {
+			o.Generate.DefaultIntType = defaults.Generate.DefaultIntType
+		}
+	}
+
+	// Fill Client
+	if o.Client == nil {
+		o.Client = defaults.Client
+	} else if defaults.Client != nil {
+		if o.Client.Name == "" {
+			o.Client.Name = defaults.Client.Name
+		}
+		if o.Client.Timeout == 0 {
+			o.Client.Timeout = defaults.Client.Timeout
+		}
+	}
+
+	return o
+}
+
+// OverwriteWith overwrites fields in the configuration with non-empty values from other.
+// The parameter takes priority - non-empty fields from other overwrite the receiver.
+func (o Configuration) OverwriteWith(other Configuration) Configuration {
+	// Overwrite simple string fields
+	if other.PackageName != "" {
 		o.PackageName = other.PackageName
 	}
-	if o.CopyrightHeader == "" && other.CopyrightHeader != "" {
+	if other.CopyrightHeader != "" {
 		o.CopyrightHeader = other.CopyrightHeader
 	}
 
-	if o.Output != nil {
-		if o.Output.Directory == "" {
-			o.Output.Directory = "."
-		}
-		if o.Output.UseSingleFile && o.Output.Filename == "" {
-			o.Output.Filename = "gen.go"
-		}
-	} else {
-		o.Output = other.Output
+	// Overwrite SkipPrune
+	if other.SkipPrune {
+		o.SkipPrune = other.SkipPrune
 	}
 
-	if o.Generate == nil {
-		o.Generate = other.Generate
-		if o.Generate == nil {
-			o.Generate = &GenerateOptions{
-				Client:                 def.Generate.Client,
-				AlwaysPrefixEnumValues: def.Generate.AlwaysPrefixEnumValues,
-				DefaultIntType:         def.Generate.DefaultIntType,
+	// Overwrite Output
+	if other.Output != nil {
+		if o.Output == nil {
+			o.Output = other.Output
+		} else {
+			if other.Output.Directory != "" {
+				o.Output.Directory = other.Output.Directory
+			}
+			if other.Output.Filename != "" {
+				o.Output.Filename = other.Output.Filename
+			}
+			if other.Output.UseSingleFile {
+				o.Output.UseSingleFile = other.Output.UseSingleFile
 			}
 		}
 	}
 
-	if o.Client == nil {
-		o.Client = other.Client
+	// Overwrite Generate options
+	if other.Generate != nil {
+		if o.Generate == nil {
+			o.Generate = other.Generate
+		} else {
+			if other.Generate.Client {
+				o.Generate.Client = other.Generate.Client
+			}
+			if other.Generate.OmitDescription {
+				o.Generate.OmitDescription = other.Generate.OmitDescription
+			}
+			if other.Generate.DefaultIntType != "" {
+				o.Generate.DefaultIntType = other.Generate.DefaultIntType
+			}
+			if other.Generate.AlwaysPrefixEnumValues {
+				o.Generate.AlwaysPrefixEnumValues = other.Generate.AlwaysPrefixEnumValues
+			}
+		}
 	}
-	if o.Client.Name == "" && other.Client.Name != "" {
-		o.Client.Name = other.Client.Name
+
+	// Overwrite Client
+	if other.Client != nil {
+		if o.Client == nil {
+			o.Client = other.Client
+		} else {
+			if other.Client.Name != "" {
+				o.Client.Name = other.Client.Name
+			}
+			if other.Client.Timeout != 0 {
+				o.Client.Timeout = other.Client.Timeout
+			}
+		}
+	}
+
+	// Overwrite Filter
+	if !other.Filter.IsEmpty() {
+		o.Filter = other.Filter
+	}
+
+	// Overwrite AdditionalImports
+	if len(other.AdditionalImports) > 0 {
+		o.AdditionalImports = other.AdditionalImports
+	}
+
+	// Overwrite ErrorMapping
+	if len(other.ErrorMapping) > 0 {
+		o.ErrorMapping = other.ErrorMapping
+	}
+
+	// Overwrite UserTemplates
+	if len(other.UserTemplates) > 0 {
+		o.UserTemplates = other.UserTemplates
+	}
+
+	// Overwrite UserContext
+	if len(other.UserContext) > 0 {
+		o.UserContext = other.UserContext
 	}
 
 	return o
@@ -133,6 +244,10 @@ type GenerateOptions struct {
 
 	// AlwaysPrefixEnumValues specifies whether to always prefix enum values with the schema name. Defaults to true.
 	AlwaysPrefixEnumValues bool `yaml:"always-prefix-enum-values"`
+
+	// ResponseValidators specifies whether to generate Validate() methods for response types.
+	// Useful for contract testing to ensure responses match the OpenAPI spec. Defaults to false.
+	ResponseValidators bool `yaml:"response-validators"`
 }
 
 type Output struct {
@@ -157,6 +272,7 @@ func NewDefaultConfiguration() Configuration {
 		},
 		Output: &Output{
 			UseSingleFile: true,
+			Filename:      "gen.go",
 		},
 		Client: &Client{
 			Name:    "Client",

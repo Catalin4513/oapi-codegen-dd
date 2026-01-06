@@ -10,7 +10,12 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var unionTypesValidate *validator.Validate
+
+func init() {
+	unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(unionTypesValidate)
+}
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
@@ -33,43 +38,6 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
 	}
 
 	return json.Marshal(object)
-}
-
-type GetUserUnion1_Response_OneOf struct {
-	union json.RawMessage
-}
-
-func (g *GetUserUnion1_Response_OneOf) Validate() error {
-	return nil
-}
-
-// Raw returns the union data inside the GetUserUnion1_Response_OneOf as bytes
-func (g *GetUserUnion1_Response_OneOf) Raw() json.RawMessage {
-	return g.union
-}
-
-// AsUser returns the union data inside the GetUserUnion1_Response_OneOf as a User
-func (g *GetUserUnion1_Response_OneOf) AsUser() (User, error) {
-	return UnmarshalAs[User](g.union)
-}
-
-// FromUser overwrites any union data inside the GetUserUnion1_Response_OneOf as the provided User
-func (g *GetUserUnion1_Response_OneOf) FromUser(v User) error {
-	bts, err := json.Marshal(v)
-	g.union = bts
-	return err
-}
-
-func (g GetUserUnion1_Response_OneOf) MarshalJSON() ([]byte, error) {
-	bts, err := g.union.MarshalJSON()
-
-	return bts, err
-}
-
-func (g *GetUserUnion1_Response_OneOf) UnmarshalJSON(bts []byte) error {
-	err := g.union.UnmarshalJSON(bts)
-
-	return err
 }
 
 type GetUserUnion2_Response_OneOf struct {
@@ -109,8 +77,8 @@ func (g *GetUserUnion3_Response_OneOf) AsUser() (User, error) {
 }
 
 // FromUser overwrites any union data inside the GetUserUnion3_Response_OneOf as the provided User
-func (g *GetUserUnion3_Response_OneOf) FromUser(v User) error {
-	bts, err := json.Marshal(v)
+func (g *GetUserUnion3_Response_OneOf) FromUser(val User) error {
+	bts, err := json.Marshal(val)
 	g.union = bts
 	return err
 }
@@ -121,8 +89,8 @@ func (g *GetUserUnion3_Response_OneOf) AsString() (string, error) {
 }
 
 // FromString overwrites any union data inside the GetUserUnion3_Response_OneOf as the provided string
-func (g *GetUserUnion3_Response_OneOf) FromString(v string) error {
-	bts, err := json.Marshal(v)
+func (g *GetUserUnion3_Response_OneOf) FromString(val string) error {
+	bts, err := json.Marshal(val)
 	g.union = bts
 	return err
 }
@@ -133,8 +101,8 @@ func (g *GetUserUnion3_Response_OneOf) AsInt() (int, error) {
 }
 
 // FromInt overwrites any union data inside the GetUserUnion3_Response_OneOf as the provided int
-func (g *GetUserUnion3_Response_OneOf) FromInt(v int) error {
-	bts, err := json.Marshal(v)
+func (g *GetUserUnion3_Response_OneOf) FromInt(val int) error {
+	bts, err := json.Marshal(val)
 	g.union = bts
 	return err
 }

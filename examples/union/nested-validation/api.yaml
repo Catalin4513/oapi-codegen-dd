@@ -1,0 +1,88 @@
+openapi: 3.0.0
+info:
+  title: Nested Union Validation Example
+  version: 1.0.0
+paths:
+  /points:
+    post:
+      operationId: createPoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PointRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  schemas:
+    PointRequest:
+      type: object
+      required:
+        - location
+      properties:
+        location:
+          $ref: '#/components/schemas/PointRequest_OneOf'
+
+    PointRequest_OneOf:
+      oneOf:
+        - $ref: '#/components/schemas/TimeBasedLocation'
+        - $ref: '#/components/schemas/DistanceBasedLocation'
+
+    TimeBasedLocation:
+      type: object
+      required:
+        - time
+      properties:
+        time:
+          $ref: '#/components/schemas/TimeInterval'
+
+    DistanceBasedLocation:
+      type: object
+      required:
+        - distance
+      properties:
+        distance:
+          type: number
+          minimum: 0
+
+    TimeInterval:
+      type: object
+      required:
+        - interval
+      properties:
+        interval:
+          $ref: '#/components/schemas/TimeIntervalType'
+
+    TimeIntervalType:
+      oneOf:
+        - $ref: '#/components/schemas/AbsoluteTimeRange'
+        - $ref: '#/components/schemas/RelativeTimeDuration'
+
+    AbsoluteTimeRange:
+      type: object
+      required:
+        - start
+        - end
+      properties:
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+
+    RelativeTimeDuration:
+      type: object
+      required:
+        - duration
+      properties:
+        duration:
+          type: integer
+          minimum: 2

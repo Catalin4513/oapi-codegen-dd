@@ -20,9 +20,29 @@ const (
 	ClientAndMaybeIdentityTypeIdentity     ClientAndMaybeIdentityType = "identity"
 )
 
+// validClientAndMaybeIdentityTypeValues is a map of valid values for ClientAndMaybeIdentityType
+var validClientAndMaybeIdentityTypeValues = map[ClientAndMaybeIdentityType]bool{
+	ClientAndMaybeIdentityTypeClient:       true,
+	ClientAndMaybeIdentityTypeClientWithID: true,
+	ClientAndMaybeIdentityTypeIdentity:     true,
+}
+
+// Validate checks if the ClientAndMaybeIdentityType value is valid
+func (c ClientAndMaybeIdentityType) Validate() error {
+	if !validClientAndMaybeIdentityTypeValues[c] {
+		return runtime.NewValidationError("", fmt.Sprintf("invalid ClientAndMaybeIdentityType value: %v", c))
+	}
+	return nil
+}
+
 type GetFooResponse = map[string]any
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Client struct {
 	Name string `json:"name" validate:"required"`
@@ -46,7 +66,19 @@ type ClientAndMaybeIdentity struct {
 }
 
 func (c ClientAndMaybeIdentity) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if c.Entity != nil {
+		if v, ok := any(c.Entity).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Entity", err)
+			}
+		}
+	}
+	if v, ok := any(c.Type).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			return runtime.NewValidationErrorFromError("Type", err)
+		}
+	}
+	return nil
 }
 
 type ClientAndMaybeIdentity_Entity struct {
@@ -55,8 +87,10 @@ type ClientAndMaybeIdentity_Entity struct {
 
 func (c ClientAndMaybeIdentity_Entity) Validate() error {
 	if c.ClientAndMaybeIdentity_Entity_AnyOf != nil {
-		if err := c.ClientAndMaybeIdentity_Entity_AnyOf.Validate(); err != nil {
-			return fmt.Errorf("ClientAndMaybeIdentity_Entity_AnyOf validation failed: %w", err)
+		if v, ok := any(c.ClientAndMaybeIdentity_Entity_AnyOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("ClientAndMaybeIdentity_Entity_AnyOf", err)
+			}
 		}
 	}
 	return nil
@@ -102,8 +136,10 @@ type ClientOrID struct {
 
 func (c ClientOrID) Validate() error {
 	if c.ClientOrID_OneOf != nil {
-		if err := c.ClientOrID_OneOf.Validate(); err != nil {
-			return fmt.Errorf("ClientOrID_OneOf validation failed: %w", err)
+		if v, ok := any(c.ClientOrID_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("ClientOrID_OneOf", err)
+			}
 		}
 	}
 	return nil
@@ -149,8 +185,10 @@ type ClientOrIdentityWithDiscriminator struct {
 
 func (c ClientOrIdentityWithDiscriminator) Validate() error {
 	if c.ClientOrIdentityWithDiscriminator_OneOf != nil {
-		if err := c.ClientOrIdentityWithDiscriminator_OneOf.Validate(); err != nil {
-			return fmt.Errorf("ClientOrIdentityWithDiscriminator_OneOf validation failed: %w", err)
+		if v, ok := any(c.ClientOrIdentityWithDiscriminator_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("ClientOrIdentityWithDiscriminator_OneOf", err)
+			}
 		}
 	}
 	return nil
@@ -190,7 +228,12 @@ func (c *ClientOrIdentityWithDiscriminator) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var unionTypesValidate *validator.Validate
+
+func init() {
+	unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(unionTypesValidate)
+}
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T

@@ -13,14 +13,26 @@ import (
 
 type GetFooResponse = map[string]any
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Order struct {
 	Product *Order_Product1 `json:"product,omitempty"`
 }
 
 func (o Order) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if o.Product != nil {
+		if v, ok := any(o.Product).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Product", err)
+			}
+		}
+	}
+	return nil
 }
 
 type Order_Product1 struct {
@@ -30,12 +42,16 @@ type Order_Product1 struct {
 
 func (o Order_Product1) Validate() error {
 	if o.Order_Product_AllOf0 != nil {
-		if err := o.Order_Product_AllOf0.Validate(); err != nil {
-			return fmt.Errorf("Order_Product_AllOf0 validation failed: %w", err)
+		if v, ok := any(o.Order_Product_AllOf0).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Order_Product_AllOf0", err)
+			}
 		}
 	}
-	if err := o.Base.Validate(); err != nil {
-		return fmt.Errorf("Base validation failed: %w", err)
+	if v, ok := any(o.Base).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			return runtime.NewValidationErrorFromError("Base", err)
+		}
 	}
 	return nil
 }
@@ -110,7 +126,12 @@ func (v VariantB) Validate() error {
 	return schemaTypesValidate.Struct(v)
 }
 
-var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var unionTypesValidate *validator.Validate
+
+func init() {
+	unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(unionTypesValidate)
+}
 
 type Order_Product struct {
 	Order_Product_AllOf0 *Order_Product_AllOf0 `json:"-"`
@@ -119,12 +140,16 @@ type Order_Product struct {
 
 func (o Order_Product) Validate() error {
 	if o.Order_Product_AllOf0 != nil {
-		if err := o.Order_Product_AllOf0.Validate(); err != nil {
-			return fmt.Errorf("Order_Product_AllOf0 validation failed: %w", err)
+		if v, ok := any(o.Order_Product_AllOf0).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Order_Product_AllOf0", err)
+			}
 		}
 	}
-	if err := o.Base.Validate(); err != nil {
-		return fmt.Errorf("Base validation failed: %w", err)
+	if v, ok := any(o.Base).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			return runtime.NewValidationErrorFromError("Base", err)
+		}
 	}
 	return nil
 }
@@ -181,8 +206,10 @@ type Order_Product_AllOf0 struct {
 
 func (o Order_Product_AllOf0) Validate() error {
 	if o.Order_Product_AllOf0_AnyOf != nil {
-		if err := o.Order_Product_AllOf0_AnyOf.Validate(); err != nil {
-			return fmt.Errorf("Order_Product_AllOf0_AnyOf validation failed: %w", err)
+		if v, ok := any(o.Order_Product_AllOf0_AnyOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Order_Product_AllOf0_AnyOf", err)
+			}
 		}
 	}
 	return nil

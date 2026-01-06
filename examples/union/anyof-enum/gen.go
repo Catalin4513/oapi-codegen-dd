@@ -19,16 +19,43 @@ const (
 	RenderingOptionsAnyOf0AmountTaxDisplayIncludeInclusiveTax RenderingOptionsAnyOf0AmountTaxDisplay = "include_inclusive_tax"
 )
 
+// validRenderingOptionsAnyOf0AmountTaxDisplayValues is a map of valid values for RenderingOptionsAnyOf0AmountTaxDisplay
+var validRenderingOptionsAnyOf0AmountTaxDisplayValues = map[RenderingOptionsAnyOf0AmountTaxDisplay]bool{
+	RenderingOptionsAnyOf0AmountTaxDisplayEmpty:               true,
+	RenderingOptionsAnyOf0AmountTaxDisplayExcludeTax:          true,
+	RenderingOptionsAnyOf0AmountTaxDisplayIncludeInclusiveTax: true,
+}
+
+// Validate checks if the RenderingOptionsAnyOf0AmountTaxDisplay value is valid
+func (r RenderingOptionsAnyOf0AmountTaxDisplay) Validate() error {
+	if !validRenderingOptionsAnyOf0AmountTaxDisplayValues[r] {
+		return runtime.NewValidationError("", fmt.Sprintf("invalid RenderingOptionsAnyOf0AmountTaxDisplay value: %v", r))
+	}
+	return nil
+}
+
 type GetFooResponse = map[string]any
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Rendering struct {
 	Options *Rendering_Options `json:"options,omitempty"`
 }
 
 func (r Rendering) Validate() error {
-	return schemaTypesValidate.Struct(r)
+	if r.Options != nil {
+		if v, ok := any(r.Options).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Options", err)
+			}
+		}
+	}
+	return nil
 }
 
 type Rendering_Options struct {
@@ -37,8 +64,10 @@ type Rendering_Options struct {
 
 func (r Rendering_Options) Validate() error {
 	if r.Rendering_Options_AnyOf != nil {
-		if err := r.Rendering_Options_AnyOf.Validate(); err != nil {
-			return fmt.Errorf("Rendering_Options_AnyOf validation failed: %w", err)
+		if v, ok := any(r.Rendering_Options_AnyOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Rendering_Options_AnyOf", err)
+			}
 		}
 	}
 	return nil
@@ -78,7 +107,12 @@ func (r *Rendering_Options) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var unionTypesValidate *validator.Validate
+
+func init() {
+	unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(unionTypesValidate)
+}
 
 type Rendering_Options_AnyOf_0 struct {
 	AmountTaxDisplay *RenderingOptionsAnyOf0AmountTaxDisplay `json:"amount_tax_display,omitempty"`
@@ -86,7 +120,19 @@ type Rendering_Options_AnyOf_0 struct {
 }
 
 func (r Rendering_Options_AnyOf_0) Validate() error {
-	return unionTypesValidate.Struct(r)
+	if r.AmountTaxDisplay != nil {
+		if v, ok := any(r.AmountTaxDisplay).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("AmountTaxDisplay", err)
+			}
+		}
+	}
+	if r.Template != nil {
+		if err := unionTypesValidate.Var(r.Template, "omitempty,max=5000"); err != nil {
+			return runtime.NewValidationErrorFromError("Template", err)
+		}
+	}
+	return nil
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {

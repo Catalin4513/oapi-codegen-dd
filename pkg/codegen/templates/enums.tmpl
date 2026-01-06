@@ -18,6 +18,7 @@ limitations under the License.
 
 {{- $root := . }}
 {{range $Enum := .Enums}}
+  {{- $alias := $Enum.Name | fst | lower }}
   {{- if and $Enum.Schema.Description (not $root.Config.Generate.OmitDescription)}}{{ toGoComment $Enum.Schema.Description $Enum.Name }}{{- end}}
     type {{$Enum.Name}} {{$Enum.Schema.GoType}}
     const (
@@ -28,4 +29,19 @@ limitations under the License.
         {{$safeName}} {{$Enum.Name}} = {{$Enum.ValueWrapper}}{{$value}}{{$Enum.ValueWrapper}}
       {{- end}}
     )
+
+    // valid{{$Enum.Name}}Values is a map of valid values for {{$Enum.Name}}
+    var valid{{$Enum.Name}}Values = map[{{$Enum.Name}}]bool{
+      {{- range $safeName := $safeNames}}
+        {{$safeName}}: true,
+      {{- end}}
+    }
+
+    // Validate checks if the {{$Enum.Name}} value is valid
+    func ({{$alias}} {{$Enum.Name}}) Validate() error {
+        if !valid{{$Enum.Name}}Values[{{$alias}}] {
+            return runtime.NewValidationError("", fmt.Sprintf("invalid {{$Enum.Name}} value: %v", {{$alias}}))
+        }
+        return nil
+    }
 {{end}}

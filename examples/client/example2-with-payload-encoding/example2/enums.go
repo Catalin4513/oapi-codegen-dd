@@ -2,9 +2,29 @@
 
 package example2
 
+import (
+	"fmt"
+
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
+)
+
 type ClientTypeType string
 
 const (
 	Company    ClientTypeType = "company"
 	Individual ClientTypeType = "individual"
 )
+
+// validClientTypeTypeValues is a map of valid values for ClientTypeType
+var validClientTypeTypeValues = map[ClientTypeType]bool{
+	Company:    true,
+	Individual: true,
+}
+
+// Validate checks if the ClientTypeType value is valid
+func (c ClientTypeType) Validate() error {
+	if !validClientTypeTypeValues[c] {
+		return runtime.NewValidationError("", fmt.Sprintf("invalid ClientTypeType value: %v", c))
+	}
+	return nil
+}

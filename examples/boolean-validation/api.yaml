@@ -1,0 +1,77 @@
+openapi: "3.1.0"
+info:
+  version: 1.0.0
+  title: Boolean Validation Test
+paths:
+  /users:
+    post:
+      summary: Create a user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /billing/portal/configurations/{configuration}:
+    post:
+      operationId: postBillingPortalConfigurationsConfiguration
+      summary: Test nested boolean validation
+      parameters:
+        - name: configuration
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - features
+                properties:
+                  features:
+                    $ref: '#/components/schemas/PortalFeatures'
+
+components:
+  schemas:
+    User:
+      type: object
+      required:
+        - name
+        - active
+      properties:
+        name:
+          type: string
+        active:
+          type: boolean
+          description: Whether the user is active
+        verified:
+          type: boolean
+          description: Optional boolean field
+
+    PortalFeatures:
+      type: object
+      required:
+        - invoice_history
+      properties:
+        invoice_history:
+          $ref: '#/components/schemas/PortalInvoiceList'
+
+    PortalInvoiceList:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+          description: Whether invoice history is enabled

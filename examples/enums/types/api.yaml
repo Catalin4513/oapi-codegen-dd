@@ -1,0 +1,55 @@
+openapi: 3.0.0
+info:
+  title: Enum Types
+  description: Test different enum types (string, int, number)
+  version: 1.0.0
+
+paths:
+components:
+  schemas:
+    StatusCode:
+      type: integer
+      enum:
+        - 200
+        - 404
+        - 500
+
+    Priority:
+      type: number
+      enum:
+        - 1.0
+        - 2.5
+        - 5.0
+
+    Color:
+      type: string
+      enum:
+        - red
+        - green
+        - blue
+
+    TestObject:
+      type: object
+      required:
+        - color
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusCode'
+        priority:
+          $ref: '#/components/schemas/Priority'
+        color:
+          $ref: '#/components/schemas/Color'
+
+    TestObjectRequired:
+      type: object
+      required:
+        - status
+        - priority
+        - color
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusCode'
+        priority:
+          $ref: '#/components/schemas/Priority'
+        color:
+          $ref: '#/components/schemas/Color'

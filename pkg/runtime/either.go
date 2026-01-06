@@ -17,8 +17,8 @@ import (
 )
 
 type Either[A, B any] struct {
-	A A
-	B B
+	A A `validate:"-"`
+	B B `validate:"-"`
 
 	N int
 }
@@ -92,8 +92,29 @@ func (t *Either[A, B]) UnmarshalJSON(data []byte) error {
 		return nil
 
 	case errA == nil:
-		// Both decoded; apply zero/meaningfulness heuristics, then tie-break to A.
+		// Both decoded; try validation first to disambiguate
+		var errValidateA, errValidateB error
+		if v, ok := any(a).(Validator); ok {
+			errValidateA = v.Validate()
+		}
+		if v, ok := any(b).(Validator); ok {
+			errValidateB = v.Validate()
+		}
 
+		// Prefer the one that validates successfully
+		if errValidateA == nil && errValidateB != nil {
+			var zeroB B
+			t.A, t.B, t.N = a, zeroB, 1
+			return nil
+		}
+		if errValidateB == nil && errValidateA != nil {
+			var zeroA A
+			t.A, t.B, t.N = zeroA, b, 2
+			return nil
+		}
+
+		// If validation doesn't help (both validate or both fail),
+		// apply zero/meaningfulness heuristics, then tie-break to A.
 		na := isNonZero(a)
 		nb := isNonZero(b)
 
@@ -116,14 +137,8 @@ func (t *Either[A, B]) UnmarshalJSON(data []byte) error {
 			return nil
 		}
 	default:
-		// Neither decoded
 		return ErrFailedToUnmarshalAsAOrB
 	}
-}
-
-// Validator is an interface for types that can be validated
-type Validator interface {
-	Validate() error
 }
 
 func (t *Either[A, B]) Validate() error {

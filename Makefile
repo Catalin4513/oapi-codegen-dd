@@ -68,7 +68,9 @@ fetch-specs:
 	find ./pkg/codegen/integration/testdata/specs -mindepth 1 -name ".*" -exec rm -rf {} +
 
 test-integration: fetch-specs
-	go test -v -tags=integration ./pkg/codegen/integration/...
+	@echo "Running integration tests..."
+	@go test -v -tags=integration ./pkg/codegen/integration/... || \
+		(echo ""; echo "❌ Integration tests failed. Check the output above for details."; exit 1)
 
 check-all: generate lint test test-integration
 	@if [ -n "$$(git status --porcelain)" ]; then \

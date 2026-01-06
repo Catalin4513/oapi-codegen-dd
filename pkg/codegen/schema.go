@@ -75,8 +75,194 @@ func (s GoSchema) IsZero() bool {
 	return s.TypeDecl() == ""
 }
 
+// IsAnyType returns true if the schema represents the 'any' type or an array of 'any'.
+// These types don't need validation methods since they accept any value.
+func (s GoSchema) IsAnyType() bool {
+	typeDecl := s.TypeDecl()
+	return typeDecl == "any" || typeDecl == "[]any"
+}
+
 func (s GoSchema) GetAdditionalTypeDefs() []TypeDefinition {
 	return s.AdditionalTypes
+}
+
+// ValidateDecl generates the body of the Validate() method for this schema.
+// It returns the Go code that should appear inside the Validate() method.
+// The alias parameter is the receiver variable name (e.g., "p" for "func (p Person) Validate()").
+// The validatorVar parameter is the name of the validator variable to use (e.g., "bodyTypesValidate").
+func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
+	var lines []string
+
+	// Handle array types
+	if s.ArrayType != nil {
+		hasConstraints := s.Constraints.MinItems != nil || s.Constraints.MaxItems != nil
+
+		// If nullable and has constraints, check for nil first
+		if s.Constraints.Nullable != nil && *s.Constraints.Nullable && hasConstraints {
+			lines = append(lines, fmt.Sprintf("if %s == nil {", alias))
+			lines = append(lines, "    return nil")
+			lines = append(lines, "}")
+		}
+
+		// Check MinItems constraint
+		if s.Constraints.MinItems != nil {
+			lines = append(lines, fmt.Sprintf("if len(%s) < %d {", alias, *s.Constraints.MinItems))
+			lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at least %d items, got %%d\", len(%s)))", *s.Constraints.MinItems, alias))
+			lines = append(lines, "}")
+		}
+		// Check MaxItems constraint
+		if s.Constraints.MaxItems != nil {
+			lines = append(lines, fmt.Sprintf("if len(%s) > %d {", alias, *s.Constraints.MaxItems))
+			lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at most %d items, got %%d\", len(%s)))", *s.Constraints.MaxItems, alias))
+			lines = append(lines, "}")
+		}
+		// Validate array items if they have constraints or are custom types
+		needsItemValidation := false
+		if s.ArrayType.RefType != "" && !s.ArrayType.IsExternalRef() {
+			needsItemValidation = true
+		} else if len(s.ArrayType.Constraints.ValidationTags) > 0 {
+			needsItemValidation = true
+		}
+
+		if needsItemValidation {
+			lines = append(lines, "for i, item := range "+alias+" {")
+
+			// If items have a Validate() method, call it
+			if s.ArrayType.RefType != "" && !s.ArrayType.IsExternalRef() {
+				lines = append(lines, "    if v, ok := any(item).(runtime.Validator); ok {")
+				lines = append(lines, "        if err := v.Validate(); err != nil {")
+				lines = append(lines, "            return runtime.NewValidationErrorFromError(fmt.Sprintf(\"[%d]\", i), err)")
+				lines = append(lines, "        }")
+				lines = append(lines, "    }")
+			} else if len(s.ArrayType.Constraints.ValidationTags) > 0 {
+				// Otherwise use validator tags
+				tags := strings.Join(s.ArrayType.Constraints.ValidationTags, ",")
+				lines = append(lines, fmt.Sprintf("    if err := %s.Var(item, \"%s\"); err != nil {", validatorVar, tags))
+				lines = append(lines, "        return runtime.NewValidationErrorFromError(fmt.Sprintf(\"[%d]\", i), err)")
+				lines = append(lines, "    }")
+			}
+
+			lines = append(lines, "}")
+		}
+		lines = append(lines, "return nil")
+		return strings.Join(lines, "\n")
+	}
+
+	// If this schema has a RefType set, it means it's a reference to another type
+	// In this case, we should delegate validation to the underlying type
+	if s.RefType != "" && !s.IsExternalRef() {
+		// Cast to the underlying type to avoid infinite recursion
+		// (the current type might implement Validator itself)
+		return fmt.Sprintf("if val, ok := any(%s(%s)).(runtime.Validator); ok {\n    return val.Validate()\n}\nreturn nil", s.RefType, alias)
+	}
+
+	// If this schema has properties but GoType is a reference to another type
+	// (not a struct/map/slice), delegate to the underlying type
+	typeDecl := s.TypeDecl()
+	if len(s.Properties) > 0 && !strings.HasPrefix(typeDecl, "struct") &&
+		!strings.HasPrefix(typeDecl, "map[") && !strings.HasPrefix(typeDecl, "[]") {
+		// This is a type definition like "type X Y" where Y is another type
+		// Cast to the underlying type to avoid infinite recursion
+		return fmt.Sprintf("if val, ok := any(%s(%s)).(runtime.Validator); ok {\n    return val.Validate()\n}\nreturn nil", typeDecl, alias)
+	}
+
+	// Check if any property needs custom validation
+	hasCustomValidation := false
+	for _, prop := range s.Properties {
+		if prop.needsCustomValidation() {
+			hasCustomValidation = true
+			break
+		}
+	}
+
+	// If no custom validation needed
+	if !hasCustomValidation {
+		typeDecl := s.TypeDecl()
+
+		// Handle map types (from additionalProperties)
+		if strings.HasPrefix(typeDecl, "map[") {
+			hasConstraints := s.Constraints.MinProperties != nil || s.Constraints.MaxProperties != nil
+
+			// If nullable and has constraints, check for nil first
+			if s.Constraints.Nullable != nil && *s.Constraints.Nullable && hasConstraints {
+				lines = append(lines, fmt.Sprintf("if %s == nil {", alias))
+				lines = append(lines, "    return nil")
+				lines = append(lines, "}")
+			}
+
+			// Check MinProperties constraint
+			if s.Constraints.MinProperties != nil {
+				lines = append(lines, fmt.Sprintf("if len(%s) < %d {", alias, *s.Constraints.MinProperties))
+				lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at least %d properties, got %%d\", len(%s)))", *s.Constraints.MinProperties, alias))
+				lines = append(lines, "}")
+			}
+			// Check MaxProperties constraint
+			if s.Constraints.MaxProperties != nil {
+				lines = append(lines, fmt.Sprintf("if len(%s) > %d {", alias, *s.Constraints.MaxProperties))
+				lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at most %d properties, got %%d\", len(%s)))", *s.Constraints.MaxProperties, alias))
+				lines = append(lines, "}")
+			}
+			// Validate each value if it implements Validator
+			if s.AdditionalPropertiesType != nil && s.AdditionalPropertiesType.RefType != "" && !s.AdditionalPropertiesType.IsExternalRef() {
+				lines = append(lines, "for k, v := range "+alias+" {")
+				lines = append(lines, "    if validator, ok := any(v).(runtime.Validator); ok {")
+				lines = append(lines, "        if err := validator.Validate(); err != nil {")
+				lines = append(lines, "            return runtime.NewValidationErrorFromError(k, err)")
+				lines = append(lines, "        }")
+				lines = append(lines, "    }")
+				lines = append(lines, "}")
+			}
+			lines = append(lines, "return nil")
+			return strings.Join(lines, "\n")
+		}
+
+		// For other non-struct types (slices, primitives), there's nothing to validate structurally
+		if strings.HasPrefix(typeDecl, "[]") || len(s.Properties) == 0 {
+			return "return nil"
+		}
+
+		// For struct types, use validator.Struct()
+		return fmt.Sprintf("return %s.Struct(%s)", validatorVar, alias)
+	}
+
+	// Generate custom validation for each property
+	for _, prop := range s.Properties {
+		if prop.needsCustomValidation() {
+			// Property needs custom validation - call Validate() method
+			if prop.IsPointerType() {
+				lines = append(lines, fmt.Sprintf("if %s.%s != nil {", alias, prop.GoName))
+				lines = append(lines, fmt.Sprintf("    if v, ok := any(%s.%s).(runtime.Validator); ok {", alias, prop.GoName))
+				lines = append(lines, "        if err := v.Validate(); err != nil {")
+				lines = append(lines, fmt.Sprintf("            return runtime.NewValidationErrorFromError(\"%s\", err)", prop.GoName))
+				lines = append(lines, "        }")
+				lines = append(lines, "    }")
+				lines = append(lines, "}")
+			} else {
+				lines = append(lines, fmt.Sprintf("if v, ok := any(%s.%s).(runtime.Validator); ok {", alias, prop.GoName))
+				lines = append(lines, "    if err := v.Validate(); err != nil {")
+				lines = append(lines, fmt.Sprintf("        return runtime.NewValidationErrorFromError(\"%s\", err)", prop.GoName))
+				lines = append(lines, "    }")
+				lines = append(lines, "}")
+			}
+		} else if len(prop.Constraints.ValidationTags) > 0 {
+			// Property with validation tags - use Var()
+			tags := strings.Join(prop.Constraints.ValidationTags, ",")
+			if prop.IsPointerType() {
+				lines = append(lines, fmt.Sprintf("if %s.%s != nil {", alias, prop.GoName))
+				lines = append(lines, fmt.Sprintf("    if err := %s.Var(%s.%s, \"%s\"); err != nil {", validatorVar, alias, prop.GoName, tags))
+				lines = append(lines, fmt.Sprintf("        return runtime.NewValidationErrorFromError(\"%s\", err)", prop.GoName))
+				lines = append(lines, "    }")
+				lines = append(lines, "}")
+			} else {
+				lines = append(lines, fmt.Sprintf("if err := %s.Var(%s.%s, \"%s\"); err != nil {", validatorVar, alias, prop.GoName, tags))
+				lines = append(lines, fmt.Sprintf("        return runtime.NewValidationErrorFromError(\"%s\", err)", prop.GoName))
+				lines = append(lines, "}")
+			}
+		}
+	}
+
+	lines = append(lines, "return nil")
+	return strings.Join(lines, "\n")
 }
 
 func (s GoSchema) createGoStruct(fields []string) string {
@@ -160,6 +346,12 @@ func GenerateGoSchema(schemaProxy *base.SchemaProxy, options ParseOptions) (GoSc
 	merged, err = createFromCombinator(schema, options)
 	if err != nil {
 		return GoSchema{}, err
+	}
+
+	// If the combinator (allOf/anyOf/oneOf) resulted in a complete schema, return it directly
+	// This handles cases like allOf with a description-only schema and a $ref
+	if !merged.IsZero() && merged.DefineViaAlias {
+		return merged, nil
 	}
 
 	extensions := extractExtensions(schema.Extensions)
@@ -248,7 +440,7 @@ func schemaHasAdditionalProperties(schema *base.Schema) bool {
 		return false
 	}
 
-	if schema.AdditionalProperties.IsA() && schema.AdditionalProperties.A != nil {
+	if schema.AdditionalProperties.IsA() {
 		return true
 	}
 
@@ -270,29 +462,34 @@ func replaceInlineTypes(src GoSchema, options ParseOptions) (GoSchema, string) {
 		baseName = pathToTypeName(options.path)
 		name = baseName
 	}
+
 	if _, exists := currentTypes[baseName]; exists {
 		name = generateTypeName(currentTypes, baseName, options.nameSuffixes)
 	}
 
-	goType := name
-	if src.ArrayType != nil {
-		goType = "[]" + goType
-		src.GoType = strings.TrimPrefix(src.GoType, "[]")
-		src.ArrayType = nil
+	isArrayType := src.ArrayType != nil
+
+	// Calculate if this type needs a custom marshaler
+	// For array type definitions like "type Foo []Bar", don't generate marshalers
+	// Arrays handle marshaling automatically
+	needsMarshal := needsMarshaler(src)
+	if isArrayType {
+		// This is an array type definition like "type Foo []Bar"
+		// Don't generate marshalers - arrays handle marshaling automatically
+		needsMarshal = false
 	}
 
 	td := TypeDefinition{
 		Name:           name,
 		Schema:         src,
 		SpecLocation:   SpecLocationSchema,
-		NeedsMarshaler: needsMarshaler(src),
+		NeedsMarshaler: needsMarshal,
 		JsonName:       "-",
 	}
 	options.AddType(td)
 
 	return GoSchema{
-		GoType:          goType,
-		RefType:         goType,
+		RefType:         name,
 		AdditionalTypes: []TypeDefinition{td},
 	}, name
 }

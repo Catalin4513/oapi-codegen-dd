@@ -120,7 +120,7 @@ func TestNumericSchemaNames(t *testing.T) {
 
 	// Check that nested types with numeric parent schemas are also prefixed
 	// Array items with properties generate TypeName_Item pattern
-	assert.Contains(t, code, "type N400_Issues N400_Issues_Item")
+	assert.Contains(t, code, "type N400_Issues []N400_Issues_Item")
 	assert.Contains(t, code, "type N400_Issues_Item struct")
 	assert.NotContains(t, code, "type 400_Issues") // Should NOT have unprefixed version
 	assert.NotContains(t, code, "[]400_Issues")    // Should NOT have unprefixed array type

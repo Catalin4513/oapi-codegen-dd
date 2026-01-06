@@ -7,12 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetFiles_Response_Validate(t *testing.T) {
+func TestGetFiles_Response_Item_Validate(t *testing.T) {
 	t.Run("has first value", func(t *testing.T) {
 		a := runtime.NewEitherFromA[string, File]("foo")
 
-		res := &GetFiles_Response{
-			GetFiles_Response_OneOf: &GetFiles_Response_OneOf{a},
+		res := &GetFiles_Response_Item{
+			GetFiles_Response_OneOf: &GetFiles_Response_OneOf{Either: a},
 		}
 		err := res.Validate()
 		if err != nil {
@@ -25,13 +25,13 @@ func TestGetFiles_Response_Validate(t *testing.T) {
 		file := File{
 			ID:      "file-123",
 			Object:  "file",
-			Purpose: "assistants",
+			Purpose: "account_requirement",
 			Size:    1024,
 		}
 		b := runtime.NewEitherFromB[string, File](file)
 
-		res := &GetFiles_Response{
-			GetFiles_Response_OneOf: &GetFiles_Response_OneOf{b},
+		res := &GetFiles_Response_Item{
+			GetFiles_Response_OneOf: &GetFiles_Response_OneOf{Either: b},
 		}
 		err := res.Validate()
 		assert.Nil(t, err)
@@ -45,8 +45,8 @@ func TestGetFiles_Response_Validate(t *testing.T) {
 		}
 		b := runtime.NewEitherFromB[string, File](file)
 
-		res := &GetFiles_Response{
-			GetFiles_Response_OneOf: &GetFiles_Response_OneOf{b},
+		res := &GetFiles_Response_Item{
+			GetFiles_Response_OneOf: &GetFiles_Response_OneOf{Either: b},
 		}
 		err := res.Validate()
 		assert.NotNil(t, err)

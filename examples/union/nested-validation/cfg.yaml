@@ -1,0 +1,3 @@
+package: nested
+skip-prune: true
+

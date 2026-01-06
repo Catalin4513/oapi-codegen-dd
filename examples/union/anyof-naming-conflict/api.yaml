@@ -1,0 +1,61 @@
+openapi: 3.0.0
+info:
+  title: AnyOf Naming Conflict Test
+  version: 1.0.0
+paths:
+  /test:
+    post:
+      operationId: test
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      anyOf:
+                        - $ref: '#/components/schemas/TypeA'
+                        - $ref: '#/components/schemas/TypeB'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      anyOf:
+                        - $ref: '#/components/schemas/TypeA'
+                        - $ref: '#/components/schemas/TypeB'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      anyOf:
+                        - $ref: '#/components/schemas/TypeA'
+                        - $ref: '#/components/schemas/TypeB'
+
+components:
+  schemas:
+    TypeA:
+      type: object
+      properties:
+        a:
+          type: string
+    TypeB:
+      type: object
+      properties:
+        b:
+          type: integer

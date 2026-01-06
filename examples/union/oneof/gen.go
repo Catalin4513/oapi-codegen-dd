@@ -11,16 +11,42 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Order struct {
 	Product     *Order_Product     `json:"product,omitempty"`
 	Description *Order_Description `json:"description,omitempty"`
-	Images      []Order_Images     `json:"images,omitempty"`
+	Images      *Order_Images      `json:"images,omitempty"`
 }
 
 func (o Order) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if o.Product != nil {
+		if v, ok := any(o.Product).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Product", err)
+			}
+		}
+	}
+	if o.Description != nil {
+		if v, ok := any(o.Description).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Description", err)
+			}
+		}
+	}
+	if o.Images != nil {
+		if v, ok := any(o.Images).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Images", err)
+			}
+		}
+	}
+	return nil
 }
 
 type Order_Product struct {
@@ -29,8 +55,10 @@ type Order_Product struct {
 
 func (o Order_Product) Validate() error {
 	if o.Order_Product_OneOf != nil {
-		if err := o.Order_Product_OneOf.Validate(); err != nil {
-			return fmt.Errorf("Order_Product_OneOf validation failed: %w", err)
+		if v, ok := any(o.Order_Product_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Order_Product_OneOf", err)
+			}
 		}
 	}
 	return nil
@@ -76,8 +104,10 @@ type Order_Product_OneOf_3_Description struct {
 
 func (o Order_Product_OneOf_3_Description) Validate() error {
 	if o.Order_Product_OneOf_3_Description_OneOf != nil {
-		if err := o.Order_Product_OneOf_3_Description_OneOf.Validate(); err != nil {
-			return fmt.Errorf("Order_Product_OneOf_3_Description_OneOf validation failed: %w", err)
+		if v, ok := any(o.Order_Product_OneOf_3_Description_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Order_Product_OneOf_3_Description_OneOf", err)
+			}
 		}
 	}
 	return nil
@@ -123,8 +153,10 @@ type Order_Description struct {
 
 func (o Order_Description) Validate() error {
 	if o.Order_Description_OneOf != nil {
-		if err := o.Order_Description_OneOf.Validate(); err != nil {
-			return fmt.Errorf("Order_Description_OneOf validation failed: %w", err)
+		if v, ok := any(o.Order_Description_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Order_Description_OneOf", err)
+			}
 		}
 	}
 	return nil
@@ -164,18 +196,35 @@ func (o *Order_Description) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type Order_Images Order_Images_Item
+type Order_Images []Order_Images_Item
 
 func (o Order_Images) Validate() error {
-	if o.Order_Images_OneOf != nil {
-		if err := o.Order_Images_OneOf.Validate(); err != nil {
-			return fmt.Errorf("Order_Images_OneOf validation failed: %w", err)
+	for i, item := range o {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+			}
 		}
 	}
 	return nil
 }
 
-func (o Order_Images) MarshalJSON() ([]byte, error) {
+type Order_Images_Item struct {
+	Order_Images_OneOf *Order_Images_OneOf `json:"-"`
+}
+
+func (o Order_Images_Item) Validate() error {
+	if o.Order_Images_OneOf != nil {
+		if v, ok := any(o.Order_Images_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Order_Images_OneOf", err)
+			}
+		}
+	}
+	return nil
+}
+
+func (o Order_Images_Item) MarshalJSON() ([]byte, error) {
 	var parts []json.RawMessage
 
 	{
@@ -189,7 +238,7 @@ func (o Order_Images) MarshalJSON() ([]byte, error) {
 	return runtime.CoalesceOrMerge(parts...)
 }
 
-func (o *Order_Images) UnmarshalJSON(data []byte) error {
+func (o *Order_Images_Item) UnmarshalJSON(data []byte) error {
 	trim := bytes.TrimSpace(data)
 	if bytes.Equal(trim, []byte("null")) {
 		return nil
@@ -209,19 +258,6 @@ func (o *Order_Images) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type Order_Images_Item struct {
-	Order_Images_OneOf *Order_Images_OneOf `json:"-"`
-}
-
-func (o Order_Images_Item) Validate() error {
-	if o.Order_Images_OneOf != nil {
-		if err := o.Order_Images_OneOf.Validate(); err != nil {
-			return fmt.Errorf("Order_Images_OneOf validation failed: %w", err)
-		}
-	}
-	return nil
-}
-
 type VersionA = string
 
 type VersionB = string
@@ -232,14 +268,26 @@ type VersionD = string
 
 type VersionE = string
 
-var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var unionTypesValidate *validator.Validate
+
+func init() {
+	unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(unionTypesValidate)
+}
 
 type Order_Product_OneOf_3 struct {
 	Description *Order_Product_OneOf_3_Description `json:"description,omitempty"`
 }
 
 func (o Order_Product_OneOf_3) Validate() error {
-	return unionTypesValidate.Struct(o)
+	if o.Description != nil {
+		if v, ok := any(o.Description).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Description", err)
+			}
+		}
+	}
+	return nil
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
@@ -284,8 +332,8 @@ func (o *Order_Product_OneOf) AsVersionA() (VersionA, error) {
 }
 
 // FromVersionA overwrites any union data inside the Order_Product_OneOf as the provided VersionA
-func (o *Order_Product_OneOf) FromVersionA(v VersionA) error {
-	bts, err := json.Marshal(v)
+func (o *Order_Product_OneOf) FromVersionA(val VersionA) error {
+	bts, err := json.Marshal(val)
 	o.union = bts
 	return err
 }
@@ -296,8 +344,8 @@ func (o *Order_Product_OneOf) AsVersionB() (VersionB, error) {
 }
 
 // FromVersionB overwrites any union data inside the Order_Product_OneOf as the provided VersionB
-func (o *Order_Product_OneOf) FromVersionB(v VersionB) error {
-	bts, err := json.Marshal(v)
+func (o *Order_Product_OneOf) FromVersionB(val VersionB) error {
+	bts, err := json.Marshal(val)
 	o.union = bts
 	return err
 }
@@ -308,8 +356,8 @@ func (o *Order_Product_OneOf) AsBool() (bool, error) {
 }
 
 // FromBool overwrites any union data inside the Order_Product_OneOf as the provided bool
-func (o *Order_Product_OneOf) FromBool(v bool) error {
-	bts, err := json.Marshal(v)
+func (o *Order_Product_OneOf) FromBool(val bool) error {
+	bts, err := json.Marshal(val)
 	o.union = bts
 	return err
 }
@@ -320,8 +368,8 @@ func (o *Order_Product_OneOf) AsOrder_Product_OneOf_3() (Order_Product_OneOf_3, 
 }
 
 // FromOrder_Product_OneOf_3 overwrites any union data inside the Order_Product_OneOf as the provided Order_Product_OneOf_3
-func (o *Order_Product_OneOf) FromOrder_Product_OneOf_3(v Order_Product_OneOf_3) error {
-	bts, err := json.Marshal(v)
+func (o *Order_Product_OneOf) FromOrder_Product_OneOf_3(val Order_Product_OneOf_3) error {
+	bts, err := json.Marshal(val)
 	o.union = bts
 	return err
 }

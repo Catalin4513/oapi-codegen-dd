@@ -3,19 +3,34 @@
 package example1
 
 import (
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
 
-var headerTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var headerTypesValidate *validator.Validate
 
-type MSN = string
+func init() {
+	headerTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(headerTypesValidate)
+}
+
+type MSN string
+
+func (m MSN) Validate() error {
+	return nil
+}
 
 type GetClientHeaders struct {
 	MerchantSerialNumber MSN `json:"Merchant-Serial-Number" validate:"required,max=7,min=4"`
 }
 
 func (g GetClientHeaders) Validate() error {
-	return headerTypesValidate.Struct(g)
+	if v, ok := any(g.MerchantSerialNumber).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			return runtime.NewValidationErrorFromError("MerchantSerialNumber", err)
+		}
+	}
+	return nil
 }
 
 type UpdateClientHeaders struct {
@@ -23,5 +38,10 @@ type UpdateClientHeaders struct {
 }
 
 func (u UpdateClientHeaders) Validate() error {
-	return headerTypesValidate.Struct(u)
+	if v, ok := any(u.MerchantSerialNumber).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			return runtime.NewValidationErrorFromError("MerchantSerialNumber", err)
+		}
+	}
+	return nil
 }

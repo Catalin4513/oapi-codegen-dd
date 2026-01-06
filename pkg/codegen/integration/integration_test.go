@@ -49,7 +49,8 @@ func TestIntegration(t *testing.T) {
 	cfg := codegen.Configuration{
 		PackageName: "integration",
 		Generate: &codegen.GenerateOptions{
-			Client: true,
+			Client:             true,
+			ResponseValidators: true,
 		},
 		Client: &codegen.Client{
 			Name: "IntegrationClient",
@@ -68,6 +69,17 @@ func TestIntegration(t *testing.T) {
 	for _, name := range specs {
 		t.Run(fmt.Sprintf("test-%s", name), func(t *testing.T) {
 			t.Parallel()
+
+			// Track result - defer to ensure it runs even if test panics
+			defer func() {
+				mu.Lock()
+				defer mu.Unlock()
+				if t.Failed() {
+					failed = append(failed, name)
+				} else {
+					passed = append(passed, name)
+				}
+			}()
 
 			contents, err := getFileContents(name)
 			if err != nil {
@@ -107,9 +119,8 @@ func TestIntegration(t *testing.T) {
 			cmd.Dir = tmpDir
 			output, err := cmd.CombinedOutput()
 			if err != nil {
-				t.Logf("go mod init output: %s", string(output))
+				t.Fatalf("failed to initialize go module:\n%s", string(output))
 			}
-			require.NoError(t, err, "failed to initialize go module")
 
 			// Add replace directive to use local version of the library BEFORE go mod tidy
 			fmt.Printf("[%s] Adding replace directive for local library\n", name)
@@ -121,9 +132,8 @@ func TestIntegration(t *testing.T) {
 			cmd.Dir = tmpDir
 			output, err = cmd.CombinedOutput()
 			if err != nil {
-				t.Logf("go mod edit output: %s", string(output))
+				t.Fatalf("failed to add replace directive:\n%s", string(output))
 			}
-			require.NoError(t, err, "failed to add replace directive")
 
 			// Run go mod tidy to download dependencies (after replace directive is set)
 			fmt.Printf("[%s] Running go mod tidy\n", name)
@@ -131,9 +141,8 @@ func TestIntegration(t *testing.T) {
 			cmd.Dir = tmpDir
 			output, err = cmd.CombinedOutput()
 			if err != nil {
-				t.Logf("go mod tidy output: %s", string(output))
+				t.Fatalf("failed to run go mod tidy:\n%s", string(output))
 			}
-			require.NoError(t, err, "failed to run go mod tidy")
 
 			// Build the generated code
 			fmt.Printf("[%s] Building generated code\n", name)
@@ -141,21 +150,11 @@ func TestIntegration(t *testing.T) {
 			cmd.Dir = tmpDir
 			output, err = cmd.CombinedOutput()
 			if err != nil {
-				t.Logf("go build output: %s", string(output))
+				t.Fatalf("failed to build generated code:\nGenerated file: %s\nBuild output:\n%s", genFile, string(output))
 			}
-			require.NoError(t, err, "failed to build generated code")
 
 			fmt.Printf("[%s] Successfully built generated code\n", name)
 			fmt.Printf("[%s] Generated code saved at: %s\n", name, tmpDir)
-
-			// Track result at the end of the test
-			mu.Lock()
-			defer mu.Unlock()
-			if t.Failed() {
-				failed = append(failed, name)
-			} else {
-				passed = append(passed, name)
-			}
 		})
 	}
 

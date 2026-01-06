@@ -37,7 +37,7 @@ func TestProperty_GoTypeDef(t *testing.T) {
 					GoType:              "int",
 				},
 				Constraints: Constraints{
-					Nullable: true,
+					Nullable: ptr(true),
 				},
 			},
 			want: "int",
@@ -55,7 +55,7 @@ func TestProperty_GoTypeDef(t *testing.T) {
 					GoType:              "int",
 				},
 				Constraints: Constraints{
-					Nullable: true,
+					Nullable: ptr(true),
 				},
 			},
 			want: "*int",
@@ -72,7 +72,7 @@ func TestProperty_GoTypeDef(t *testing.T) {
 					GoType:              "int",
 				},
 				Constraints: Constraints{
-					Nullable: true,
+					Nullable: ptr(true),
 				},
 			},
 			want: "CustomType",
@@ -156,8 +156,8 @@ func TestProperty_GoTypeDef_nullable(t *testing.T) {
 					GoType:              "int",
 				},
 				Constraints: Constraints{
-					Nullable: false,
-					Required: true,
+					Nullable: ptr(false),
+					Required: ptr(true),
 				},
 			},
 			want: "int",
@@ -171,8 +171,8 @@ func TestProperty_GoTypeDef_nullable(t *testing.T) {
 					GoType:              "int",
 				},
 				Constraints: Constraints{
-					Nullable: true,
-					Required: true,
+					Nullable: ptr(true),
+					Required: ptr(true),
 				},
 			},
 			want: "*int",
@@ -197,7 +197,7 @@ func TestProperty_GoTypeDef_nullable(t *testing.T) {
 					GoType:              "int",
 				},
 				Constraints: Constraints{
-					Nullable: true,
+					Nullable: ptr(true),
 				},
 			},
 			want: "*int",

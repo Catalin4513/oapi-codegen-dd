@@ -58,7 +58,7 @@ return res0`
 							GoType: "string",
 						},
 						Constraints: Constraints{
-							Nullable: true,
+							Nullable: ptr(true),
 						},
 					},
 				},
@@ -147,19 +147,19 @@ return res2`
 					{
 						GoName:        "Data",
 						JsonFieldName: "data",
-						Constraints:   Constraints{Nullable: true},
+						Constraints:   Constraints{Nullable: ptr(true)},
 						Schema: GoSchema{
 							Properties: []Property{
 								{
 									GoName:        "Details",
 									JsonFieldName: "details",
-									Constraints:   Constraints{Nullable: true},
+									Constraints:   Constraints{Nullable: ptr(true)},
 									Schema: GoSchema{
 										Properties: []Property{
 											{
 												GoName:        "Message",
 												JsonFieldName: "message",
-												Constraints:   Constraints{Nullable: true},
+												Constraints:   Constraints{Nullable: ptr(true)},
 												Schema: GoSchema{
 													GoType: "string",
 												},

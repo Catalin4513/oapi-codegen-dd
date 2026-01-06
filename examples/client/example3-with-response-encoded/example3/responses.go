@@ -8,7 +8,15 @@ import (
 	"fmt"
 
 	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
+	"github.com/go-playground/validator/v10"
 )
+
+var responseTypesValidate *validator.Validate
+
+func init() {
+	responseTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(responseTypesValidate)
+}
 
 type GetUserSingleResponse struct {
 	ID      string  `json:"id" validate:"required"`
@@ -16,46 +24,25 @@ type GetUserSingleResponse struct {
 	Address *string `json:"address,omitempty"`
 }
 
-type GetUserUnion1Response struct {
-	GetUserUnion1_Response_OneOf *GetUserUnion1_Response_OneOf `json:"-"`
+func (g GetUserSingleResponse) Validate() error {
+	return responseTypesValidate.Struct(g)
 }
 
-func (g GetUserUnion1Response) MarshalJSON() ([]byte, error) {
-	var parts []json.RawMessage
-
-	{
-		b, err := runtime.MarshalJSON(g.GetUserUnion1_Response_OneOf)
-		if err != nil {
-			return nil, fmt.Errorf("GetUserUnion1_Response_OneOf marshal: %w", err)
-		}
-		parts = append(parts, b)
-	}
-
-	return runtime.CoalesceOrMerge(parts...)
-}
-
-func (g *GetUserUnion1Response) UnmarshalJSON(data []byte) error {
-	trim := bytes.TrimSpace(data)
-	if bytes.Equal(trim, []byte("null")) {
-		return nil
-	}
-	if len(trim) == 0 {
-		return fmt.Errorf("empty JSON input")
-	}
-
-	if g.GetUserUnion1_Response_OneOf == nil {
-		g.GetUserUnion1_Response_OneOf = &GetUserUnion1_Response_OneOf{}
-	}
-
-	if err := runtime.UnmarshalJSON(data, g.GetUserUnion1_Response_OneOf); err != nil {
-		return fmt.Errorf("GetUserUnion1_Response_OneOf unmarshal: %w", err)
-	}
-
-	return nil
-}
+type GetUserUnion1Response = User
 
 type GetUserUnion2Response struct {
 	GetUserUnion2_Response_OneOf *GetUserUnion2_Response_OneOf `json:"-"`
+}
+
+func (g GetUserUnion2Response) Validate() error {
+	if g.GetUserUnion2_Response_OneOf != nil {
+		if v, ok := any(g.GetUserUnion2_Response_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("GetUserUnion2_Response_OneOf", err)
+			}
+		}
+	}
+	return nil
 }
 
 func (g GetUserUnion2Response) MarshalJSON() ([]byte, error) {
@@ -94,6 +81,17 @@ func (g *GetUserUnion2Response) UnmarshalJSON(data []byte) error {
 
 type GetUserUnion3Response struct {
 	GetUserUnion3_Response_OneOf *GetUserUnion3_Response_OneOf `json:"-"`
+}
+
+func (g GetUserUnion3Response) Validate() error {
+	if g.GetUserUnion3_Response_OneOf != nil {
+		if v, ok := any(g.GetUserUnion3_Response_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("GetUserUnion3_Response_OneOf", err)
+			}
+		}
+	}
+	return nil
 }
 
 func (g GetUserUnion3Response) MarshalJSON() ([]byte, error) {

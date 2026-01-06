@@ -3,6 +3,7 @@
 package circularproperties
 
 import (
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -10,7 +11,12 @@ type PostUsersResponse struct {
 	City *Address `json:"city,omitempty"`
 }
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 // User info.
 type User = any
@@ -20,5 +26,12 @@ type Address struct {
 }
 
 func (a Address) Validate() error {
-	return schemaTypesValidate.Struct(a)
+	if a.City != nil {
+		if v, ok := any(a.City).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("City", err)
+			}
+		}
+	}
+	return nil
 }

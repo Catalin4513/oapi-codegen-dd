@@ -101,6 +101,10 @@
         "always-prefix-enum-values": {
             "type": "boolean",
             "description": "AlwaysPrefixEnumValues specifies whether to always prefix enum values with the schema name. Defaults to true."
+        },
+        "response-validators": {
+            "type": "boolean",
+            "description": "ResponseValidators specifies whether to generate Validate() methods for response types. Useful for contract testing. Defaults to false."
         }
       },
       "required": []

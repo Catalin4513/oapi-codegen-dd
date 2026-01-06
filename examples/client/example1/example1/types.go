@@ -3,10 +3,16 @@
 package example1
 
 import (
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type ClientType struct {
 	Name string          `json:"name" validate:"required"`
@@ -14,7 +20,17 @@ type ClientType struct {
 }
 
 func (c ClientType) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if err := schemaTypesValidate.Var(c.Name, "required"); err != nil {
+		return runtime.NewValidationErrorFromError("Name", err)
+	}
+	if c.Type != nil {
+		if v, ok := any(c.Type).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Type", err)
+			}
+		}
+	}
+	return nil
 }
 
 type Error struct {
@@ -32,7 +48,14 @@ type UpdateClientErrorResponse struct {
 }
 
 func (u UpdateClientErrorResponse) Validate() error {
-	return schemaTypesValidate.Struct(u)
+	if u.Code != nil {
+		if v, ok := any(u.Code).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Code", err)
+			}
+		}
+	}
+	return nil
 }
 
 type ErrorCode = string

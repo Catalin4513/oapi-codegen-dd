@@ -61,14 +61,11 @@ func TestGenerateGoSchema_generateUnion(t *testing.T) {
 		res, err := GenerateGoSchema(getUser, ParseOptions{}.WithPath([]string{"User"}))
 		require.NoError(t, err)
 
-		assert.Equal(t, "struct {\n    User_OneOf *User_OneOf`json:\"-\"`\n}", res.GoType)
-
+		// With single element oneOf, it should just return the User type directly
+		assert.Equal(t, "User", res.GoType)
+		assert.True(t, res.DefineViaAlias)
 		assert.Nil(t, res.UnionElements)
-		assert.Equal(t, 1, len(res.AdditionalTypes))
-		assert.Equal(t, "User_OneOf", res.AdditionalTypes[0].Name)
-		assert.Equal(t, "struct {\nunion json.RawMessage\n}", res.AdditionalTypes[0].Schema.GoType)
-		assert.Equal(t, 1, len(res.AdditionalTypes[0].Schema.UnionElements))
-		assert.Equal(t, UnionElement("User"), res.AdditionalTypes[0].Schema.UnionElements[0])
+		assert.Equal(t, 0, len(res.AdditionalTypes))
 	})
 
 	t.Run("one-of 2 possible values", func(t *testing.T) {

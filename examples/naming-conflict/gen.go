@@ -3,6 +3,9 @@
 package namingconflict
 
 import (
+	"fmt"
+
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -13,14 +16,40 @@ const (
 	TypeSourceType Type = "source_type"
 )
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+// validTypeValues is a map of valid values for Type
+var validTypeValues = map[Type]bool{
+	TypeDebit:      true,
+	TypeSourceType: true,
+}
+
+// Validate checks if the Type value is valid
+func (t Type) Validate() error {
+	if !validTypeValues[t] {
+		return runtime.NewValidationError("", fmt.Sprintf("invalid Type value: %v", t))
+	}
+	return nil
+}
+
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Source struct {
 	CreditTransfer *SourceType `json:"credit_transfer,omitempty"`
 }
 
 func (s Source) Validate() error {
-	return schemaTypesValidate.Struct(s)
+	if s.CreditTransfer != nil {
+		if v, ok := any(s.CreditTransfer).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("CreditTransfer", err)
+			}
+		}
+	}
+	return nil
 }
 
 type SourceType struct {

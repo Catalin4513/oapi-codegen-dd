@@ -3,11 +3,17 @@
 package xgotype
 
 import (
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 	googleuuid "github.com/google/uuid"
 )
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Client struct {
 	Name string   `json:"name" validate:"required"`
@@ -24,5 +30,10 @@ type ClientWithExtension struct {
 }
 
 func (c ClientWithExtension) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if v, ok := any(c.Name).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			return runtime.NewValidationErrorFromError("Name", err)
+		}
+	}
+	return nil
 }

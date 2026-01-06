@@ -3,6 +3,9 @@
 package namingconflict2
 
 import (
+	"fmt"
+
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -13,6 +16,20 @@ const (
 	SourceTypeAlipay2           SourceType = "alipay"
 )
 
+// validSourceTypeValues is a map of valid values for SourceType
+var validSourceTypeValues = map[SourceType]bool{
+	SourceTypeACHCreditTransfer: true,
+	SourceTypeAlipay2:           true,
+}
+
+// Validate checks if the SourceType value is valid
+func (s SourceType) Validate() error {
+	if !validSourceTypeValues[s] {
+		return runtime.NewValidationError("", fmt.Sprintf("invalid SourceType value: %v", s))
+	}
+	return nil
+}
+
 type PaymentSourceType string
 
 const (
@@ -20,14 +37,40 @@ const (
 	PaymentSourceTypeAlipay            PaymentSourceType = "alipay"
 )
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+// validPaymentSourceTypeValues is a map of valid values for PaymentSourceType
+var validPaymentSourceTypeValues = map[PaymentSourceType]bool{
+	PaymentSourceTypeACHCreditTransfer: true,
+	PaymentSourceTypeAlipay:            true,
+}
+
+// Validate checks if the PaymentSourceType value is valid
+func (p PaymentSourceType) Validate() error {
+	if !validPaymentSourceTypeValues[p] {
+		return runtime.NewValidationError("", fmt.Sprintf("invalid PaymentSourceType value: %v", p))
+	}
+	return nil
+}
+
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Payment struct {
 	Source *Payment_Source `json:"source,omitempty"`
 }
 
 func (p Payment) Validate() error {
-	return schemaTypesValidate.Struct(p)
+	if p.Source != nil {
+		if v, ok := any(p.Source).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Source", err)
+			}
+		}
+	}
+	return nil
 }
 
 type Payment_Source struct {
@@ -35,7 +78,14 @@ type Payment_Source struct {
 }
 
 func (p Payment_Source) Validate() error {
-	return schemaTypesValidate.Struct(p)
+	if p.Type != nil {
+		if v, ok := any(p.Type).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Type", err)
+			}
+		}
+	}
+	return nil
 }
 
 type Choice = SourceType

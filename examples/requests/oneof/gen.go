@@ -11,7 +11,12 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var bodyTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var bodyTypesValidate *validator.Validate
+
+func init() {
+	bodyTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(bodyTypesValidate)
+}
 
 type ProcessPaymentBody struct {
 	ProcessPaymentBody_OneOf *ProcessPaymentBody_OneOf `json:"-"`
@@ -19,8 +24,10 @@ type ProcessPaymentBody struct {
 
 func (p ProcessPaymentBody) Validate() error {
 	if p.ProcessPaymentBody_OneOf != nil {
-		if err := p.ProcessPaymentBody_OneOf.Validate(); err != nil {
-			return fmt.Errorf("ProcessPaymentBody_OneOf validation failed: %w", err)
+		if v, ok := any(p.ProcessPaymentBody_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("ProcessPaymentBody_OneOf", err)
+			}
 		}
 	}
 	return nil
@@ -60,7 +67,12 @@ func (p *ProcessPaymentBody) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type PayloadA struct {
 	A *string `json:"a,omitempty"`
@@ -86,7 +98,12 @@ func (p PayloadC) Validate() error {
 	return schemaTypesValidate.Struct(p)
 }
 
-var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var unionTypesValidate *validator.Validate
+
+func init() {
+	unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(unionTypesValidate)
+}
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
@@ -130,8 +147,8 @@ func (p *ProcessPaymentBody_OneOf) AsPayloadA() (PayloadA, error) {
 }
 
 // FromPayloadA overwrites any union data inside the ProcessPaymentBody_OneOf as the provided PayloadA
-func (p *ProcessPaymentBody_OneOf) FromPayloadA(v PayloadA) error {
-	bts, err := json.Marshal(v)
+func (p *ProcessPaymentBody_OneOf) FromPayloadA(val PayloadA) error {
+	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
 }
@@ -142,8 +159,8 @@ func (p *ProcessPaymentBody_OneOf) AsPayloadB() (PayloadB, error) {
 }
 
 // FromPayloadB overwrites any union data inside the ProcessPaymentBody_OneOf as the provided PayloadB
-func (p *ProcessPaymentBody_OneOf) FromPayloadB(v PayloadB) error {
-	bts, err := json.Marshal(v)
+func (p *ProcessPaymentBody_OneOf) FromPayloadB(val PayloadB) error {
+	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
 }
@@ -154,8 +171,8 @@ func (p *ProcessPaymentBody_OneOf) AsPayloadC() (PayloadC, error) {
 }
 
 // FromPayloadC overwrites any union data inside the ProcessPaymentBody_OneOf as the provided PayloadC
-func (p *ProcessPaymentBody_OneOf) FromPayloadC(v PayloadC) error {
-	bts, err := json.Marshal(v)
+func (p *ProcessPaymentBody_OneOf) FromPayloadC(val PayloadC) error {
+	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
 }

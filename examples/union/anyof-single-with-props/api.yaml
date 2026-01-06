@@ -1,0 +1,77 @@
+openapi: 3.0.0
+info:
+  title: Single AnyOf with Properties Test
+  version: 1.0.0
+  description: |
+    This example demonstrates the issue where a schema has properties
+    AND a single-element anyOf. This reproduces the PayPal payments_payment_v2.json issue.
+
+paths:
+  /test:
+    post:
+      operationId: testEndpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CombinedError'
+      responses:
+        '200':
+          description: Success
+
+components:
+  schemas:
+    # Base error with common properties
+    BaseError:
+      type: object
+      properties:
+        name:
+          type: string
+        message:
+          type: string
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+    
+    # Generic error detail
+    ErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+        issue:
+          type: string
+    
+    # Specific error that overrides the issues property with a single-element anyOf
+    SpecificError:
+      properties:
+        issues:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/SpecificIssue'
+    
+    # A specific issue type
+    SpecificIssue:
+      type: object
+      properties:
+        code:
+          type: string
+          enum:
+            - INVALID_REQUEST
+            - BUSINESS_ERROR
+        description:
+          type: string
+        field:
+          type: string
+    
+    # Combined error using allOf - this is where the bug occurs
+    # When merging BaseError and SpecificError, the 'issues' property
+    # from SpecificError has a single-element anyOf that should NOT
+    # be optimized away because it needs to be merged with the parent schema
+    CombinedError:
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+        - $ref: '#/components/schemas/SpecificError'

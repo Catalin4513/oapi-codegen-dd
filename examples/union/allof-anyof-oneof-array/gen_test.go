@@ -77,7 +77,7 @@ func TestCreateUserBody_Pages_Validation(t *testing.T) {
 			),
 		}
 
-		pages := CreateUserBody_Pages{
+		pages := CreateUserBody_Pages_Item{
 			Limit:                      100,
 			Tag1:                       &tag1,
 			Tag2:                       &tag2,
@@ -89,7 +89,7 @@ func TestCreateUserBody_Pages_Validation(t *testing.T) {
 	})
 
 	t.Run("limit below minimum", func(t *testing.T) {
-		pages := CreateUserBody_Pages{
+		pages := CreateUserBody_Pages_Item{
 			Limit: 0,
 		}
 		err := pages.Validate()
@@ -98,7 +98,7 @@ func TestCreateUserBody_Pages_Validation(t *testing.T) {
 	})
 
 	t.Run("limit above maximum", func(t *testing.T) {
-		pages := CreateUserBody_Pages{
+		pages := CreateUserBody_Pages_Item{
 			Limit: 1001,
 		}
 		err := pages.Validate()
@@ -108,7 +108,7 @@ func TestCreateUserBody_Pages_Validation(t *testing.T) {
 
 	t.Run("tag1 exceeds maxLength", func(t *testing.T) {
 		tag1 := "this is a very long tag that exceeds the maximum length of 50 characters"
-		pages := CreateUserBody_Pages{
+		pages := CreateUserBody_Pages_Item{
 			Limit: 100,
 			Tag1:  &tag1,
 		}
@@ -119,7 +119,7 @@ func TestCreateUserBody_Pages_Validation(t *testing.T) {
 
 	t.Run("tag2 below minLength", func(t *testing.T) {
 		tag2 := ""
-		pages := CreateUserBody_Pages{
+		pages := CreateUserBody_Pages_Item{
 			Limit: 100,
 			Tag2:  &tag2,
 		}
@@ -223,7 +223,7 @@ func TestCreateUserBody_Pages_Integration(t *testing.T) {
 		// both the union properties AND regular fields are validated
 		tag1 := "this is way too long and should fail validation because it exceeds 50 characters"
 
-		pages := CreateUserBody_Pages{
+		pages := CreateUserBody_Pages_Item{
 			Limit: 100, // valid
 			Tag1:  &tag1,
 		}
@@ -241,7 +241,7 @@ func TestCreateUserBody_Pages_Integration(t *testing.T) {
 			),
 		}
 
-		pages := CreateUserBody_Pages{
+		pages := CreateUserBody_Pages_Item{
 			Limit:                      100, // valid
 			CreateUserBody_Pages_AnyOf: &anyOf,
 		}

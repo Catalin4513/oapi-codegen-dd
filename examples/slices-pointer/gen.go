@@ -3,21 +3,40 @@
 package slicespointer
 
 import (
+	"fmt"
+
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Payments []string
 
 func (p Payments) Validate() error {
+	if p == nil {
+		return nil
+	}
+	if len(p) < 1 {
+		return runtime.NewValidationError("", fmt.Sprintf("must have at least 1 items, got %d", len(p)))
+	}
+	for i, item := range p {
+		if err := schemaTypesValidate.Var(item, "omitempty,min=3"); err != nil {
+			return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+		}
+	}
 	return nil
 }
 
 type Data map[string]any
 
 func (d Data) Validate() error {
-	return schemaTypesValidate.Struct(d)
+	return nil
 }
 
 type User struct {
@@ -28,5 +47,15 @@ type User struct {
 }
 
 func (u User) Validate() error {
-	return schemaTypesValidate.Struct(u)
+	if v, ok := any(u.Payments).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			return runtime.NewValidationErrorFromError("Payments", err)
+		}
+	}
+	if v, ok := any(u.Data).(runtime.Validator); ok {
+		if err := v.Validate(); err != nil {
+			return runtime.NewValidationErrorFromError("Data", err)
+		}
+	}
+	return nil
 }

@@ -19,34 +19,43 @@ import (
 )
 
 type ConstraintsContext struct {
-	name       string
-	hasNilType bool
-	required   bool
+	name         string
+	hasNilType   bool
+	required     bool
+	specLocation SpecLocation
 }
 
 type Constraints struct {
-	Required       bool
-	Nullable       bool
-	ReadOnly       bool
-	WriteOnly      bool
-	MinLength      int64
-	MaxLength      int64
-	Min            float64
-	Max            float64
-	MinItems       int
+	Required       *bool
+	Nullable       *bool
+	ReadOnly       *bool
+	WriteOnly      *bool
+	MinLength      *int64
+	MaxLength      *int64
+	Pattern        *string
+	Min            *float64
+	Max            *float64
+	MinItems       *int64
+	MaxItems       *int64
+	MinProperties  *int64
+	MaxProperties  *int64
 	ValidationTags []string
 }
 
 func (c Constraints) IsEqual(other Constraints) bool {
-	return c.Required == other.Required &&
-		c.Nullable == other.Nullable &&
-		c.ReadOnly == other.ReadOnly &&
-		c.WriteOnly == other.WriteOnly &&
-		c.MinLength == other.MinLength &&
-		c.MaxLength == other.MaxLength &&
-		c.Min == other.Min &&
-		c.Max == other.Max &&
-		c.MinItems == other.MinItems &&
+	return ptrEqual(c.Required, other.Required) &&
+		ptrEqual(c.Nullable, other.Nullable) &&
+		ptrEqual(c.ReadOnly, other.ReadOnly) &&
+		ptrEqual(c.WriteOnly, other.WriteOnly) &&
+		ptrEqual(c.MinLength, other.MinLength) &&
+		ptrEqual(c.MaxLength, other.MaxLength) &&
+		ptrEqual(c.Pattern, other.Pattern) &&
+		ptrEqual(c.Min, other.Min) &&
+		ptrEqual(c.Max, other.Max) &&
+		ptrEqual(c.MinItems, other.MinItems) &&
+		ptrEqual(c.MaxItems, other.MaxItems) &&
+		ptrEqual(c.MinProperties, other.MinProperties) &&
+		ptrEqual(c.MaxProperties, other.MaxProperties) &&
 		slices.Equal(c.ValidationTags, other.ValidationTags)
 }
 
@@ -68,12 +77,13 @@ func newConstraints(schema *base.Schema, opts ConstraintsContext) Constraints {
 		required = slices.Contains(schema.Required, name)
 	}
 
-	nullable := false
-	if !required || hasNilType {
-		nullable = true
-	} else if schema.Nullable != nil {
-		nullable = *schema.Nullable
+	// ReadOnly fields should not be required in request bodies
+	// even if they are marked as required in the schema
+	if required && opts.specLocation == SpecLocationBody && schema.ReadOnly != nil && *schema.ReadOnly {
+		required = false
 	}
+
+	nullable := !required || hasNilType || deref(schema.Nullable)
 
 	if required && isBoolean {
 		// otherwise validation will always fail with `false` value.
@@ -90,64 +100,89 @@ func newConstraints(schema *base.Schema, opts ConstraintsContext) Constraints {
 		validationTags = append(validationTags, "omitempty")
 	}
 
-	readOnly := false
+	var readOnly *bool
 	if schema.ReadOnly != nil {
-		readOnly = *schema.ReadOnly
+		readOnly = schema.ReadOnly
 	}
 
-	writeOnly := false
+	var writeOnly *bool
 	if schema.WriteOnly != nil {
-		writeOnly = *schema.WriteOnly
+		writeOnly = schema.WriteOnly
 	}
 
-	minValue := float64(0)
+	var minValue *float64
 	if schema.Minimum != nil {
 		minTag := "gte"
-		minValue = *schema.Minimum
-		if schema.ExclusiveMinimum != nil {
-			if schema.ExclusiveMinimum.IsA() && schema.ExclusiveMinimum.A {
-				minTag = "gt"
-			} else if schema.ExclusiveMinimum.IsB() {
-				minTag = "gt"
-				minValue = schema.ExclusiveMinimum.B
+		val := *schema.Minimum
+		if schema.ExclusiveMinimum != nil && ((schema.ExclusiveMinimum.IsA() && schema.ExclusiveMinimum.A) || schema.ExclusiveMinimum.IsB()) {
+			minTag = "gt"
+			if schema.ExclusiveMinimum.IsB() {
+				val = schema.ExclusiveMinimum.B
 			}
 		}
+
+		minValue = &val
 		if isInt {
-			validationTags = append(validationTags, fmt.Sprintf("%s=%d", minTag, int64(minValue)))
+			validationTags = append(validationTags, fmt.Sprintf("%s=%d", minTag, int64(val)))
 		} else if isFloat {
-			validationTags = append(validationTags, fmt.Sprintf("%s=%g", minTag, minValue))
+			validationTags = append(validationTags, fmt.Sprintf("%s=%g", minTag, val))
 		}
 	}
 
-	maxValue := float64(0)
+	var maxValue *float64
 	if schema.Maximum != nil {
 		maxTag := "lte"
-		maxValue = *schema.Maximum
-		if schema.ExclusiveMaximum != nil {
-			if schema.ExclusiveMaximum.IsA() && schema.ExclusiveMaximum.A {
-				maxTag = "lt"
-			} else if schema.ExclusiveMaximum.IsB() {
-				maxTag = "lt"
-				maxValue = schema.ExclusiveMaximum.B
+		val := *schema.Maximum
+		if schema.ExclusiveMaximum != nil && ((schema.ExclusiveMaximum.IsA() && schema.ExclusiveMaximum.A) || schema.ExclusiveMaximum.IsB()) {
+			maxTag = "lt"
+			if schema.ExclusiveMaximum.IsB() {
+				val = schema.ExclusiveMaximum.B
 			}
 		}
+
+		maxValue = &val
 		if isInt {
-			validationTags = append(validationTags, fmt.Sprintf("%s=%d", maxTag, int64(maxValue)))
+			validationTags = append(validationTags, fmt.Sprintf("%s=%d", maxTag, int64(val)))
 		} else if isFloat {
-			validationTags = append(validationTags, fmt.Sprintf("%s=%g", maxTag, maxValue))
+			validationTags = append(validationTags, fmt.Sprintf("%s=%g", maxTag, val))
 		}
 	}
 
-	minLength := int64(0)
+	var minLength *int64
 	if schema.MinLength != nil {
-		minLength = *schema.MinLength
-		validationTags = append(validationTags, fmt.Sprintf("min=%d", minLength))
+		minLength = schema.MinLength
+		validationTags = append(validationTags, fmt.Sprintf("min=%d", *minLength))
 	}
 
-	maxLength := int64(0)
+	var maxLength *int64
 	if schema.MaxLength != nil {
-		maxLength = *schema.MaxLength
-		validationTags = append(validationTags, fmt.Sprintf("max=%d", maxLength))
+		maxLength = schema.MaxLength
+		validationTags = append(validationTags, fmt.Sprintf("max=%d", *maxLength))
+	}
+
+	var pattern *string
+	if schema.Pattern != "" {
+		pattern = &schema.Pattern
+	}
+
+	var minItems *int64
+	if schema.MinItems != nil {
+		minItems = schema.MinItems
+	}
+
+	var maxItems *int64
+	if schema.MaxItems != nil {
+		maxItems = schema.MaxItems
+	}
+
+	var minProperties *int64
+	if schema.MinProperties != nil {
+		minProperties = schema.MinProperties
+	}
+
+	var maxProperties *int64
+	if schema.MaxProperties != nil {
+		maxProperties = schema.MaxProperties
 	}
 
 	if len(validationTags) == 1 && validationTags[0] == "omitempty" {
@@ -177,15 +212,30 @@ func newConstraints(schema *base.Schema, opts ConstraintsContext) Constraints {
 		return a < b
 	})
 
+	var requiredPtr *bool
+	if required {
+		requiredPtr = ptr(true)
+	}
+
+	var nullablePtr *bool
+	if nullable {
+		nullablePtr = ptr(true)
+	}
+
 	return Constraints{
-		Nullable:       nullable,
-		Required:       required,
+		Nullable:       nullablePtr,
+		Required:       requiredPtr,
 		ReadOnly:       readOnly,
 		WriteOnly:      writeOnly,
 		Min:            minValue,
 		Max:            maxValue,
 		MinLength:      minLength,
 		MaxLength:      maxLength,
+		Pattern:        pattern,
+		MinItems:       minItems,
+		MaxItems:       maxItems,
+		MinProperties:  minProperties,
+		MaxProperties:  maxProperties,
 		ValidationTags: validationTags,
 	}
 }

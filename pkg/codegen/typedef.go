@@ -47,7 +47,7 @@ func (t TypeDefinition) IsAlias() bool {
 }
 
 func (t TypeDefinition) IsOptional() bool {
-	return !t.Schema.Constraints.Required
+	return t.Schema.Constraints.Required == nil || !*t.Schema.Constraints.Required
 }
 
 // GetErrorResponse generates a Go code snippet that returns an error response
@@ -98,7 +98,7 @@ func (t TypeDefinition) GetErrorResponse(errTypes map[string]string, alias strin
 		varName = fmt.Sprintf("res%d", varIndex)
 		code = append(code, fmt.Sprintf("%s := %s.%s", varName, prevVar, name))
 
-		if prop.Constraints.Nullable {
+		if prop.Constraints.Nullable != nil && *prop.Constraints.Nullable {
 			code = append(code, fmt.Sprintf("if %s == nil { %s }", varName, unknownRes))
 
 			// Prepare for next access with dereference

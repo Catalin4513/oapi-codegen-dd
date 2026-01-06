@@ -26,9 +26,9 @@ func TestGetFiles_Response_UnmarshalJSON(t *testing.T) {
 
 func TestGetFiles_Response_MarshalJSON(t *testing.T) {
 	resp := GetFilesResponse{
-		{
+		GetFiles_Response_Item{
 			GetFiles_Response_OneOf: &GetFiles_Response_OneOf{
-				runtime.NewEitherFromA[GetFiles_Response_OneOf_0, VariantC](
+				Either: runtime.NewEitherFromA[GetFiles_Response_OneOf_0, VariantC](
 					GetFiles_Response_OneOf_0{
 						A: func() *string {
 							s := "val-a"
@@ -38,9 +38,9 @@ func TestGetFiles_Response_MarshalJSON(t *testing.T) {
 				),
 			},
 		},
-		{
+		GetFiles_Response_Item{
 			GetFiles_Response_OneOf: &GetFiles_Response_OneOf{
-				runtime.NewEitherFromB[GetFiles_Response_OneOf_0, VariantC](
+				Either: runtime.NewEitherFromB[GetFiles_Response_OneOf_0, VariantC](
 					VariantC{
 						C: func() *string {
 							s := "val-c"
@@ -57,4 +57,42 @@ func TestGetFiles_Response_MarshalJSON(t *testing.T) {
 
 	expected := `[{"a":"val-a"},{"c":"val-c"}]`
 	assert.JSONEq(t, expected, string(data))
+}
+
+func TestGetFiles_Response_Item_Validate(t *testing.T) {
+	t.Run("valid response with variant A", func(t *testing.T) {
+		resp := GetFiles_Response_Item{
+			GetFiles_Response_OneOf: &GetFiles_Response_OneOf{
+				Either: runtime.NewEitherFromA[GetFiles_Response_OneOf_0, VariantC](
+					GetFiles_Response_OneOf_0{
+						A: func() *string {
+							s := "val-a"
+							return &s
+						}(),
+					},
+				),
+			},
+		}
+
+		err := resp.Validate()
+		assert.NoError(t, err)
+	})
+
+	t.Run("valid response with variant C", func(t *testing.T) {
+		resp := GetFiles_Response_Item{
+			GetFiles_Response_OneOf: &GetFiles_Response_OneOf{
+				Either: runtime.NewEitherFromB[GetFiles_Response_OneOf_0, VariantC](
+					VariantC{
+						C: func() *string {
+							s := "val-c"
+							return &s
+						}(),
+					},
+				),
+			},
+		}
+
+		err := resp.Validate()
+		assert.NoError(t, err)
+	})
 }

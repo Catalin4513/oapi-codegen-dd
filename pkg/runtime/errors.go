@@ -68,6 +68,9 @@ func WithStatusCode(code int) ClientAPIErrorOption {
 type ValidationError struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`
+
+	// underlying error, not serialized
+	Err error `json:"-"`
 }
 
 func (e ValidationError) Error() string {
@@ -78,8 +81,18 @@ func (e ValidationError) Error() string {
 	return fmt.Sprintf("%s%s", field, e.Message)
 }
 
+// Unwrap returns the underlying error for error wrapping support
+func (e ValidationError) Unwrap() error {
+	return e.Err
+}
+
 func NewValidationError(field, message string) ValidationError {
 	return ValidationError{Field: field, Message: message}
+}
+
+// NewValidationErrorFromError creates a ValidationError that wraps an underlying error
+func NewValidationErrorFromError(field string, err error) ValidationError {
+	return ValidationError{Field: field, Message: err.Error(), Err: err}
 }
 
 type ValidationErrors []ValidationError

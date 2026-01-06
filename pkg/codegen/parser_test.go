@@ -166,13 +166,13 @@ type IntOrStringOrBool struct {
 					GoName:        "IdAnyOf",
 					JsonFieldName: "id",
 					Schema:        GoSchema{RefType: "IdAnyOf"},
-					Constraints:   Constraints{Nullable: true},
+					Constraints:   Constraints{Nullable: ptr(true)},
 				},
 				{
 					GoName:        "AddressOneOf",
 					JsonFieldName: "address",
 					Schema:        GoSchema{RefType: "AddressOneOf"},
-					Constraints:   Constraints{Nullable: true},
+					Constraints:   Constraints{Nullable: ptr(true)},
 				},
 			},
 		}

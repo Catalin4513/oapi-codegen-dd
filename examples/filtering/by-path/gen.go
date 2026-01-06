@@ -94,7 +94,12 @@ type GetClientResponse struct {
 	Age  *int   `json:"age,omitempty"`
 }
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Person struct {
 	Name string `json:"name" validate:"required"`

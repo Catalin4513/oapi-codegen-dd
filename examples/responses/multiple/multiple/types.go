@@ -3,11 +3,17 @@
 package multiple
 
 import (
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type LinksSelf struct {
 	Self *string `json:"self,omitempty"`
@@ -42,5 +48,19 @@ type Booking struct {
 }
 
 func (b Booking) Validate() error {
-	return schemaTypesValidate.Struct(b)
+	if b.ID != nil {
+		if v, ok := any(b.ID).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("ID", err)
+			}
+		}
+	}
+	if b.TripID != nil {
+		if v, ok := any(b.TripID).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("TripID", err)
+			}
+		}
+	}
+	return nil
 }

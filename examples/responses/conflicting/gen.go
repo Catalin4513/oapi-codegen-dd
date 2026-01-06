@@ -133,7 +133,12 @@ func asMap[V any](v any) (map[string]V, error) {
 	return m, nil
 }
 
-var bodyTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var bodyTypesValidate *validator.Validate
+
+func init() {
+	bodyTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(bodyTypesValidate)
+}
 
 // CreatePaymentBody The `CreatePaymentRequest` object.
 type CreatePaymentBody = CreatePaymentRequest
@@ -147,7 +152,12 @@ type CreatePaymentResponseJSON = Payment
 // CreatePaymentResponseJSON201 Schema for The `CreatePaymentResponse` object.
 type CreatePaymentResponseJSON201 = CreatePaymentResponse
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 // CreatePaymentRequest The `CreatePaymentRequest` object.
 type CreatePaymentRequest struct {

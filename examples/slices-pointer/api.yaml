@@ -7,8 +7,10 @@ components:
     payments:
       type: array
       nullable: true
+      minItems: 1
       items:
         type: string
+        minLength: 3
 
     data:
       type: object

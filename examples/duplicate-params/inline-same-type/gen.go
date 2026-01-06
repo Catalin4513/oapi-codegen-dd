@@ -3,10 +3,16 @@
 package inlinesametype
 
 import (
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
 
-var queryTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var queryTypesValidate *validator.Validate
+
+func init() {
+	queryTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(queryTypesValidate)
+}
 
 type SearchQuery struct {
 	// Filter Filter results (first definition - optional, minLength 1)

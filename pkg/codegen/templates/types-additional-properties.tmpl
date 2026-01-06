@@ -73,12 +73,12 @@ func ({{$alias}} {{$td.Name}}) MarshalJSON() ([]byte, error) {
     var err error
     object := make(map[string]json.RawMessage)
     {{range $td.Schema.Properties}}
-    {{if not .Constraints.Required}}if {{$alias}}.{{.GoName}} != nil { {{end}}
+    {{if .IsPointerType}}if {{$alias}}.{{.GoName}} != nil { {{end}}
         object["{{.JsonFieldName}}"], err = json.Marshal({{$alias}}.{{.GoName}})
         if err != nil {
             return nil, fmt.Errorf("error marshaling '{{.JsonFieldName}}': %w", err)
         }
-        {{if not .Constraints.Required}} }{{end}}
+        {{if .IsPointerType}} }{{end}}
     {{end}}
 
     for fieldName, field := range {{$alias}}.AdditionalProperties {

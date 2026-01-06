@@ -3,6 +3,7 @@
 package defaultsint64type
 
 import (
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -11,7 +12,12 @@ type GetClientResponse struct {
 	Age *int32 `json:"age,omitempty"`
 }
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Person struct {
 	ID  *int64 `json:"id,omitempty"`

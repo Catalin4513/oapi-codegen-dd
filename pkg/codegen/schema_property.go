@@ -35,24 +35,70 @@ func (p Property) IsEqual(other Property) bool {
 func (p Property) GoTypeDef() string {
 	typeDef := p.Schema.TypeDecl()
 
-	if p.Schema.OpenAPISchema != nil && slices.Contains(p.Schema.OpenAPISchema.Type, "array") {
-		return typeDef
-	}
-
-	if p.Schema.OpenAPISchema != nil && slices.Contains(p.Schema.OpenAPISchema.Type, "object") {
-		if schemaHasAdditionalProperties(p.Schema.OpenAPISchema) {
-			return typeDef
-		}
-	}
-
-	if strings.HasPrefix(typeDef, "map[") || strings.HasPrefix(typeDef, "[]") {
-		return typeDef
-	}
-
-	if !p.Schema.SkipOptionalPointer && p.Constraints.Nullable {
+	if p.IsPointerType() {
 		typeDef = "*" + strings.TrimPrefix(typeDef, "*")
 	}
 	return typeDef
+}
+
+// IsPointerType returns true if this property's Go type is a pointer.
+func (p Property) IsPointerType() bool {
+	typeDef := p.Schema.TypeDecl()
+
+	// Arrays, maps, and objects with additional properties are not pointers
+	if p.Schema.OpenAPISchema != nil && slices.Contains(p.Schema.OpenAPISchema.Type, "array") {
+		return false
+	}
+	if p.Schema.OpenAPISchema != nil && slices.Contains(p.Schema.OpenAPISchema.Type, "object") {
+		if schemaHasAdditionalProperties(p.Schema.OpenAPISchema) {
+			return false
+		}
+	}
+	if strings.HasPrefix(typeDef, "map[") || strings.HasPrefix(typeDef, "[]") {
+		return false
+	}
+
+	// Check if it's a pointer based on nullable and SkipOptionalPointer
+	return !p.Schema.SkipOptionalPointer && p.Constraints.Nullable != nil && *p.Constraints.Nullable
+}
+
+// needsCustomValidation returns true if this property needs custom validation logic
+// (i.e., calling Validate() method) instead of just using validator tags.
+func (p Property) needsCustomValidation() bool {
+	// Inline union (RefType with no JsonFieldName)
+	if p.Schema.RefType != "" && p.JsonFieldName == "" {
+		return true
+	}
+
+	// Property with union elements
+	if len(p.Schema.UnionElements) > 0 {
+		return true
+	}
+
+	// Named ref (RefType with JsonFieldName)
+	if p.Schema.RefType != "" && p.JsonFieldName != "" {
+		return true
+	}
+
+	// Custom Go type that's not a primitive
+	if p.Schema.GoType != "" {
+		typeDef := p.Schema.TypeDecl()
+
+		// Inline arrays and maps of primitives don't need custom validation
+		if strings.HasPrefix(typeDef, "[]") || strings.HasPrefix(typeDef, "map[") {
+			return false
+		}
+
+		primitives := []string{"string", "int", "int32", "int64", "float32", "float64", "bool", "time.Time"}
+		for _, prim := range primitives {
+			if typeDef == prim {
+				return false
+			}
+		}
+		return true
+	}
+
+	return false
 }
 
 func createPropertyGoFieldName(jsonName string, extensions map[string]any) string {
@@ -121,7 +167,7 @@ func genFieldsFromProperties(props []Property, options ParseOptions) []string {
 		field += fmt.Sprintf("    %s %s", goFieldName, p.GoTypeDef())
 
 		c := p.Constraints
-		omitEmpty := c.Nullable
+		omitEmpty := c.Nullable != nil && *c.Nullable
 		if p.Schema.SkipOptionalPointer {
 			omitEmpty = false
 		}

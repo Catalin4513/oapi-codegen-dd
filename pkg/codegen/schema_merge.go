@@ -12,7 +12,6 @@ package codegen
 
 import (
 	"fmt"
-	"log"
 	"slices"
 
 	"github.com/pb33f/libopenapi/datamodel/high/base"
@@ -48,6 +47,13 @@ func createFromCombinator(schema *base.Schema, options ParseOptions) (GoSchema, 
 		if err != nil {
 			return GoSchema{}, fmt.Errorf("error merging allOf: %w", err)
 		}
+
+		// If the allOf resulted in a simple type (no properties), return it directly
+		// This handles cases like allOf with a description-only schema and a $ref
+		if len(allOfSchema.Properties) == 0 && !hasAnyOf && !hasOneOf {
+			return allOfSchema, nil
+		}
+
 		out.Properties = append(out.Properties, allOfSchema.Properties...)
 		additionalTypes = append(additionalTypes, allOfSchema.AdditionalTypes...)
 	}
@@ -59,6 +65,13 @@ func createFromCombinator(schema *base.Schema, options ParseOptions) (GoSchema, 
 		if err != nil {
 			return GoSchema{}, fmt.Errorf("error resolving anyOf: %w", err)
 		}
+
+		// If generateUnion returned a simple type (not a union), return it directly
+		// This happens when there's only 1 element, or when filtering null leaves 1 element
+		if len(anyOfSchema.UnionElements) == 0 && !hasAllOf && !hasOneOf {
+			return anyOfSchema, nil
+		}
+
 		anyOfFields := genFieldsFromProperties(anyOfSchema.Properties, options)
 		anyOfSchema.GoType = anyOfSchema.createGoStruct(anyOfFields)
 
@@ -76,7 +89,7 @@ func createFromCombinator(schema *base.Schema, options ParseOptions) (GoSchema, 
 		out.Properties = append(out.Properties, Property{
 			GoName:      anyOfName,
 			Schema:      GoSchema{RefType: anyOfName},
-			Constraints: Constraints{Nullable: true},
+			Constraints: Constraints{Nullable: ptr(true)},
 		})
 	}
 
@@ -87,6 +100,13 @@ func createFromCombinator(schema *base.Schema, options ParseOptions) (GoSchema, 
 		if err != nil {
 			return GoSchema{}, fmt.Errorf("error resolving oneOf: %w", err)
 		}
+
+		// If generateUnion returned a simple type (not a union), return it directly
+		// This happens when there's only 1 element, or when filtering null leaves 1 element
+		if len(oneOfSchema.UnionElements) == 0 && !hasAllOf && !hasAnyOf {
+			return oneOfSchema, nil
+		}
+
 		oneOfFields := genFieldsFromProperties(oneOfSchema.Properties, options)
 		oneOfSchema.GoType = oneOfSchema.createGoStruct(oneOfFields)
 
@@ -102,7 +122,7 @@ func createFromCombinator(schema *base.Schema, options ParseOptions) (GoSchema, 
 		out.Properties = append(out.Properties, Property{
 			GoName:      oneOfName,
 			Schema:      GoSchema{RefType: oneOfName},
-			Constraints: Constraints{Nullable: true},
+			Constraints: Constraints{Nullable: ptr(true)},
 		})
 	}
 
@@ -149,8 +169,15 @@ func mergeAllOfSchemas(allOf []*base.SchemaProxy, options ParseOptions) (GoSchem
 
 	if allMergeable {
 		var merged *base.Schema
+		var lastRef string
 		for _, schemaProxy := range allOf {
 			s := schemaProxy.Schema()
+			ref := schemaProxy.GetReference()
+
+			// Track the last non-empty reference
+			if ref != "" {
+				lastRef = ref
+			}
 
 			var err error
 			merged, err = mergeOpenapiSchemas(merged, s)
@@ -163,6 +190,13 @@ func mergeAllOfSchemas(allOf []*base.SchemaProxy, options ParseOptions) (GoSchem
 		opts := options
 		if low := schemaProxy.GoLow(); low != nil {
 			opts = options.WithReference(low.GetReference())
+		}
+
+		// If we have a reference from one of the allOf elements and the merged schema
+		// has no properties (i.e., it's a simple reference), use the reference.
+		// This handles cases like allOf with a description-only schema and a $ref.
+		if lastRef != "" && merged.Properties == nil {
+			opts = options.WithReference(lastRef)
 		}
 		return GenerateGoSchema(schemaProxy, opts)
 	}
@@ -182,7 +216,7 @@ func mergeAllOfSchemas(allOf []*base.SchemaProxy, options ParseOptions) (GoSchem
 			out.Properties = append(out.Properties, Property{
 				GoName:      typeName,
 				Schema:      GoSchema{RefType: typeName},
-				Constraints: Constraints{Nullable: false},
+				Constraints: Constraints{Nullable: ptr(false)},
 			})
 			continue
 		}
@@ -198,7 +232,7 @@ func mergeAllOfSchemas(allOf []*base.SchemaProxy, options ParseOptions) (GoSchem
 		out.Properties = append(out.Properties, Property{
 			GoName:      fieldName,
 			Schema:      GoSchema{RefType: fieldName},
-			Constraints: Constraints{Nullable: true},
+			Constraints: Constraints{Nullable: ptr(true)},
 		})
 
 		additionalTypes = append(additionalTypes, TypeDefinition{
@@ -250,28 +284,15 @@ func mergeOpenapiSchemas(s1, s2 *base.Schema) (*base.Schema, error) {
 	t1 := getSchemaType(s1)
 	t2 := getSchemaType(s2)
 
-	// Handle empty schemas - treat them as no-op
-	if len(t2) == 0 && s2.Properties == nil && s2.Items == nil && len(s2.AllOf) == 0 && len(s2.AnyOf) == 0 && len(s2.OneOf) == 0 {
+	// If a schema has no type, ignore it in the merge (e.g., description-only schemas)
+	if len(t2) == 0 {
 		return s1, nil
 	}
-	if len(t1) == 0 && s1.Properties == nil && s1.Items == nil && len(s1.AllOf) == 0 && len(s1.AnyOf) == 0 && len(s1.OneOf) == 0 {
+	if len(t1) == 0 {
 		return s2, nil
-	}
-
-	// Handle nil types first before comparing
-	if t1 == nil && t2 == nil {
-		return nil, nil
-	} else if t1 == nil {
-		return s2, nil
-	} else if t2 == nil {
-		return s1, nil
 	}
 
 	if !slices.Equal(t1, t2) {
-		log.Printf("DEBUG: ===== MERGE FAILURE =====")
-		log.Printf("DEBUG: Schema 1 - type=%v, hasProps=%v, hasItems=%v, title=%s", t1, s1.Properties != nil, s1.Items != nil, s1.Title)
-		log.Printf("DEBUG: Schema 2 - type=%v, hasProps=%v, hasItems=%v, title=%s", t2, s2.Properties != nil, s2.Items != nil, s2.Title)
-		log.Printf("DEBUG: =========================")
 		return nil, fmt.Errorf("can not merge incompatible types: %v, %v", t1, t2)
 	}
 
@@ -338,17 +359,17 @@ func mergeOpenapiSchemas(s1, s2 *base.Schema) (*base.Schema, error) {
 	}
 	result.ExclusiveMaximum = s1.ExclusiveMaximum
 
-	if s1.Nullable != s2.Nullable {
+	if !ptrEqual(s1.Nullable, s2.Nullable) {
 		return nil, ErrMergingSchemasWithDifferentNullable
 	}
 	result.Nullable = s1.Nullable
 
-	if s1.ReadOnly != s2.ReadOnly {
+	if !ptrEqual(s1.ReadOnly, s2.ReadOnly) {
 		return nil, ErrMergingSchemasWithDifferentReadOnly
 	}
 	result.ReadOnly = s1.ReadOnly
 
-	if s1.WriteOnly != s2.WriteOnly {
+	if !ptrEqual(s1.WriteOnly, s2.WriteOnly) {
 		return nil, ErrMergingSchemasWithDifferentWriteOnly
 	}
 	result.WriteOnly = s1.WriteOnly

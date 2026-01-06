@@ -1,0 +1,75 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Using complex schemas
+  description: An example of `anyOf`, `allOf` and `oneOf` used together
+paths:
+  /foo:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - type: string
+      responses:
+        '200':
+          description: Foo
+          headers:
+            'x-ok':
+              schema:
+                anyOf:
+                  - type: string
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: string
+
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        client:
+          anyOf:
+            - $ref: '#/components/schemas/Identity'
+        verification:
+            anyOf:
+              - $ref: '#/components/schemas/Verification'
+        other:
+          type: object
+          additionalProperties:
+            oneOf:
+              - type: string
+
+    Identity:
+      type: object
+      required:
+        - issuer
+      properties:
+        issuer:
+          type: string
+
+    Verification:
+      type: object
+      properties:
+        verifier:
+          oneOf:
+            - $ref: '#/components/schemas/Address'
+
+    Address:
+      type: object
+      properties:
+        city:
+          type: string
+        location:
+          oneOf:
+            - $ref: '#/components/schemas/Location'
+
+
+    Location:
+      type: object
+      properties:
+        description:
+          type: string

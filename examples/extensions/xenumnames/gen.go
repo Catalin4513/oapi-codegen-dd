@@ -2,6 +2,12 @@
 
 package xenumnames
 
+import (
+	"fmt"
+
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
+)
+
 type ClientType string
 
 const (
@@ -9,9 +15,37 @@ const (
 	EXP ClientType = "EXP"
 )
 
+// validClientTypeValues is a map of valid values for ClientType
+var validClientTypeValues = map[ClientType]bool{
+	ACT: true,
+	EXP: true,
+}
+
+// Validate checks if the ClientType value is valid
+func (c ClientType) Validate() error {
+	if !validClientTypeValues[c] {
+		return runtime.NewValidationError("", fmt.Sprintf("invalid ClientType value: %v", c))
+	}
+	return nil
+}
+
 type ClientTypeWithNamesExtension string
 
 const (
 	Active  ClientTypeWithNamesExtension = "ACT"
 	Expired ClientTypeWithNamesExtension = "EXP"
 )
+
+// validClientTypeWithNamesExtensionValues is a map of valid values for ClientTypeWithNamesExtension
+var validClientTypeWithNamesExtensionValues = map[ClientTypeWithNamesExtension]bool{
+	Active:  true,
+	Expired: true,
+}
+
+// Validate checks if the ClientTypeWithNamesExtension value is valid
+func (c ClientTypeWithNamesExtension) Validate() error {
+	if !validClientTypeWithNamesExtensionValues[c] {
+		return runtime.NewValidationError("", fmt.Sprintf("invalid ClientTypeWithNamesExtension value: %v", c))
+	}
+	return nil
+}

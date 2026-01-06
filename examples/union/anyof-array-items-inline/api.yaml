@@ -1,0 +1,88 @@
+openapi: 3.0.0
+info:
+  title: AnyOf Array Items with Inline Properties
+  version: 1.0.0
+  description: |
+    This reproduces the PayPal payments_payment_v2.json issue where:
+    - Array items have anyOf with multiple inline schemas (not refs)
+    - Each anyOf element has inline properties
+    - These are merged via allOf
+
+paths:
+  /test:
+    post:
+      operationId: testEndpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CombinedError'
+      responses:
+        '200':
+          description: Success
+
+components:
+  schemas:
+    # Base error with generic issues array
+    BaseError:
+      type: object
+      properties:
+        name:
+          type: string
+        message:
+          type: string
+        issues:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              issue:
+                type: string
+    
+    # Specific error with anyOf in array items (inline schemas, not refs)
+    SpecificError:
+      properties:
+        issues:
+          type: array
+          items:
+            anyOf:
+              - title: ERROR_TYPE_A
+                properties:
+                  issue:
+                    type: string
+                    enum:
+                      - ERROR_A
+                  description:
+                    type: string
+                    enum:
+                      - This is error type A
+              - title: ERROR_TYPE_B
+                properties:
+                  issue:
+                    type: string
+                    enum:
+                      - ERROR_B
+                  description:
+                    type: string
+                    enum:
+                      - This is error type B
+              - title: ERROR_TYPE_C
+                properties:
+                  issue:
+                    type: string
+                    enum:
+                      - ERROR_C
+                  description:
+                    type: string
+                    enum:
+                      - This is error type C
+    
+    # Combined error using allOf
+    CombinedError:
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+        - $ref: '#/components/schemas/SpecificError'
+

@@ -187,3 +187,174 @@ func TestEither_Validate(t *testing.T) {
 		assert.NoError(t, err) // Should pass because only A is validated
 	})
 }
+
+// Test types for disambiguation
+type PersonWithRequired struct {
+	Name string `json:"name" validate:"required"`
+	Age  int    `json:"age"`
+}
+
+func (p PersonWithRequired) Validate() error {
+	if p.Name == "" {
+		return assert.AnError
+	}
+	return nil
+}
+
+type PersonWithoutRequired struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
+func (p PersonWithoutRequired) Validate() error {
+	// Always valid
+	return nil
+}
+
+func TestEither_UnmarshalJSON_Disambiguation(t *testing.T) {
+	t.Run("prefers type that validates when both unmarshal successfully", func(t *testing.T) {
+		// Both types can unmarshal this JSON, but only PersonWithoutRequired validates
+		data := []byte(`{"name":"","age":25}`)
+		var either Either[PersonWithRequired, PersonWithoutRequired]
+
+		err := either.UnmarshalJSON(data)
+		assert.NoError(t, err)
+		assert.True(t, either.IsB(), "should choose B (PersonWithoutRequired) because it validates")
+		assert.Equal(t, "", either.B.Name)
+		assert.Equal(t, 25, either.B.Age)
+	})
+
+	t.Run("chooses A when only A validates", func(t *testing.T) {
+		data := []byte(`{"name":"John","age":30}`)
+		var either Either[PersonWithRequired, PersonWithoutRequired]
+
+		err := either.UnmarshalJSON(data)
+		assert.NoError(t, err)
+		// Both validate, but validation doesn't disambiguate, so falls back to heuristics
+		// Both are non-zero, so defaults to A
+		assert.True(t, either.IsA(), "should default to A when both validate")
+	})
+
+	t.Run("falls back to A when both validate", func(t *testing.T) {
+		data := []byte(`{"name":"Alice","age":25}`)
+		var either Either[PersonWithoutRequired, PersonWithoutRequired]
+
+		err := either.UnmarshalJSON(data)
+		assert.NoError(t, err)
+		assert.True(t, either.IsA(), "should default to A when both types validate")
+	})
+}
+
+type BooleanStruct struct {
+	Enabled bool `json:"enabled"`
+}
+
+func (b BooleanStruct) Validate() error {
+	return nil
+}
+
+type StringStruct struct {
+	Value string `json:"value"`
+}
+
+func (s StringStruct) Validate() error {
+	return nil
+}
+
+func TestEither_UnmarshalJSON_BooleanDisambiguation(t *testing.T) {
+	t.Run("false boolean is non-zero and should be preferred", func(t *testing.T) {
+		data := []byte(`{"enabled":false}`)
+		var either Either[BooleanStruct, StringStruct]
+
+		err := either.UnmarshalJSON(data)
+		assert.NoError(t, err)
+		// BooleanStruct unmarshals successfully with enabled=false
+		// StringStruct unmarshals with zero value (empty string)
+		// isNonZero(BooleanStruct{false}) should return true for the struct itself
+		// This tests the heuristic when validation doesn't help
+		assert.True(t, either.IsA(), "should choose BooleanStruct")
+		assert.False(t, either.A.Enabled)
+	})
+
+	t.Run("true boolean is non-zero", func(t *testing.T) {
+		data := []byte(`{"enabled":true}`)
+		var either Either[BooleanStruct, StringStruct]
+
+		err := either.UnmarshalJSON(data)
+		assert.NoError(t, err)
+		assert.True(t, either.IsA(), "should choose BooleanStruct")
+		assert.True(t, either.A.Enabled)
+	})
+}
+
+// Structs with nearly identical fields - only validation can disambiguate
+type CreateUserRequest struct {
+	Name  string `json:"name" validate:"required"`
+	Email string `json:"email" validate:"required"`
+	Age   int    `json:"age"`
+}
+
+func (c CreateUserRequest) Validate() error {
+	if c.Name == "" || c.Email == "" {
+		return assert.AnError
+	}
+	return nil
+}
+
+type UpdateUserRequest struct {
+	Name  string `json:"name"`  // optional
+	Email string `json:"email"` // optional
+	Age   int    `json:"age"`
+}
+
+func (u UpdateUserRequest) Validate() error {
+	// All fields optional
+	return nil
+}
+
+func TestEither_UnmarshalJSON_ValidationOnlyDisambiguation(t *testing.T) {
+	t.Run("validation disambiguates when fields are identical but requirements differ", func(t *testing.T) {
+		// Both structs have same fields, both unmarshal successfully
+		// Only validation can tell them apart
+		data := []byte(`{"name":"","email":"","age":25}`)
+		var either Either[CreateUserRequest, UpdateUserRequest]
+
+		err := either.UnmarshalJSON(data)
+		assert.NoError(t, err)
+		// CreateUserRequest fails validation (name and email required)
+		// UpdateUserRequest passes validation (all optional)
+		assert.True(t, either.IsB(), "should choose UpdateUserRequest because it validates")
+		assert.Equal(t, "", either.B.Name)
+		assert.Equal(t, "", either.B.Email)
+		assert.Equal(t, 25, either.B.Age)
+	})
+
+	t.Run("chooses type that validates when both have data", func(t *testing.T) {
+		// With valid data, CreateUserRequest validates
+		data := []byte(`{"name":"John","email":"john@example.com","age":30}`)
+		var either Either[CreateUserRequest, UpdateUserRequest]
+
+		err := either.UnmarshalJSON(data)
+		assert.NoError(t, err)
+		// Both validate successfully, falls back to heuristics then A
+		assert.True(t, either.IsA(), "should default to A when both validate")
+		assert.Equal(t, "John", either.A.Name)
+		assert.Equal(t, "john@example.com", either.A.Email)
+		assert.Equal(t, 30, either.A.Age)
+	})
+
+	t.Run("partial data - only one validates", func(t *testing.T) {
+		// Only name provided - CreateUserRequest fails (email required)
+		data := []byte(`{"name":"Alice","age":28}`)
+		var either Either[CreateUserRequest, UpdateUserRequest]
+
+		err := either.UnmarshalJSON(data)
+		assert.NoError(t, err)
+		// CreateUserRequest fails validation (missing email)
+		// UpdateUserRequest passes validation (email optional)
+		assert.True(t, either.IsB(), "should choose UpdateUserRequest because it validates")
+		assert.Equal(t, "Alice", either.B.Name)
+		assert.Equal(t, "", either.B.Email)
+		assert.Equal(t, 28, either.B.Age)
+	})
+}

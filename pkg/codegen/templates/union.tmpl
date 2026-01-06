@@ -87,7 +87,7 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
         }
 
         // From{{ .Method }} overwrites any union data inside the {{$typeName}} as the provided {{.}}
-        func ({{$alias}} *{{$typeName}}) From{{ .Method }} (v {{.}}) error {
+        func ({{$alias}} *{{$typeName}}) From{{ .Method }} (val {{.}}) error {
             {{if $discriminator -}}
                 {{range $value, $type := $discriminator.Mapping -}}
                     {{if eq $type $element -}}
@@ -98,11 +98,11 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
                                 {{$hasProperty = true -}}
                             {{end -}}
                         {{end -}}
-                        {{if not $hasProperty}}v.{{$discriminator.PropertyName}} = "{{$value}}"{{end}}
+                        {{if not $hasProperty}}val.{{$discriminator.PropertyName}} = "{{$value}}"{{end}}
                     {{end -}}
                 {{end -}}
             {{end -}}
-            bts, err := json.Marshal(v)
+            bts, err := json.Marshal(val)
             {{$alias}}.union = bts
             return err
         }
@@ -228,12 +228,12 @@ func ({{$args.alias}} {{$args.name}}) MarshalJSON() ([]byte, error) {
         }
 
         {{range $args.schema.Properties}}
-            {{if not .Constraints.Required}}if {{$args.alias}}.{{.GoName}} != nil { {{end}}
+            {{if .IsPointerType}}if {{$args.alias}}.{{.GoName}} != nil { {{end}}
                 object["{{.JsonFieldName}}"], err = json.Marshal({{$args.alias}}.{{.GoName}})
                 if err != nil {
                     return nil, fmt.Errorf("error marshaling '{{.JsonFieldName}}': %w", err)
                 }
-                {{if not .Constraints.Required}} }{{end}}
+                {{if .IsPointerType}} }{{end}}
         {{end -}}
         bts, err = json.Marshal(object)
     {{end -}}

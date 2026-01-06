@@ -27,8 +27,9 @@ func oapiSchemaToGoType(schema *base.Schema, options ParseOptions) (GoSchema, er
 	path := options.path
 
 	constraints := newConstraints(schema, ConstraintsContext{
-		name:       "",
-		hasNilType: slices.Contains(t, "null"),
+		name:         "",
+		hasNilType:   slices.Contains(t, "null"),
+		specLocation: options.specLocation,
 	})
 
 	if slices.Contains(t, "array") {
@@ -54,9 +55,11 @@ func oapiSchemaToGoType(schema *base.Schema, options ParseOptions) (GoSchema, er
 			typeName := pathToTypeName(append(path, "Item"))
 
 			typeDef := TypeDefinition{
-				Name:     typeName,
-				JsonName: strings.Join(append(path, "Item"), "."),
-				Schema:   arrayType,
+				Name:           typeName,
+				JsonName:       strings.Join(append(path, "Item"), "."),
+				Schema:         arrayType,
+				SpecLocation:   SpecLocationSchema,
+				NeedsMarshaler: needsMarshaler(arrayType),
 			}
 			options.AddType(typeDef)
 			arrayType.AdditionalTypes = append(arrayType.AdditionalTypes, typeDef)
@@ -179,9 +182,17 @@ func oapiSchemaToGoType(schema *base.Schema, options ParseOptions) (GoSchema, er
 		case "uuid":
 			goType = "uuid.UUID"
 		}
+
+		// Don't use alias if we have length constraints that need validation
+		// (we can't add methods to type aliases)
+		defineViaAlias := true
+		if goType == "string" && (constraints.MinLength != nil || constraints.MaxLength != nil) {
+			defineViaAlias = false
+		}
+
 		return GoSchema{
 			GoType:              goType,
-			DefineViaAlias:      true,
+			DefineViaAlias:      defineViaAlias,
 			SkipOptionalPointer: skipOptionalPointer,
 			Description:         schema.Description,
 			OpenAPISchema:       schema,

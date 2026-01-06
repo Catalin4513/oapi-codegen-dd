@@ -11,11 +11,21 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var bodyTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var bodyTypesValidate *validator.Validate
+
+func init() {
+	bodyTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(bodyTypesValidate)
+}
 
 type ProcessPaymentBody = Payload
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Payload struct {
 	Payload_OneOf *Payload_OneOf `json:"-"`
@@ -23,8 +33,10 @@ type Payload struct {
 
 func (p Payload) Validate() error {
 	if p.Payload_OneOf != nil {
-		if err := p.Payload_OneOf.Validate(); err != nil {
-			return fmt.Errorf("Payload_OneOf validation failed: %w", err)
+		if v, ok := any(p.Payload_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Payload_OneOf", err)
+			}
 		}
 	}
 	return nil
@@ -88,7 +100,12 @@ func (p PayloadC) Validate() error {
 	return schemaTypesValidate.Struct(p)
 }
 
-var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var unionTypesValidate *validator.Validate
+
+func init() {
+	unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(unionTypesValidate)
+}
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
@@ -132,8 +149,8 @@ func (p *Payload_OneOf) AsPayloadA() (PayloadA, error) {
 }
 
 // FromPayloadA overwrites any union data inside the Payload_OneOf as the provided PayloadA
-func (p *Payload_OneOf) FromPayloadA(v PayloadA) error {
-	bts, err := json.Marshal(v)
+func (p *Payload_OneOf) FromPayloadA(val PayloadA) error {
+	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
 }
@@ -144,8 +161,8 @@ func (p *Payload_OneOf) AsPayloadB() (PayloadB, error) {
 }
 
 // FromPayloadB overwrites any union data inside the Payload_OneOf as the provided PayloadB
-func (p *Payload_OneOf) FromPayloadB(v PayloadB) error {
-	bts, err := json.Marshal(v)
+func (p *Payload_OneOf) FromPayloadB(val PayloadB) error {
+	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
 }
@@ -156,8 +173,8 @@ func (p *Payload_OneOf) AsPayloadC() (PayloadC, error) {
 }
 
 // FromPayloadC overwrites any union data inside the Payload_OneOf as the provided PayloadC
-func (p *Payload_OneOf) FromPayloadC(v PayloadC) error {
-	bts, err := json.Marshal(v)
+func (p *Payload_OneOf) FromPayloadC(val PayloadC) error {
+	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
 }

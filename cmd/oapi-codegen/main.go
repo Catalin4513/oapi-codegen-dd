@@ -71,7 +71,7 @@ func main() {
 		}
 	}
 
-	cfg = cfg.Merge(codegen.NewDefaultConfiguration())
+	cfg = cfg.WithDefaults()
 
 	code, err := codegen.Generate(specContents, cfg)
 	if err != nil {
@@ -81,10 +81,12 @@ func main() {
 	destDir := ""
 	destFile := ""
 	if cfg.Output != nil {
-		destDir = filepath.Join(cfg.Output.Directory)
-		err = os.MkdirAll(destDir, generatedDirPerm)
-		if err != nil {
-			errExit("Error creating directory: %v", err)
+		destDir = cfg.Output.Directory
+		if destDir != "" {
+			err = os.MkdirAll(destDir, generatedDirPerm)
+			if err != nil {
+				errExit("Error creating directory: %v", err)
+			}
 		}
 		if cfg.Output.UseSingleFile {
 			destFile = filepath.Join(destDir, cfg.Output.Filename)

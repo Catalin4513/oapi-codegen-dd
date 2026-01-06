@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
 )
 
@@ -45,7 +46,7 @@ func (r RequestBodyDefinition) TypeDef(opID string) TypeDefinition {
 }
 
 func (r RequestBodyDefinition) IsOptional() bool {
-	return !r.Schema.Constraints.Required
+	return r.Schema.Constraints.Required == nil || !*r.Schema.Constraints.Required
 }
 
 // RequestBodyEncoding describes the encoding options for a request body.
@@ -101,9 +102,22 @@ func createBodyDefinition(operationID string, body *v3high.RequestBody, options 
 
 	bodyTypeName := operationID + "Body"
 	ref := schemaProxy.GoLow().GetReference()
-	opts := options.WithReference(ref).WithPath([]string{bodyTypeName})
+	opts := options.WithReference(ref).WithPath([]string{bodyTypeName}).WithSpecLocation(SpecLocationBody)
 
-	bodySchema, err := GenerateGoSchema(schemaProxy, opts)
+	// For request bodies, filter out readOnly fields from the required list
+	// since readOnly fields should only appear in responses, not requests
+	hasReadOnlyRequired := filterReadOnlyFromRequired(schemaProxy)
+
+	// If the schema has readOnly required fields and uses a $ref, we need to
+	// generate a new struct instead of using a type alias, so we can have
+	// different required fields for the request body vs the response
+	optsForBody := opts
+	if hasReadOnlyRequired && ref != "" {
+		// Clear the reference so it generates a new struct instead of an alias
+		optsForBody = opts.WithReference("")
+	}
+
+	bodySchema, err := GenerateGoSchema(schemaProxy, optsForBody)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error generating request body definition: %w", err)
 	}
@@ -123,7 +137,7 @@ func createBodyDefinition(operationID string, body *v3high.RequestBody, options 
 		bodySchema.RefType = bodyTypeName
 	}
 
-	bodySchema.Constraints.Required = required
+	bodySchema.Constraints.Required = ptr(required)
 
 	bd := &RequestBodyDefinition{
 		Name:        bodyTypeName,
@@ -147,4 +161,82 @@ func createBodyDefinition(operationID string, body *v3high.RequestBody, options 
 	}
 
 	return bd, &td, nil
+}
+
+// filterReadOnlyFromRequired removes readOnly properties from the required list
+// in request body schemas. ReadOnly properties should only be required in responses,
+// not in requests. Returns true if any readOnly required fields were found and filtered.
+func filterReadOnlyFromRequired(schemaProxy *base.SchemaProxy) bool {
+	if schemaProxy == nil {
+		return false
+	}
+
+	schema := schemaProxy.Schema()
+	if schema == nil {
+		return false
+	}
+
+	hasReadOnlyRequired := false
+
+	// Handle allOf, anyOf, oneOf schemas
+	if schema.AllOf != nil {
+		for _, subSchemaProxy := range schema.AllOf {
+			if filterReadOnlyFromRequired(subSchemaProxy) {
+				hasReadOnlyRequired = true
+			}
+		}
+	}
+
+	if schema.AnyOf != nil {
+		for _, subSchemaProxy := range schema.AnyOf {
+			if filterReadOnlyFromRequired(subSchemaProxy) {
+				hasReadOnlyRequired = true
+			}
+		}
+	}
+
+	if schema.OneOf != nil {
+		for _, subSchemaProxy := range schema.OneOf {
+			if filterReadOnlyFromRequired(subSchemaProxy) {
+				hasReadOnlyRequired = true
+			}
+		}
+	}
+
+	// Handle regular object schemas with properties
+	if schema.Properties != nil {
+		// Build a list of readOnly property names
+		readOnlyProps := make(map[string]bool)
+		for propName, propProxy := range schema.Properties.FromOldest() {
+			if propProxy == nil {
+				continue
+			}
+			propSchema := propProxy.Schema()
+			if propSchema != nil && propSchema.ReadOnly != nil && *propSchema.ReadOnly {
+				readOnlyProps[propName] = true
+			}
+		}
+
+		// Filter out readOnly properties from the required list
+		if len(readOnlyProps) > 0 && len(schema.Required) > 0 {
+			var filteredRequired []string
+			for _, reqProp := range schema.Required {
+				if !readOnlyProps[reqProp] {
+					filteredRequired = append(filteredRequired, reqProp)
+				} else {
+					hasReadOnlyRequired = true
+				}
+			}
+			schema.Required = filteredRequired
+		}
+
+		// Recursively filter nested object properties
+		for _, propProxy := range schema.Properties.FromOldest() {
+			if filterReadOnlyFromRequired(propProxy) {
+				hasReadOnlyRequired = true
+			}
+		}
+	}
+
+	return hasReadOnlyRequired
 }

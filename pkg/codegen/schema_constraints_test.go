@@ -20,7 +20,7 @@ import (
 func TestNewConstraints(t *testing.T) {
 	t.Run("integer constraints", func(t *testing.T) {
 		minValue := float64(10)
-		maxValue := float64(100)
+		maxValue := float64(99)
 		schema := &base.Schema{
 			Type:     []string{"integer"},
 			Format:   "int32",
@@ -40,9 +40,9 @@ func TestNewConstraints(t *testing.T) {
 		})
 
 		assert.Equal(t, Constraints{
-			Required: true,
-			Min:      minValue,
-			Max:      float64(99),
+			Required: ptr(true),
+			Min:      &minValue,
+			Max:      &maxValue,
 			ValidationTags: []string{
 				"required",
 				"gte=10",
@@ -69,9 +69,9 @@ func TestNewConstraints(t *testing.T) {
 		})
 
 		assert.Equal(t, Constraints{
-			Min:      minValue,
-			Max:      float64(100),
-			Nullable: true,
+			Min:      &minValue,
+			Max:      &maxValue,
+			Nullable: ptr(true),
 			ValidationTags: []string{
 				"omitempty",
 				"gte=10",
@@ -90,12 +90,28 @@ func TestNewConstraints(t *testing.T) {
 		res := newConstraints(schema, ConstraintsContext{})
 
 		assert.Equal(t, Constraints{
-			MaxLength: 100,
-			Nullable:  true,
+			MaxLength: &maxLn,
+			Nullable:  ptr(true),
 			ValidationTags: []string{
 				"omitempty",
 				"max=100",
 			},
+		}, res)
+	})
+
+	t.Run("string with pattern", func(t *testing.T) {
+		pattern := "^[0-9]{4,7}$"
+		schema := &base.Schema{
+			Type:    []string{"string"},
+			Pattern: pattern,
+		}
+
+		res := newConstraints(schema, ConstraintsContext{})
+
+		assert.Equal(t, Constraints{
+			Pattern:  &pattern,
+			Nullable: ptr(true),
+			// ValidationTags is nil because "omitempty" alone gets cleared
 		}, res)
 	})
 
@@ -111,8 +127,44 @@ func TestNewConstraints(t *testing.T) {
 			required:   true,
 		})
 
+		// For boolean types, required is set to false to avoid validation failures with false values
+		// Since required=false, we don't set the Required pointer (it remains nil)
+		assert.Equal(t, Constraints{}, res)
+	})
+
+	t.Run("array with minItems and maxItems", func(t *testing.T) {
+		minItems := int64(1)
+		maxItems := int64(10)
+		schema := &base.Schema{
+			Type:     []string{"array"},
+			MinItems: &minItems,
+			MaxItems: &maxItems,
+		}
+
+		res := newConstraints(schema, ConstraintsContext{})
+
 		assert.Equal(t, Constraints{
-			Required: false,
+			MinItems: &minItems,
+			MaxItems: &maxItems,
+			Nullable: ptr(true),
+		}, res)
+	})
+
+	t.Run("object with minProperties and maxProperties", func(t *testing.T) {
+		minProps := int64(1)
+		maxProps := int64(5)
+		schema := &base.Schema{
+			Type:          []string{"object"},
+			MinProperties: &minProps,
+			MaxProperties: &maxProps,
+		}
+
+		res := newConstraints(schema, ConstraintsContext{})
+
+		assert.Equal(t, Constraints{
+			MinProperties: &minProps,
+			MaxProperties: &maxProps,
+			Nullable:      ptr(true),
 		}, res)
 	})
 }

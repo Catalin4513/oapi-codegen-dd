@@ -21,6 +21,7 @@ components:
       properties:
         client:
           allOf:
+            - description: should be ignored without type
             - $ref: '#/components/schemas/Client'
             - properties:
                 id:

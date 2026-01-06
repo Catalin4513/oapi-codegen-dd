@@ -58,12 +58,12 @@ func filterOperations(model *v3high.Document, cfg FilterConfig) {
 	}
 
 	for path, pathItem := range paths {
-		if cfg.Include.Paths != nil && !slices.Contains(cfg.Include.Paths, path) {
+		if len(cfg.Include.Paths) > 0 && !slices.Contains(cfg.Include.Paths, path) {
 			model.Paths.PathItems.Delete(path)
 			continue
 		}
 
-		if cfg.Exclude.Paths != nil && slices.Contains(cfg.Exclude.Paths, path) {
+		if len(cfg.Exclude.Paths) > 0 && slices.Contains(cfg.Exclude.Paths, path) {
 			model.Paths.PathItems.Delete(path)
 			continue
 		}
@@ -94,10 +94,10 @@ func filterOperations(model *v3high.Document, cfg FilterConfig) {
 			}
 
 			// OperationIDs
-			if cfg.Exclude.OperationIDs != nil && slices.Contains(cfg.Exclude.OperationIDs, op.OperationId) {
+			if len(cfg.Exclude.OperationIDs) > 0 && slices.Contains(cfg.Exclude.OperationIDs, op.OperationId) {
 				remove = true
 			}
-			if cfg.Include.OperationIDs != nil && !slices.Contains(cfg.Include.OperationIDs, op.OperationId) {
+			if len(cfg.Include.OperationIDs) > 0 && !slices.Contains(cfg.Include.OperationIDs, op.OperationId) {
 				remove = true
 			}
 

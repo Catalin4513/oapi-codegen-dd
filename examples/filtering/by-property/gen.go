@@ -170,7 +170,12 @@ func asMap[V any](v any) (map[string]V, error) {
 	return m, nil
 }
 
-var bodyTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var bodyTypesValidate *validator.Validate
+
+func init() {
+	bodyTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(bodyTypesValidate)
+}
 
 type UpdateClientBody = Person
 
@@ -191,7 +196,12 @@ func (r UpdateClientErrorResponse) Error() string {
 	return res0
 }
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Person struct {
 	Name       string `json:"name" validate:"required"`
@@ -200,7 +210,17 @@ type Person struct {
 }
 
 func (p Person) Validate() error {
-	return schemaTypesValidate.Struct(p)
+	if err := schemaTypesValidate.Var(p.Name, "required"); err != nil {
+		return runtime.NewValidationErrorFromError("Name", err)
+	}
+	if p.Employment != nil {
+		if v, ok := any(p.Employment).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Employment", err)
+			}
+		}
+	}
+	return nil
 }
 
 type Job struct {

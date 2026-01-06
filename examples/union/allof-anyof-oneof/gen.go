@@ -13,14 +13,26 @@ import (
 
 type GetFooResponse = map[string]any
 
-var schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var schemaTypesValidate *validator.Validate
+
+func init() {
+	schemaTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(schemaTypesValidate)
+}
 
 type Order struct {
 	Client *Order_Client `json:"client,omitempty"`
 }
 
 func (o Order) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if o.Client != nil {
+		if v, ok := any(o.Client).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Client", err)
+			}
+		}
+	}
+	return nil
 }
 
 type Order_Client struct {
@@ -32,19 +44,23 @@ type Order_Client struct {
 
 func (o Order_Client) Validate() error {
 	if err := schemaTypesValidate.Var(o.Name, "required"); err != nil {
-		return fmt.Errorf("Name validation failed: %w", err)
+		return runtime.NewValidationErrorFromError("Name", err)
 	}
 	if err := schemaTypesValidate.Var(o.ID, "required"); err != nil {
-		return fmt.Errorf("ID validation failed: %w", err)
+		return runtime.NewValidationErrorFromError("ID", err)
 	}
 	if o.Order_Client_AnyOf != nil {
-		if err := o.Order_Client_AnyOf.Validate(); err != nil {
-			return fmt.Errorf("Order_Client_AnyOf validation failed: %w", err)
+		if v, ok := any(o.Order_Client_AnyOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Order_Client_AnyOf", err)
+			}
 		}
 	}
 	if o.Order_Client_OneOf != nil {
-		if err := o.Order_Client_OneOf.Validate(); err != nil {
-			return fmt.Errorf("Order_Client_OneOf validation failed: %w", err)
+		if v, ok := any(o.Order_Client_OneOf).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError("Order_Client_OneOf", err)
+			}
 		}
 	}
 	return nil
@@ -157,7 +173,12 @@ func (l Location) Validate() error {
 	return schemaTypesValidate.Struct(l)
 }
 
-var unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+var unionTypesValidate *validator.Validate
+
+func init() {
+	unionTypesValidate = validator.New(validator.WithRequiredStructEnabled())
+	runtime.RegisterCustomTypeFunc(unionTypesValidate)
+}
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T

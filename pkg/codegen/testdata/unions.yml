@@ -64,3 +64,44 @@ components:
         message:
           type: string
           description: Error message
+
+    # Test schemas for single-element anyOf/oneOf optimization
+    Order:
+      type: object
+      properties:
+        client:
+          anyOf:
+            - $ref: '#/components/schemas/Identity'
+        verification:
+          anyOf:
+            - $ref: '#/components/schemas/Verification'
+
+    Identity:
+      type: object
+      required:
+        - issuer
+      properties:
+        issuer:
+          type: string
+
+    Verification:
+      type: object
+      properties:
+        verifier:
+          oneOf:
+            - $ref: '#/components/schemas/Address'
+
+    Address:
+      type: object
+      properties:
+        city:
+          type: string
+        location:
+          oneOf:
+            - $ref: '#/components/schemas/Location'
+
+    Location:
+      type: object
+      properties:
+        description:
+          type: string

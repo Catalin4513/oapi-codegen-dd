@@ -54,6 +54,7 @@ type ParseOptions struct {
 	currentTypes map[string]TypeDefinition
 	reference    string
 	path         []string
+	specLocation SpecLocation
 
 	// naming parameters
 	baseName     string
@@ -87,6 +88,11 @@ func (o ParseOptions) WithBaseName(baseName string) ParseOptions {
 
 func (o ParseOptions) WithNameSuffixes(suffixes []string) ParseOptions {
 	o.nameSuffixes = slices.Clone(suffixes)
+	return o
+}
+
+func (o ParseOptions) WithSpecLocation(specLocation SpecLocation) ParseOptions {
+	o.specLocation = specLocation
 	return o
 }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createUserBodyPages(t *testing.T) CreateUserBody_Pages {
+func createUserBodyPagesItem(t *testing.T) CreateUserBody_Pages_Item {
 	t.Helper()
 	var (
 		tag1 string
@@ -30,7 +30,7 @@ func createUserBodyPages(t *testing.T) CreateUserBody_Pages {
 	}
 	oneOf := runtime.NewEitherFromA[CreateUserBody_Pages_OneOf_0, CreateUserBody_Pages_OneOf_1](oneOfValue)
 
-	return CreateUserBody_Pages{
+	return CreateUserBody_Pages_Item{
 		Limit: 10,
 		Tag1:  &tag1,
 		Tag2:  &tag2,
@@ -43,7 +43,7 @@ func createUserBodyPages(t *testing.T) CreateUserBody_Pages {
 	}
 }
 
-func TestCreateUserBody_Pages_MarshalJSON(t *testing.T) {
+func TestCreateUserBody_Pages_Item_MarshalJSON(t *testing.T) {
 	expectedJSON := `{
         "limit": 10,
         "tag1": "tag1",
@@ -53,13 +53,13 @@ func TestCreateUserBody_Pages_MarshalJSON(t *testing.T) {
         "second": 21
     }`
 
-	res, err := json.Marshal(createUserBodyPages(t))
+	res, err := json.Marshal(createUserBodyPagesItem(t))
 	require.NoError(t, err)
 
 	assert.JSONEq(t, expectedJSON, string(res))
 }
 
-func TestCreateUserBody_Pages_UnmarshalJSON(t *testing.T) {
+func TestCreateUserBody_Pages_Item_UnmarshalJSON(t *testing.T) {
 	data := []byte(`{
         "limit": 10,
         "tag1": "tag1",
@@ -68,11 +68,11 @@ func TestCreateUserBody_Pages_UnmarshalJSON(t *testing.T) {
         "first": 1,
         "second": 21
     }`)
-	var obj CreateUserBody_Pages
+	var obj CreateUserBody_Pages_Item
 	err := json.Unmarshal(data, &obj)
 	require.NoError(t, err)
 
-	expected := createUserBodyPages(t)
+	expected := createUserBodyPagesItem(t)
 
 	assert.Equal(t, expected, obj)
 }

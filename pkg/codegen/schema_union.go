@@ -12,6 +12,7 @@ package codegen
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/pb33f/libopenapi/datamodel/high/base"
@@ -39,6 +40,49 @@ func generateUnion(elements []*base.SchemaProxy, discriminator *base.Discriminat
 			Mapping:  make(map[string]string),
 		}
 	}
+
+	// Early return for single element unions (no null involved)
+	if len(elements) == 1 {
+		ref := elements[0].GoLow().GetReference()
+		opts := options.WithReference(ref)
+		return GenerateGoSchema(elements[0], opts)
+	}
+
+	// Filter out null types from union elements
+	var nonNullElements []*base.SchemaProxy
+	hasNull := false
+	for _, element := range elements {
+		if element == nil {
+			continue
+		}
+		schema := element.Schema()
+		if schema == nil {
+			continue
+		}
+		// Check if this element is a null type
+		if len(schema.Type) == 1 && slices.Contains(schema.Type, "null") {
+			hasNull = true
+			continue
+		}
+		nonNullElements = append(nonNullElements, element)
+	}
+
+	// If after filtering we have only 1 element, return it as a nullable type
+	if len(nonNullElements) == 1 {
+		ref := nonNullElements[0].GoLow().GetReference()
+		opts := options.WithReference(ref)
+		schema, err := GenerateGoSchema(nonNullElements[0], opts)
+		if err != nil {
+			return GoSchema{}, err
+		}
+		if hasNull {
+			schema.Constraints.Nullable = ptr(true)
+		}
+		return schema, nil
+	}
+
+	// Use the filtered elements for union generation
+	elements = nonNullElements
 
 	primitives := map[string]bool{
 		"string":  true,
