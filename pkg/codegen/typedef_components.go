@@ -73,6 +73,18 @@ func getComponentParameters(params *orderedmap.Map[string, *v3high.Parameter], o
 			return nil, fmt.Errorf("error making name for components/parameters/%s: %w", paramName, err)
 		}
 
+		ref := ""
+		if paramOrRef.Schema != nil {
+			ref = paramOrRef.Schema.GoLow().GetReference()
+		}
+
+		// For inline schemas (no $ref), we need to create a type alias
+		// For referenced schemas, we use the referenced type name
+		if ref == "" {
+			// Inline schema - create a type alias
+			goType.DefineViaAlias = true
+		}
+
 		typeDef := TypeDefinition{
 			JsonName:         paramName,
 			Schema:           goType,
@@ -82,11 +94,6 @@ func getComponentParameters(params *orderedmap.Map[string, *v3high.Parameter], o
 			HasSensitiveData: hasSensitiveData(goType),
 		}
 		options.AddType(typeDef)
-
-		ref := ""
-		if paramOrRef.Schema != nil {
-			ref = paramOrRef.Schema.GoLow().GetReference()
-		}
 
 		if ref != "" {
 			// Generate a reference type for referenced parameters

@@ -38,20 +38,18 @@ func CreateDocument(docContents []byte, cfg Configuration) (libopenapi.Document,
 
 	// If we filtered anything, we must prune to remove dangling references
 	// Otherwise, only prune if SkipPrune is false
-	shouldPrune := filtered || !cfg.SkipPrune
-	if shouldPrune {
-		doc, err = pruneSchema(doc, oapiCodegenExtensions)
-		if err != nil {
+	if filtered || !cfg.SkipPrune {
+		if err = pruneSchema(doc); err != nil {
 			return nil, fmt.Errorf("error pruning schema: %w", err)
 		}
-	} else {
-		// If we're not pruning, we still need to reload the document to persist filter changes
-		_, doc, _, err = doc.RenderAndReload()
-		if err != nil {
-			return nil, fmt.Errorf("error reloading document: %w", err)
-		}
+		return doc, nil
 	}
 
+	// If we're not pruning, we still need to reload the document to persist filter changes
+	_, doc, _, err = doc.RenderAndReload()
+	if err != nil {
+		return nil, fmt.Errorf("error reloading document: %w", err)
+	}
 	return doc, nil
 }
 

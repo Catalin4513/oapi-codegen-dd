@@ -63,13 +63,13 @@ tidy-ci:
 
 .PHONY: fetch-specs
 fetch-specs:
-	rm -rf ./pkg/codegen/integration/testdata/specs
-	git clone https://github.com/cubahno/specs.git ./pkg/codegen/integration/testdata/specs
-	find ./pkg/codegen/integration/testdata/specs -mindepth 1 -name ".*" -exec rm -rf {} +
+	rm -rf ./testdata/specs
+	git clone https://github.com/cubahno/specs.git ./testdata/specs
+	find ./testdata/specs -mindepth 1 -name ".*" -exec rm -rf {} +
 
 test-integration:
-	@go test -v -tags=integration -count=1 -timeout=30m ./pkg/codegen/integration/... 2>&1 | \
-		grep -v "^=== RUN\|^=== PAUSE\|^=== CONT\|^--- PASS:" || true
+	@go test -v -tags=integration -count=1 -timeout=30m . 2>&1 | \
+		grep -v "^=== RUN\|^=== PAUSE\|^=== CONT\|^--- PASS:"
 
 check-all: generate lint test test-integration
 	@if [ -n "$$(git status --porcelain)" ]; then \
@@ -97,4 +97,4 @@ check-fmt:
 
 build-ci: check-fmt lint-ci gosec
 
-test-ci: test fetch-specs test-integration
+test-ci: test

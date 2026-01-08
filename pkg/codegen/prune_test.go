@@ -115,12 +115,12 @@ func TestFilterOnlyCat(t *testing.T) {
 	assert.NotEmpty(t, m2.Model.Paths.PathItems.GetOrZero("/cat").Get, "GET /cat operation should still be in spec")
 	assert.Empty(t, m2.Model.Paths.PathItems.GetOrZero("/dog").Get, "GET /dog should have been removed from spec")
 
-	doc, err = pruneSchema(doc2, oapiCodegenExtensions)
+	err = pruneSchema(doc2)
 	assert.Nil(t, err)
 	if err != nil {
 		t.Fatal(err)
 	}
-	model, _ = doc.BuildV3Model()
+	model, _ = doc2.BuildV3Model()
 
 	assert.Equal(t, 3, model.Model.Components.Schemas.Len())
 }
@@ -159,12 +159,12 @@ func TestFilterOnlyDog(t *testing.T) {
 	assert.NotEmpty(t, m2.Model.Paths.PathItems.GetOrZero("/dog").Get)
 	assert.Empty(t, m2.Model.Paths.PathItems.GetOrZero("/cat").Get)
 
-	doc3, _ := pruneSchema(doc2, oapiCodegenExtensions)
+	err = pruneSchema(doc2)
 	assert.Nil(t, err)
 	if err != nil {
 		t.Fatal(err)
 	}
-	m3, _ := doc3.BuildV3Model()
+	m3, _ := doc2.BuildV3Model()
 
 	assert.Equal(t, 3, m3.Model.Components.Schemas.Len())
 }
@@ -189,7 +189,7 @@ func TestPruningUnusedComponents(t *testing.T) {
 	assert.Equal(t, 1, m.Components.Links.Len())
 	assert.Equal(t, 1, m.Components.Callbacks.Len())
 
-	doc, _ = pruneSchema(doc, oapiCodegenExtensions)
+	_ = pruneSchema(doc)
 	model, _ = doc.BuildV3Model()
 	m = &model.Model
 
@@ -198,9 +198,9 @@ func TestPruningUnusedComponents(t *testing.T) {
 	assert.Equal(t, 0, m.Components.RequestBodies.Len())
 	assert.Equal(t, 0, m.Components.Responses.Len())
 	assert.Equal(t, 0, m.Components.Headers.Len())
-	assert.Equal(t, 0, m.Components.Examples.Len())
-	assert.Equal(t, 0, m.Components.Links.Len())
-	assert.Equal(t, 0, m.Components.Callbacks.Len())
+	assert.Nil(t, m.Components.Examples)
+	assert.Nil(t, m.Components.Links)
+	assert.Nil(t, m.Components.Callbacks)
 }
 
 func TestPruneParameterSchemaRefs(t *testing.T) {
@@ -219,7 +219,7 @@ func TestPruneParameterSchemaRefs(t *testing.T) {
 	assert.Equal(t, 2, m.Components.Parameters.Len(), "Should have 2 parameters before pruning")
 
 	// Prune the schema
-	doc, err = pruneSchema(doc, oapiCodegenExtensions)
+	err = pruneSchema(doc)
 	assert.NoError(t, err)
 
 	model, _ = doc.BuildV3Model()
@@ -262,10 +262,10 @@ func TestPruneInlineParameterSchemaRefs(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Prune unused schemas
-		doc3, err := pruneSchema(doc2, oapiCodegenExtensions)
+		err = pruneSchema(doc2)
 		assert.NoError(t, err)
 
-		model3, err := doc3.BuildV3Model()
+		model3, err := doc2.BuildV3Model()
 		assert.NoError(t, err)
 
 		// After pruning: should have 2 schemas (UserId, User)
@@ -305,10 +305,10 @@ func TestPruneComponentSchemaRefs(t *testing.T) {
 		assert.Equal(t, 6, model.Model.Components.Schemas.Len())
 
 		// Prune unused schemas
-		doc2, err := pruneSchema(doc, oapiCodegenExtensions)
+		err = pruneSchema(doc)
 		assert.NoError(t, err)
 
-		model2, err := doc2.BuildV3Model()
+		model2, err := doc.BuildV3Model()
 		assert.NoError(t, err)
 
 		// After pruning: should have 5 schemas (all except UnusedSchema)
@@ -354,10 +354,10 @@ func TestPruneComponentRequestBodyRefs(t *testing.T) {
 		assert.Equal(t, 3, model.Model.Components.Schemas.Len())
 
 		// Prune unused components
-		doc2, err := pruneSchema(doc, oapiCodegenExtensions)
+		err = pruneSchema(doc)
 		assert.NoError(t, err)
 
-		model2, err := doc2.BuildV3Model()
+		model2, err := doc.BuildV3Model()
 		assert.NoError(t, err)
 
 		// After pruning: should have 3 request bodies (all except UnusedRequest)
@@ -410,10 +410,10 @@ func TestPruneDefaultResponseHeaders(t *testing.T) {
 		assert.Equal(t, 3, model.Model.Components.Schemas.Len())
 
 		// Prune unused components
-		doc2, err := pruneSchema(doc, oapiCodegenExtensions)
+		err = pruneSchema(doc)
 		assert.NoError(t, err)
 
-		model2, err := doc2.BuildV3Model()
+		model2, err := doc.BuildV3Model()
 		assert.NoError(t, err)
 
 		// After pruning: should have 2 headers (ErrorCode, ErrorMessage - UnusedHeader should be pruned)
@@ -454,42 +454,37 @@ func TestPruneExamples(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Prune the document
-		prunedDoc, err := pruneSchema(doc, oapiCodegenExtensions)
+		err = pruneSchema(doc)
 		assert.NoError(t, err)
 
-		model, err := prunedDoc.BuildV3Model()
+		model, err := doc.BuildV3Model()
 		assert.NoError(t, err)
 
-		// components/examples should be removed by pruning (they're not referenced by operations)
-		// We track example references via collectExampleRefs
-		assert.Equal(t, 0, model.Model.Components.Examples.Len())
+		// components/examples should be removed by pruning (set to nil)
+		assert.Nil(t, model.Model.Components.Examples)
 
-		// Schema examples are also not removed
+		// Schema examples are not removed (we don't touch inline examples anymore)
 		paySessionReq := model.Model.Components.Schemas.GetOrZero("PaySessionRequest")
 		schema := paySessionReq.Schema()
 		assert.NotNil(t, schema.Example)
 
-		// Property examples should be empty, but example (singular) should be kept
+		// Property examples - we don't clean them up anymore
 		fooProp := schema.Properties.GetOrZero("foo")
 		fooSchema := fooProp.Schema()
-		assert.Nil(t, fooSchema.Examples)
+		// Example (singular) should still be there
 		assert.NotNil(t, fooSchema.Example)
 
-		// Check inline operation request body examples are removed
+		// We don't clean up inline examples anymore - just verify the structure is intact
 		sessionsPath := model.Model.Paths.PathItems.GetOrZero("/sessions")
 		postOp := sessionsPath.Post
 		assert.NotNil(t, postOp.RequestBody)
-		jsonContent := postOp.RequestBody.Content.GetOrZero("application/json")
-		assert.Equal(t, 0, jsonContent.Examples.Len())
 
-		// Parameter examples should be empty, but example (singular) should be kept
+		// Parameter example (singular) should still be there
 		param := model.Model.Components.Parameters.GetOrZero("Idempotency-Key")
-		assert.Equal(t, 0, param.Examples.Len())
 		assert.NotNil(t, param.Example)
 
-		// Header examples should be empty, but example (singular) should be kept
+		// Header example (singular) should still be there
 		header := model.Model.Components.Headers.GetOrZero("Idempotency-Key")
-		assert.Equal(t, 0, header.Examples.Len())
 		assert.NotNil(t, header.Example)
 	})
 
@@ -501,15 +496,14 @@ func TestPruneExamples(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Prune the document
-		prunedDoc, err := pruneSchema(doc, oapiCodegenExtensions)
+		err = pruneSchema(doc)
 		assert.NoError(t, err)
 
-		model, err := prunedDoc.BuildV3Model()
+		model, err := doc.BuildV3Model()
 		assert.NoError(t, err)
 
-		// components/examples should be removed because they're only referenced by webhooks
-		// and webhooks are removed during cleanup
-		assert.Equal(t, 0, model.Model.Components.Examples.Len())
+		// components/examples should be removed (set to nil)
+		assert.Nil(t, model.Model.Components.Examples)
 
 		// webhooks should be removed
 		assert.Nil(t, model.Model.Webhooks)

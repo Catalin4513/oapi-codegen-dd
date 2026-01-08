@@ -16,11 +16,11 @@ pipeline:
               tty: true
               resources:
                 limits:
-                  memory: 16Gi
-                  cpu: 16
-                requests:
                   memory: 8Gi
                   cpu: 8
+                requests:
+                  memory: 4Gi
+                  cpu: 4
       stages:
         - name: CI Checks
           parallel:
@@ -73,5 +73,8 @@ pipeline:
                       # Run test-ci target (includes test and test-integration)
                       echo "Running test-ci..."
                       make test-ci
+                      echo "Running integration tests..."
+                      make fetch-specs
+                      INTEGRATION_MAX_CONCURRENCY=10 go test -v -tags=integration -count=1 -timeout=15m .
                   - type: codeCov
                     container: go

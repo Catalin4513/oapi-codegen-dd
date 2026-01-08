@@ -11,7 +11,7 @@
 //go:build integration
 // +build integration
 
-package integration
+package main
 
 import (
 	"context"
@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -31,20 +32,24 @@ import (
 var specsFS embed.FS
 
 type testResult struct {
-	name   string
-	passed bool
-	stage  string // "read", "generate", "write", "mod-init", "mod-tidy", "build"
-	err    string
-	tmpDir string
+	name        string
+	passed      bool
+	stage       string // "read", "generate", "write", "mod-init", "mod-tidy", "build"
+	err         string
+	tmpDir      string
+	linesOfCode int
 }
 
-var showMaxErrors = 50
+var (
+	showMaxErrors  = 10
+	maxConcurrency = 50
+)
 
 func TestIntegration(t *testing.T) {
 	specPath := os.Getenv("SPEC")
 
-	// Get project root
-	projectRoot, err := filepath.Abs(filepath.Join("..", "..", ".."))
+	// Get project root (current directory since test is at root)
+	projectRoot, err := filepath.Abs(".")
 	if err != nil {
 		t.Fatalf("Failed to get project root: %v", err)
 	}
@@ -67,7 +72,7 @@ func TestIntegration(t *testing.T) {
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, "\n🔍 Found %d spec(s) to process\n", len(specs))
+	fmt.Fprintf(os.Stderr, "\n🔍 Found %d specs to process\n", len(specs))
 
 	// Enable verbose mode for single spec
 	verbose := len(specs) == 1
@@ -121,7 +126,12 @@ func TestIntegration(t *testing.T) {
 	}()
 
 	// Process specs in parallel
-	semaphore := make(chan struct{}, 50) // Limit concurrency to 50
+	if envMax := os.Getenv("INTEGRATION_MAX_CONCURRENCY"); envMax != "" {
+		if parsed, err := strconv.Atoi(envMax); err == nil && parsed > 0 {
+			maxConcurrency = parsed
+		}
+	}
+	semaphore := make(chan struct{}, maxConcurrency)
 
 	for _, name := range specs {
 		wg.Add(1)
@@ -236,6 +246,11 @@ output:
 			}
 			if verbose {
 				fmt.Fprintf(os.Stderr, "   ✅ Code generation successful\n")
+			}
+
+			// Count lines of code in generated file
+			if genContent, err := os.ReadFile(genFile); err == nil {
+				result.linesOfCode = len(strings.Split(string(genContent), "\n"))
 			}
 
 			// Initialize go module
@@ -370,10 +385,12 @@ func collectSpecs(t *testing.T, specPath string) []string {
 func printSummary(total int, results []testResult) {
 	var passed, failed []testResult
 	failuresByStage := make(map[string]int)
+	totalLOC := 0
 
 	for _, r := range results {
 		if r.passed {
 			passed = append(passed, r)
+			totalLOC += r.linesOfCode
 		} else {
 			failed = append(failed, r)
 			failuresByStage[r.stage]++
@@ -390,6 +407,12 @@ func printSummary(total int, results []testResult) {
 	} else {
 		fmt.Fprintf(os.Stderr, "📈 Results: %d passed, %d failed out of %d total (%.1f%% pass rate)\n",
 			len(passed), len(failed), total, passRate)
+	}
+
+	if totalLOC > 0 {
+		avgLOC := totalLOC / len(passed)
+		fmt.Fprintf(os.Stderr, "📝 Total LOC generated: %s lines (avg: %s lines/spec)\n",
+			formatNumber(totalLOC), formatNumber(avgLOC))
 	}
 
 	fmt.Fprintln(os.Stderr, strings.Repeat("─", 80))
@@ -444,4 +467,20 @@ func printSummary(total int, results []testResult) {
 	}
 
 	fmt.Fprintln(os.Stderr, strings.Repeat("═", 80))
+}
+
+func formatNumber(n int) string {
+	s := fmt.Sprintf("%d", n)
+	if len(s) <= 3 {
+		return s
+	}
+	// Add commas for thousands
+	var result []byte
+	for i, c := range s {
+		if i > 0 && (len(s)-i)%3 == 0 {
+			result = append(result, ',')
+		}
+		result = append(result, byte(c))
+	}
+	return string(result)
 }

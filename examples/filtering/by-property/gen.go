@@ -180,9 +180,12 @@ func init() {
 type UpdateClientBody = Person
 
 type GetClientResponse struct {
-	Name       string `json:"name" validate:"required"`
-	Age        *int   `json:"age,omitempty"`
-	Employment *Job   `json:"employment,omitempty"`
+	Name       string  `json:"name" validate:"required"`
+	Age        *int    `json:"age,omitempty"`
+	Address    *string `json:"address,omitempty"`
+	Mother     *Person `json:"mother,omitempty"`
+	Father     *Person `json:"father,omitempty"`
+	Employment *Job    `json:"employment,omitempty"`
 }
 
 type UpdateClientErrorResponse struct {

@@ -3,8 +3,6 @@
 package schemarefs
 
 import (
-	"fmt"
-
 	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
@@ -16,42 +14,16 @@ func init() {
 	runtime.RegisterCustomTypeFunc(queryTypesValidate)
 }
 
-type Headquarters struct {
+type Headquarters = struct {
 	Name    *string `json:"name,omitempty"`
 	Phone   *string `json:"phone,omitempty"`
 	Email   *string `json:"email,omitempty"`
 	Address *string `json:"address,omitempty"`
 }
 
-func (h Headquarters) Validate() error {
-	return queryTypesValidate.Struct(h)
-}
+type Establishments = []Establishments_Item
 
-type Establishments []Establishments_Item
-
-func (e Establishments) Validate() error {
-	for i, item := range e {
-		if v, ok := any(item).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
-			}
-		}
-	}
-	return nil
-}
-
-type Arrangements []Arrangements_Item
-
-func (a Arrangements) Validate() error {
-	for i, item := range a {
-		if v, ok := any(item).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
-			}
-		}
-	}
-	return nil
-}
+type Arrangements = []Arrangements_Item
 
 type UpdateOrganizationQuery struct {
 	CompanyName *string `json:"company_name,omitempty"`
