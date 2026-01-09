@@ -89,9 +89,9 @@ func TestParser_Parse(t *testing.T) {
 		schema := GoSchema{
 			RefType: "",
 			UnionElements: []UnionElement{
-				"int",
-				"string",
-				"bool",
+				{TypeName: "int", Schema: GoSchema{GoType: "int"}},
+				{TypeName: "string", Schema: GoSchema{GoType: "string"}},
+				{TypeName: "bool", Schema: GoSchema{GoType: "bool"}},
 			},
 		}
 		fields := genFieldsFromProperties(schema.Properties, parseOptions)
@@ -131,9 +131,9 @@ type IntOrStringOrBool struct {
 		unions := make([]TypeDefinition, 0)
 		anyOfSchema := GoSchema{
 			UnionElements: []UnionElement{
-				"int",
-				"string",
-				"bool",
+				{TypeName: "int", Schema: GoSchema{GoType: "int"}},
+				{TypeName: "string", Schema: GoSchema{GoType: "string"}},
+				{TypeName: "bool", Schema: GoSchema{GoType: "bool"}},
 			},
 		}
 		anyOfFields := genFieldsFromProperties(anyOfSchema.Properties, parseOptions)
@@ -147,8 +147,8 @@ type IntOrStringOrBool struct {
 
 		oneOfSchema := GoSchema{
 			UnionElements: []UnionElement{
-				"int",
-				"string",
+				{TypeName: "int", Schema: GoSchema{GoType: "int"}},
+				{TypeName: "string", Schema: GoSchema{GoType: "string"}},
 			},
 		}
 		oneOfFields := genFieldsFromProperties(oneOfSchema.Properties, parseOptions)

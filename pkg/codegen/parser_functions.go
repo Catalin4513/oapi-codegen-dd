@@ -43,6 +43,7 @@ var TemplateFunctions = template.FuncMap{
 	"append": func(slice []any, val any) []any {
 		return append(slice, val)
 	},
+	"filterOmitEmpty": filterOmitEmpty,
 }
 
 // uppercaseFirstCharacter Uppercases the first character in a string.
@@ -129,4 +130,15 @@ func escapeGoString(s string) string {
 		return quoted[1 : len(quoted)-1]
 	}
 	return quoted
+}
+
+// filterOmitEmpty removes "omitempty" from a slice of validation tags
+func filterOmitEmpty(tags []string) []string {
+	result := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		if tag != "omitempty" {
+			result = append(result, tag)
+		}
+	}
+	return result
 }

@@ -133,3 +133,13 @@ components:
         type: string
         minLength: 1
         maxLength: 50
+
+    # Example with map that has both item count and value length constraints
+    tagsWithBothConstraints:
+      type: object
+      minProperties: 2
+      maxProperties: 5
+      additionalProperties:
+        type: string
+        minLength: 1
+        maxLength: 50

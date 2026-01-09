@@ -28,6 +28,13 @@ func (l Location) Validate() error {
 type Users map[string]User
 
 func (u Users) Validate() error {
+	for k, v := range u {
+		if validator, ok := any(v).(runtime.Validator); ok {
+			if err := validator.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError(k, err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -58,14 +65,7 @@ type ReferenceWithRequiredExtra struct {
 }
 
 func (r ReferenceWithRequiredExtra) Validate() error {
-	if r.Index != nil {
-		if v, ok := any(r.Index).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Index", err)
-			}
-		}
-	}
-	return nil
+	return schemaTypesValidate.Struct(r)
 }
 
 // Getter for additional properties for ReferenceWithRequiredExtra. Returns the specified
@@ -139,14 +139,7 @@ type RouteWithOptionalExtra struct {
 }
 
 func (r RouteWithOptionalExtra) Validate() error {
-	if r.Index != nil {
-		if v, ok := any(r.Index).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Index", err)
-			}
-		}
-	}
-	return nil
+	return schemaTypesValidate.Struct(r)
 }
 
 // Getter for additional properties for RouteWithOptionalExtra. Returns the specified
@@ -285,11 +278,7 @@ func (a ArrayWithMinItems) Validate() error {
 	return nil
 }
 
-type Username string
-
-func (u Username) Validate() error {
-	return nil
-}
+type Username = string
 
 type UserProfile struct {
 	Name string `json:"name" validate:"required,max=20,min=3"`
@@ -302,6 +291,31 @@ func (u UserProfile) Validate() error {
 type TagsWithLength map[string]string
 
 func (t TagsWithLength) Validate() error {
+	for k, v := range t {
+		if err := schemaTypesValidate.Var(v, "omitempty,max=50,min=1"); err != nil {
+			return runtime.NewValidationErrorFromError(k, err)
+		}
+	}
+	return nil
+}
+
+type TagsWithBothConstraints map[string]string
+
+func (t TagsWithBothConstraints) Validate() error {
+	if t == nil {
+		return nil
+	}
+	if len(t) < 2 {
+		return runtime.NewValidationError("", fmt.Sprintf("must have at least 2 properties, got %d", len(t)))
+	}
+	if len(t) > 5 {
+		return runtime.NewValidationError("", fmt.Sprintf("must have at most 5 properties, got %d", len(t)))
+	}
+	for k, v := range t {
+		if err := schemaTypesValidate.Var(v, "omitempty,max=50,min=1"); err != nil {
+			return runtime.NewValidationErrorFromError(k, err)
+		}
+	}
 	return nil
 }
 

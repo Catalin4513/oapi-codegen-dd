@@ -174,6 +174,9 @@ func (u *UpdateConfigBody_Config) UnmarshalJSON(data []byte) error {
 type GetFirewall_Response_Rules []GetFirewall_Response_Rules_Item
 
 func (g GetFirewall_Response_Rules) Validate() error {
+	if g == nil {
+		return nil
+	}
 	for i, item := range g {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -196,6 +199,9 @@ func (g GetFirewall_Response_Rules_Item) Validate() error {
 type CreateFirewallBody_Rules []CreateFirewallBody_Rules_Item
 
 func (c CreateFirewallBody_Rules) Validate() error {
+	if c == nil {
+		return nil
+	}
 	for i, item := range c {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -218,6 +224,9 @@ func (c CreateFirewallBody_Rules_Item) Validate() error {
 type CreateFirewall_Response_Rules []CreateFirewall_Response_Rules_Item
 
 func (c CreateFirewall_Response_Rules) Validate() error {
+	if c == nil {
+		return nil
+	}
 	for i, item := range c {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -332,6 +341,9 @@ type GetConfig_Response_Config_AnyOf struct {
 }
 
 func (g *GetConfig_Response_Config_AnyOf) Validate() error {
+	// NOTE: Validation is not supported for unions with more than 2 elements.
+	// Validating would require unmarshaling against each possible type, which is inefficient.
+	// Use AsValidated<Type>() methods to validate after retrieving the specific type.
 	return nil
 }
 
@@ -345,8 +357,26 @@ func (g *GetConfig_Response_Config_AnyOf) AsGetConfig_Response_Config_AnyOf_0() 
 	return UnmarshalAs[GetConfig_Response_Config_AnyOf_0](g.union)
 }
 
+// AsValidatedGetConfig_Response_Config_AnyOf_0 returns the union data inside the GetConfig_Response_Config_AnyOf as a validated GetConfig_Response_Config_AnyOf_0
+func (g *GetConfig_Response_Config_AnyOf) AsValidatedGetConfig_Response_Config_AnyOf_0() (GetConfig_Response_Config_AnyOf_0, error) {
+	val, err := g.AsGetConfig_Response_Config_AnyOf_0()
+	if err != nil {
+		var zero GetConfig_Response_Config_AnyOf_0
+		return zero, err
+	}
+	if err := g.validateGetConfig_Response_Config_AnyOf_0(val); err != nil {
+		var zero GetConfig_Response_Config_AnyOf_0
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromGetConfig_Response_Config_AnyOf_0 overwrites any union data inside the GetConfig_Response_Config_AnyOf as the provided GetConfig_Response_Config_AnyOf_0
 func (g *GetConfig_Response_Config_AnyOf) FromGetConfig_Response_Config_AnyOf_0(val GetConfig_Response_Config_AnyOf_0) error {
+	// Validate before storing
+	if err := g.validateGetConfig_Response_Config_AnyOf_0(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	g.union = bts
 	return err
@@ -357,8 +387,26 @@ func (g *GetConfig_Response_Config_AnyOf) AsGetConfig_Response_Config_AnyOf_1() 
 	return UnmarshalAs[GetConfig_Response_Config_AnyOf_1](g.union)
 }
 
+// AsValidatedGetConfig_Response_Config_AnyOf_1 returns the union data inside the GetConfig_Response_Config_AnyOf as a validated GetConfig_Response_Config_AnyOf_1
+func (g *GetConfig_Response_Config_AnyOf) AsValidatedGetConfig_Response_Config_AnyOf_1() (GetConfig_Response_Config_AnyOf_1, error) {
+	val, err := g.AsGetConfig_Response_Config_AnyOf_1()
+	if err != nil {
+		var zero GetConfig_Response_Config_AnyOf_1
+		return zero, err
+	}
+	if err := g.validateGetConfig_Response_Config_AnyOf_1(val); err != nil {
+		var zero GetConfig_Response_Config_AnyOf_1
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromGetConfig_Response_Config_AnyOf_1 overwrites any union data inside the GetConfig_Response_Config_AnyOf as the provided GetConfig_Response_Config_AnyOf_1
 func (g *GetConfig_Response_Config_AnyOf) FromGetConfig_Response_Config_AnyOf_1(val GetConfig_Response_Config_AnyOf_1) error {
+	// Validate before storing
+	if err := g.validateGetConfig_Response_Config_AnyOf_1(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	g.union = bts
 	return err
@@ -369,11 +417,53 @@ func (g *GetConfig_Response_Config_AnyOf) AsGetConfig_Response_Config_AnyOf_2() 
 	return UnmarshalAs[GetConfig_Response_Config_AnyOf_2](g.union)
 }
 
+// AsValidatedGetConfig_Response_Config_AnyOf_2 returns the union data inside the GetConfig_Response_Config_AnyOf as a validated GetConfig_Response_Config_AnyOf_2
+func (g *GetConfig_Response_Config_AnyOf) AsValidatedGetConfig_Response_Config_AnyOf_2() (GetConfig_Response_Config_AnyOf_2, error) {
+	val, err := g.AsGetConfig_Response_Config_AnyOf_2()
+	if err != nil {
+		var zero GetConfig_Response_Config_AnyOf_2
+		return zero, err
+	}
+	if err := g.validateGetConfig_Response_Config_AnyOf_2(val); err != nil {
+		var zero GetConfig_Response_Config_AnyOf_2
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromGetConfig_Response_Config_AnyOf_2 overwrites any union data inside the GetConfig_Response_Config_AnyOf as the provided GetConfig_Response_Config_AnyOf_2
 func (g *GetConfig_Response_Config_AnyOf) FromGetConfig_Response_Config_AnyOf_2(val GetConfig_Response_Config_AnyOf_2) error {
+	// Validate before storing
+	if err := g.validateGetConfig_Response_Config_AnyOf_2(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	g.union = bts
 	return err
+}
+
+// validateGetConfig_Response_Config_AnyOf_0 validates a GetConfig_Response_Config_AnyOf_0 value
+func (g *GetConfig_Response_Config_AnyOf) validateGetConfig_Response_Config_AnyOf_0(val GetConfig_Response_Config_AnyOf_0) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateGetConfig_Response_Config_AnyOf_1 validates a GetConfig_Response_Config_AnyOf_1 value
+func (g *GetConfig_Response_Config_AnyOf) validateGetConfig_Response_Config_AnyOf_1(val GetConfig_Response_Config_AnyOf_1) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateGetConfig_Response_Config_AnyOf_2 validates a GetConfig_Response_Config_AnyOf_2 value
+func (g *GetConfig_Response_Config_AnyOf) validateGetConfig_Response_Config_AnyOf_2(val GetConfig_Response_Config_AnyOf_2) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (g GetConfig_Response_Config_AnyOf) MarshalJSON() ([]byte, error) {
@@ -393,6 +483,9 @@ type UpdateConfigBody_Config_AnyOf struct {
 }
 
 func (u *UpdateConfigBody_Config_AnyOf) Validate() error {
+	// NOTE: Validation is not supported for unions with more than 2 elements.
+	// Validating would require unmarshaling against each possible type, which is inefficient.
+	// Use AsValidated<Type>() methods to validate after retrieving the specific type.
 	return nil
 }
 
@@ -406,8 +499,26 @@ func (u *UpdateConfigBody_Config_AnyOf) AsUpdateConfigBody_Config_AnyOf_0() (Upd
 	return UnmarshalAs[UpdateConfigBody_Config_AnyOf_0](u.union)
 }
 
+// AsValidatedUpdateConfigBody_Config_AnyOf_0 returns the union data inside the UpdateConfigBody_Config_AnyOf as a validated UpdateConfigBody_Config_AnyOf_0
+func (u *UpdateConfigBody_Config_AnyOf) AsValidatedUpdateConfigBody_Config_AnyOf_0() (UpdateConfigBody_Config_AnyOf_0, error) {
+	val, err := u.AsUpdateConfigBody_Config_AnyOf_0()
+	if err != nil {
+		var zero UpdateConfigBody_Config_AnyOf_0
+		return zero, err
+	}
+	if err := u.validateUpdateConfigBody_Config_AnyOf_0(val); err != nil {
+		var zero UpdateConfigBody_Config_AnyOf_0
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromUpdateConfigBody_Config_AnyOf_0 overwrites any union data inside the UpdateConfigBody_Config_AnyOf as the provided UpdateConfigBody_Config_AnyOf_0
 func (u *UpdateConfigBody_Config_AnyOf) FromUpdateConfigBody_Config_AnyOf_0(val UpdateConfigBody_Config_AnyOf_0) error {
+	// Validate before storing
+	if err := u.validateUpdateConfigBody_Config_AnyOf_0(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	u.union = bts
 	return err
@@ -418,8 +529,26 @@ func (u *UpdateConfigBody_Config_AnyOf) AsUpdateConfigBody_Config_AnyOf_1() (Upd
 	return UnmarshalAs[UpdateConfigBody_Config_AnyOf_1](u.union)
 }
 
+// AsValidatedUpdateConfigBody_Config_AnyOf_1 returns the union data inside the UpdateConfigBody_Config_AnyOf as a validated UpdateConfigBody_Config_AnyOf_1
+func (u *UpdateConfigBody_Config_AnyOf) AsValidatedUpdateConfigBody_Config_AnyOf_1() (UpdateConfigBody_Config_AnyOf_1, error) {
+	val, err := u.AsUpdateConfigBody_Config_AnyOf_1()
+	if err != nil {
+		var zero UpdateConfigBody_Config_AnyOf_1
+		return zero, err
+	}
+	if err := u.validateUpdateConfigBody_Config_AnyOf_1(val); err != nil {
+		var zero UpdateConfigBody_Config_AnyOf_1
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromUpdateConfigBody_Config_AnyOf_1 overwrites any union data inside the UpdateConfigBody_Config_AnyOf as the provided UpdateConfigBody_Config_AnyOf_1
 func (u *UpdateConfigBody_Config_AnyOf) FromUpdateConfigBody_Config_AnyOf_1(val UpdateConfigBody_Config_AnyOf_1) error {
+	// Validate before storing
+	if err := u.validateUpdateConfigBody_Config_AnyOf_1(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	u.union = bts
 	return err
@@ -430,11 +559,53 @@ func (u *UpdateConfigBody_Config_AnyOf) AsUpdateConfigBody_Config_AnyOf_2() (Upd
 	return UnmarshalAs[UpdateConfigBody_Config_AnyOf_2](u.union)
 }
 
+// AsValidatedUpdateConfigBody_Config_AnyOf_2 returns the union data inside the UpdateConfigBody_Config_AnyOf as a validated UpdateConfigBody_Config_AnyOf_2
+func (u *UpdateConfigBody_Config_AnyOf) AsValidatedUpdateConfigBody_Config_AnyOf_2() (UpdateConfigBody_Config_AnyOf_2, error) {
+	val, err := u.AsUpdateConfigBody_Config_AnyOf_2()
+	if err != nil {
+		var zero UpdateConfigBody_Config_AnyOf_2
+		return zero, err
+	}
+	if err := u.validateUpdateConfigBody_Config_AnyOf_2(val); err != nil {
+		var zero UpdateConfigBody_Config_AnyOf_2
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromUpdateConfigBody_Config_AnyOf_2 overwrites any union data inside the UpdateConfigBody_Config_AnyOf as the provided UpdateConfigBody_Config_AnyOf_2
 func (u *UpdateConfigBody_Config_AnyOf) FromUpdateConfigBody_Config_AnyOf_2(val UpdateConfigBody_Config_AnyOf_2) error {
+	// Validate before storing
+	if err := u.validateUpdateConfigBody_Config_AnyOf_2(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	u.union = bts
 	return err
+}
+
+// validateUpdateConfigBody_Config_AnyOf_0 validates a UpdateConfigBody_Config_AnyOf_0 value
+func (u *UpdateConfigBody_Config_AnyOf) validateUpdateConfigBody_Config_AnyOf_0(val UpdateConfigBody_Config_AnyOf_0) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateUpdateConfigBody_Config_AnyOf_1 validates a UpdateConfigBody_Config_AnyOf_1 value
+func (u *UpdateConfigBody_Config_AnyOf) validateUpdateConfigBody_Config_AnyOf_1(val UpdateConfigBody_Config_AnyOf_1) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateUpdateConfigBody_Config_AnyOf_2 validates a UpdateConfigBody_Config_AnyOf_2 value
+func (u *UpdateConfigBody_Config_AnyOf) validateUpdateConfigBody_Config_AnyOf_2(val UpdateConfigBody_Config_AnyOf_2) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (u UpdateConfigBody_Config_AnyOf) MarshalJSON() ([]byte, error) {

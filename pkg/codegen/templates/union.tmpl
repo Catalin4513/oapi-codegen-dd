@@ -54,18 +54,37 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
     {{/* Add Validate method for union types */}}
     func ({{$alias}} *{{$typeName}}) Validate() error {
         {{- if $eitherType }}
+        {{- $elementA := index .Schema.UnionElements 0 }}
+        {{- $elementB := index .Schema.UnionElements 1 }}
+        {{- $tagsA := filterOmitEmpty $elementA.Schema.Constraints.ValidationTags }}
+        {{- $tagsB := filterOmitEmpty $elementB.Schema.Constraints.ValidationTags }}
         if {{$alias}}.IsA() {
+            {{- if gt (len $tagsA) 0 }}
+            if err := unionTypesValidate.Var({{$alias}}.A, "{{join "," $tagsA}}"); err != nil {
+                return err
+            }
+            {{- else }}
             if v, ok := any({{$alias}}.A).(runtime.Validator); ok {
                 return v.Validate()
             }
+            {{- end }}
         }
         if {{$alias}}.IsB() {
+            {{- if gt (len $tagsB) 0 }}
+            if err := unionTypesValidate.Var({{$alias}}.B, "{{join "," $tagsB}}"); err != nil {
+                return err
+            }
+            {{- else }}
             if v, ok := any({{$alias}}.B).(runtime.Validator); ok {
                 return v.Validate()
             }
+            {{- end }}
         }
         return nil
         {{- else }}
+        // NOTE: Validation is not supported for unions with more than 2 elements.
+        // Validating would require unmarshaling against each possible type, which is inefficient.
+        // Use AsValidated<Type>() methods to validate after retrieving the specific type.
         return nil
         {{- end }}
     }
@@ -75,22 +94,39 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
     func ({{$alias}} *{{$typeName}}) Raw() json.RawMessage {
         return {{$alias}}.union
     }
-    {{ end }}
 
+    {{/* Generate exported As/AsValidated/From methods for each union element */}}
     {{range .Schema.UnionElements}}
         {{$element := . -}}
 
-        {{ if not $eitherType }}
-        // As{{ .Method }} returns the union data inside the {{$typeName}} as a {{.}}
-        func ({{$alias}} *{{$typeName}}) As{{ .Method }}() ({{.}}, error) {
-            return UnmarshalAs[{{.}}]({{$alias}}.union)
+        // As{{ .Method }} returns the union data inside the {{$typeName}} as a {{.TypeName}}
+        func ({{$alias}} *{{$typeName}}) As{{ .Method }}() ({{.TypeName}}, error) {
+            return UnmarshalAs[{{.TypeName}}]({{$alias}}.union)
         }
 
-        // From{{ .Method }} overwrites any union data inside the {{$typeName}} as the provided {{.}}
-        func ({{$alias}} *{{$typeName}}) From{{ .Method }} (val {{.}}) error {
+        // AsValidated{{ .Method }} returns the union data inside the {{$typeName}} as a validated {{.TypeName}}
+        func ({{$alias}} *{{$typeName}}) AsValidated{{ .Method }}() ({{.TypeName}}, error) {
+            val, err := {{$alias}}.As{{ .Method }}()
+            if err != nil {
+                var zero {{.TypeName}}
+                return zero, err
+            }
+            if err := {{$alias}}.validate{{ .Method }}(val); err != nil {
+                var zero {{.TypeName}}
+                return zero, err
+            }
+            return val, nil
+        }
+
+        // From{{ .Method }} overwrites any union data inside the {{$typeName}} as the provided {{.TypeName}}
+        func ({{$alias}} *{{$typeName}}) From{{ .Method }} (val {{.TypeName}}) error {
+            // Validate before storing
+            if err := {{$alias}}.validate{{ .Method }}(val); err != nil {
+                return err
+            }
             {{if $discriminator -}}
                 {{range $value, $type := $discriminator.Mapping -}}
-                    {{if eq $type $element -}}
+                    {{if eq $type $element.TypeName -}}
                         {{range $properties -}}
                             {{if eq .GoName $discriminator.PropertyName -}}
                                 {{if .IsPointerType -}}
@@ -107,8 +143,28 @@ func marshalJSONWithDiscriminator(data []byte, field, value string) ([]byte, err
             {{$alias}}.union = bts
             return err
         }
-        {{end}}{{/*// either type check*/}}
     {{end}}
+
+    {{/* Generate unexported validation helper methods for each union element */}}
+    {{range .Schema.UnionElements}}
+        {{$element := . -}}
+        {{- $tags := filterOmitEmpty .Schema.Constraints.ValidationTags }}
+        {{- if gt (len $tags) 0 }}
+        // validate{{.Method}} validates a {{.TypeName}} value
+        func ({{$alias}} *{{$typeName}}) validate{{.Method}}(val {{.TypeName}}) error {
+            return unionTypesValidate.Var(val, "{{join "," $tags}}")
+        }
+        {{- else }}
+        // validate{{.Method}} validates a {{.TypeName}} value
+        func ({{$alias}} *{{$typeName}}) validate{{.Method}}(val {{.TypeName}}) error {
+            if v, ok := any(val).(runtime.Validator); ok {
+                return v.Validate()
+            }
+            return nil
+        }
+        {{- end }}
+    {{end}}
+    {{ end }}
 
     {{if $discriminator}}
         func ({{$alias}} {{.Name}}) discriminator(data []byte) (string, error) {
@@ -199,7 +255,7 @@ func ({{$args.alias}} *{{$args.name}}) UnmarshalJSON(data []byte) error {
                 return err
             }
 
-            {{if eq $type (index $args.elements 0)}}
+            {{if eq $type (index $args.elements 0).TypeName}}
                 {{$args.alias}}.A = res
                 {{$args.alias}}.N = 1
             {{ else }}

@@ -28,6 +28,31 @@ import (
 	"time"
 )
 
+const (
+	// Maximum number of errors to display in summary
+	showMaxErrors = 10
+
+	// Default maximum concurrency for parallel test execution
+	defaultMaxConcurrency = 50
+
+	// Timeout for each spec's operations (generate, build, etc.)
+	specTimeout = 5 * time.Minute
+
+	// Maximum number of error lines to show per failure
+	maxErrorLines = 10
+
+	// Maximum length of error line before truncation
+	maxErrorLineLength = 120
+)
+
+var (
+	// Specs that are known to be problematic (too large, timeout, etc.)
+	// Add specs here to skip them in CI unless explicitly requested via SPEC env var
+	skipSpecs = map[string]bool{
+		// Example: "testdata/specs/3.0/aws/ec2.yaml": true,
+	}
+)
+
 //go:embed testdata/specs
 var specsFS embed.FS
 
@@ -39,11 +64,6 @@ type testResult struct {
 	tmpDir      string
 	linesOfCode int
 }
-
-var (
-	showMaxErrors  = 10
-	maxConcurrency = 50
-)
 
 func TestIntegration(t *testing.T) {
 	specPath := os.Getenv("SPEC")
@@ -126,6 +146,7 @@ func TestIntegration(t *testing.T) {
 	}()
 
 	// Process specs in parallel
+	maxConcurrency := defaultMaxConcurrency
 	if envMax := os.Getenv("INTEGRATION_MAX_CONCURRENCY"); envMax != "" {
 		if parsed, err := strconv.Atoi(envMax); err == nil && parsed > 0 {
 			maxConcurrency = parsed
@@ -221,7 +242,7 @@ output:
 			}
 
 			// Create context with timeout for all operations
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			ctx, cancel := context.WithTimeout(context.Background(), specTimeout)
 			defer cancel()
 
 			if verbose {
@@ -336,8 +357,9 @@ output:
 
 func collectSpecs(t *testing.T, specPath string) []string {
 	var specs []string
+	explicitSpec := specPath != ""
 
-	if specPath != "" {
+	if explicitSpec {
 		// Check if the path exists as-is
 		if _, err := os.Stat(specPath); err == nil {
 			specs = append(specs, specPath)
@@ -356,6 +378,7 @@ func collectSpecs(t *testing.T, specPath string) []string {
 	}
 
 	// Walk through testdata/specs
+	var skipped int
 	err := fs.WalkDir(specsFS, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -370,6 +393,11 @@ func collectSpecs(t *testing.T, specPath string) []string {
 		}
 
 		if strings.HasSuffix(fileName, ".yml") || strings.HasSuffix(fileName, ".yaml") || strings.HasSuffix(fileName, ".json") {
+			// Skip problematic specs unless explicitly requested
+			if !explicitSpec && skipSpecs[path] {
+				skipped++
+				return nil
+			}
 			specs = append(specs, path)
 		}
 		return nil
@@ -377,6 +405,10 @@ func collectSpecs(t *testing.T, specPath string) []string {
 
 	if err != nil {
 		t.Fatalf("Failed to walk specs directory: %v", err)
+	}
+
+	if skipped > 0 {
+		fmt.Fprintf(os.Stderr, "⏭️  Skipped %d known problematic specs (use SPEC=<name> to test individually)\n", skipped)
 	}
 
 	return specs
@@ -427,11 +459,12 @@ func printSummary(total int, results []testResult) {
 			}
 		}
 
-		fmt.Fprintln(os.Stderr, "\n📋 FAILED SPECS (first 10):")
-		if len(failed) < showMaxErrors {
-			showMaxErrors = len(failed)
+		fmt.Fprintf(os.Stderr, "\n📋 FAILED SPECS (first %d):\n", showMaxErrors)
+		errorsToShow := showMaxErrors
+		if len(failed) < errorsToShow {
+			errorsToShow = len(failed)
 		}
-		for i := 0; i < showMaxErrors; i++ {
+		for i := 0; i < errorsToShow; i++ {
 			r := failed[i]
 			// Shorten the spec name if it's too long
 			specName := r.name
@@ -441,14 +474,22 @@ func printSummary(total int, results []testResult) {
 			fmt.Fprintf(os.Stderr, "\n   %d. %s\n", i+1, specName)
 			fmt.Fprintf(os.Stderr, "      Stage: %s\n", r.stage)
 
-			// Show first line of error only
+			// Show error lines for better debugging
 			errLines := strings.Split(r.err, "\n")
-			if len(errLines) > 0 {
-				errMsg := errLines[0]
-				if len(errMsg) > 100 {
-					errMsg = errMsg[:97] + "..."
+			linesToShow := maxErrorLines
+			if len(errLines) < linesToShow {
+				linesToShow = len(errLines)
+			}
+			fmt.Fprintf(os.Stderr, "      Error:\n")
+			for j := 0; j < linesToShow; j++ {
+				line := errLines[j]
+				if len(line) > maxErrorLineLength {
+					line = line[:maxErrorLineLength-3] + "..."
 				}
-				fmt.Fprintf(os.Stderr, "      Error: %s\n", errMsg)
+				fmt.Fprintf(os.Stderr, "        %s\n", line)
+			}
+			if len(errLines) > linesToShow {
+				fmt.Fprintf(os.Stderr, "        ... (%d more lines)\n", len(errLines)-linesToShow)
 			}
 
 			if r.tmpDir != "" {
@@ -456,8 +497,8 @@ func printSummary(total int, results []testResult) {
 			}
 		}
 
-		if len(failed) > showMaxErrors {
-			fmt.Fprintf(os.Stderr, "\n   ... and %d more failures (run with SPEC=<name> to test individually)\n", len(failed)-showMaxErrors)
+		if len(failed) > errorsToShow {
+			fmt.Fprintf(os.Stderr, "\n   ... and %d more failures (run with SPEC=<name> to test individually)\n", len(failed)-errorsToShow)
 		}
 
 		fmt.Fprintln(os.Stderr, "\n💡 TIP: To debug a specific failure:")

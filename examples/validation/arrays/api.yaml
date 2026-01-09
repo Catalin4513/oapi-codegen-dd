@@ -1,0 +1,42 @@
+openapi: 3.0.0
+info:
+  title: Primitives
+  description: An example of primitive types
+  version: 1.0.0
+
+paths:
+
+components:
+  schemas:
+    users:
+      type: array
+      minItems: 2
+      items:
+        oneOf:
+          - $ref: '#/components/schemas/user'
+          - type: string
+            minLength: 3
+
+    nested:
+      type: object
+      properties:
+        entity:
+          oneOf:
+            - $ref: '#/components/schemas/user'
+            - type: object
+              properties:
+                name:
+                  oneOf:
+                    - type: integer
+                      minimum: 1
+                    - type: string
+                      minLength: 3
+                    - $ref: '#/components/schemas/user'
+
+    user:
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer

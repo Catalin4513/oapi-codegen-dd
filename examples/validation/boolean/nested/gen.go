@@ -30,7 +30,7 @@ func init() {
 }
 
 type PostBillingPortalConfigurationsConfigurationResponse struct {
-	Features PortalFeatures `json:"features" validate:"required"`
+	Features PortalFeatures `json:"features"`
 }
 
 func (p PostBillingPortalConfigurationsConfigurationResponse) Validate() error {
@@ -51,7 +51,7 @@ func init() {
 
 type PortalFeatures struct {
 	ID             *string           `json:"id,omitempty"`
-	InvoiceHistory PortalInvoiceList `json:"invoice_history" validate:"required"`
+	InvoiceHistory PortalInvoiceList `json:"invoice_history"`
 }
 
 func (p PortalFeatures) Validate() error {

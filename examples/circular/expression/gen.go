@@ -3,6 +3,8 @@
 package expression
 
 import (
+	"fmt"
+
 	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
@@ -80,6 +82,19 @@ func (e Expression) Validate() error {
 type Expressions []Expression
 
 func (e Expressions) Validate() error {
+	if e == nil {
+		return nil
+	}
+	if len(e) < 1 {
+		return runtime.NewValidationError("", fmt.Sprintf("must have at least 1 items, got %d", len(e)))
+	}
+	for i, item := range e {
+		if v, ok := any(item).(runtime.Validator); ok {
+			if err := v.Validate(); err != nil {
+				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+			}
+		}
+	}
 	return nil
 }
 

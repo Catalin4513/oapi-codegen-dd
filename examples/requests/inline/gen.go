@@ -368,6 +368,9 @@ type ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf struct {
 }
 
 func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) Validate() error {
+	// NOTE: Validation is not supported for unions with more than 2 elements.
+	// Validating would require unmarshaling against each possible type, which is inefficient.
+	// Use AsValidated<Type>() methods to validate after retrieving the specific type.
 	return nil
 }
 
@@ -381,8 +384,26 @@ func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) AsBool() (bool, error) {
 	return UnmarshalAs[bool](p.union)
 }
 
+// AsValidatedBool returns the union data inside the ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf as a validated bool
+func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) AsValidatedBool() (bool, error) {
+	val, err := p.AsBool()
+	if err != nil {
+		var zero bool
+		return zero, err
+	}
+	if err := p.validateBool(val); err != nil {
+		var zero bool
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromBool overwrites any union data inside the ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf as the provided bool
 func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) FromBool(val bool) error {
+	// Validate before storing
+	if err := p.validateBool(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
@@ -393,8 +414,26 @@ func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) AsFloat32() (float32, error)
 	return UnmarshalAs[float32](p.union)
 }
 
+// AsValidatedFloat32 returns the union data inside the ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf as a validated float32
+func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) AsValidatedFloat32() (float32, error) {
+	val, err := p.AsFloat32()
+	if err != nil {
+		var zero float32
+		return zero, err
+	}
+	if err := p.validateFloat32(val); err != nil {
+		var zero float32
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromFloat32 overwrites any union data inside the ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf as the provided float32
 func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) FromFloat32(val float32) error {
+	// Validate before storing
+	if err := p.validateFloat32(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
@@ -405,11 +444,53 @@ func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) AsString() (string, error) {
 	return UnmarshalAs[string](p.union)
 }
 
+// AsValidatedString returns the union data inside the ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf as a validated string
+func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) AsValidatedString() (string, error) {
+	val, err := p.AsString()
+	if err != nil {
+		var zero string
+		return zero, err
+	}
+	if err := p.validateString(val); err != nil {
+		var zero string
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromString overwrites any union data inside the ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf as the provided string
 func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) FromString(val string) error {
+	// Validate before storing
+	if err := p.validateString(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
+}
+
+// validateBool validates a bool value
+func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) validateBool(val bool) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateFloat32 validates a float32 value
+func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) validateFloat32(val float32) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateString validates a string value
+func (p *ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) validateString(val string) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (p ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf) MarshalJSON() ([]byte, error) {

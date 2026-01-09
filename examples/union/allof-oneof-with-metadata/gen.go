@@ -537,6 +537,9 @@ type Collaboration_Item_AllOf0_OneOf struct {
 }
 
 func (c *Collaboration_Item_AllOf0_OneOf) Validate() error {
+	// NOTE: Validation is not supported for unions with more than 2 elements.
+	// Validating would require unmarshaling against each possible type, which is inefficient.
+	// Use AsValidated<Type>() methods to validate after retrieving the specific type.
 	return nil
 }
 
@@ -550,8 +553,26 @@ func (c *Collaboration_Item_AllOf0_OneOf) AsFile() (File, error) {
 	return UnmarshalAs[File](c.union)
 }
 
+// AsValidatedFile returns the union data inside the Collaboration_Item_AllOf0_OneOf as a validated File
+func (c *Collaboration_Item_AllOf0_OneOf) AsValidatedFile() (File, error) {
+	val, err := c.AsFile()
+	if err != nil {
+		var zero File
+		return zero, err
+	}
+	if err := c.validateFile(val); err != nil {
+		var zero File
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromFile overwrites any union data inside the Collaboration_Item_AllOf0_OneOf as the provided File
 func (c *Collaboration_Item_AllOf0_OneOf) FromFile(val File) error {
+	// Validate before storing
+	if err := c.validateFile(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	c.union = bts
 	return err
@@ -562,8 +583,26 @@ func (c *Collaboration_Item_AllOf0_OneOf) AsFolder() (Folder, error) {
 	return UnmarshalAs[Folder](c.union)
 }
 
+// AsValidatedFolder returns the union data inside the Collaboration_Item_AllOf0_OneOf as a validated Folder
+func (c *Collaboration_Item_AllOf0_OneOf) AsValidatedFolder() (Folder, error) {
+	val, err := c.AsFolder()
+	if err != nil {
+		var zero Folder
+		return zero, err
+	}
+	if err := c.validateFolder(val); err != nil {
+		var zero Folder
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromFolder overwrites any union data inside the Collaboration_Item_AllOf0_OneOf as the provided Folder
 func (c *Collaboration_Item_AllOf0_OneOf) FromFolder(val Folder) error {
+	// Validate before storing
+	if err := c.validateFolder(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	c.union = bts
 	return err
@@ -574,11 +613,53 @@ func (c *Collaboration_Item_AllOf0_OneOf) AsWebLink() (WebLink, error) {
 	return UnmarshalAs[WebLink](c.union)
 }
 
+// AsValidatedWebLink returns the union data inside the Collaboration_Item_AllOf0_OneOf as a validated WebLink
+func (c *Collaboration_Item_AllOf0_OneOf) AsValidatedWebLink() (WebLink, error) {
+	val, err := c.AsWebLink()
+	if err != nil {
+		var zero WebLink
+		return zero, err
+	}
+	if err := c.validateWebLink(val); err != nil {
+		var zero WebLink
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromWebLink overwrites any union data inside the Collaboration_Item_AllOf0_OneOf as the provided WebLink
 func (c *Collaboration_Item_AllOf0_OneOf) FromWebLink(val WebLink) error {
+	// Validate before storing
+	if err := c.validateWebLink(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	c.union = bts
 	return err
+}
+
+// validateFile validates a File value
+func (c *Collaboration_Item_AllOf0_OneOf) validateFile(val File) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateFolder validates a Folder value
+func (c *Collaboration_Item_AllOf0_OneOf) validateFolder(val Folder) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateWebLink validates a WebLink value
+func (c *Collaboration_Item_AllOf0_OneOf) validateWebLink(val WebLink) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (c Collaboration_Item_AllOf0_OneOf) MarshalJSON() ([]byte, error) {
@@ -598,6 +679,9 @@ type GetCollaboration_Response_Item_AllOf0_OneOf struct {
 }
 
 func (g *GetCollaboration_Response_Item_AllOf0_OneOf) Validate() error {
+	// NOTE: Validation is not supported for unions with more than 2 elements.
+	// Validating would require unmarshaling against each possible type, which is inefficient.
+	// Use AsValidated<Type>() methods to validate after retrieving the specific type.
 	return nil
 }
 
@@ -611,8 +695,26 @@ func (g *GetCollaboration_Response_Item_AllOf0_OneOf) AsFile() (File, error) {
 	return UnmarshalAs[File](g.union)
 }
 
+// AsValidatedFile returns the union data inside the GetCollaboration_Response_Item_AllOf0_OneOf as a validated File
+func (g *GetCollaboration_Response_Item_AllOf0_OneOf) AsValidatedFile() (File, error) {
+	val, err := g.AsFile()
+	if err != nil {
+		var zero File
+		return zero, err
+	}
+	if err := g.validateFile(val); err != nil {
+		var zero File
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromFile overwrites any union data inside the GetCollaboration_Response_Item_AllOf0_OneOf as the provided File
 func (g *GetCollaboration_Response_Item_AllOf0_OneOf) FromFile(val File) error {
+	// Validate before storing
+	if err := g.validateFile(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	g.union = bts
 	return err
@@ -623,8 +725,26 @@ func (g *GetCollaboration_Response_Item_AllOf0_OneOf) AsFolder() (Folder, error)
 	return UnmarshalAs[Folder](g.union)
 }
 
+// AsValidatedFolder returns the union data inside the GetCollaboration_Response_Item_AllOf0_OneOf as a validated Folder
+func (g *GetCollaboration_Response_Item_AllOf0_OneOf) AsValidatedFolder() (Folder, error) {
+	val, err := g.AsFolder()
+	if err != nil {
+		var zero Folder
+		return zero, err
+	}
+	if err := g.validateFolder(val); err != nil {
+		var zero Folder
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromFolder overwrites any union data inside the GetCollaboration_Response_Item_AllOf0_OneOf as the provided Folder
 func (g *GetCollaboration_Response_Item_AllOf0_OneOf) FromFolder(val Folder) error {
+	// Validate before storing
+	if err := g.validateFolder(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	g.union = bts
 	return err
@@ -635,11 +755,53 @@ func (g *GetCollaboration_Response_Item_AllOf0_OneOf) AsWebLink() (WebLink, erro
 	return UnmarshalAs[WebLink](g.union)
 }
 
+// AsValidatedWebLink returns the union data inside the GetCollaboration_Response_Item_AllOf0_OneOf as a validated WebLink
+func (g *GetCollaboration_Response_Item_AllOf0_OneOf) AsValidatedWebLink() (WebLink, error) {
+	val, err := g.AsWebLink()
+	if err != nil {
+		var zero WebLink
+		return zero, err
+	}
+	if err := g.validateWebLink(val); err != nil {
+		var zero WebLink
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromWebLink overwrites any union data inside the GetCollaboration_Response_Item_AllOf0_OneOf as the provided WebLink
 func (g *GetCollaboration_Response_Item_AllOf0_OneOf) FromWebLink(val WebLink) error {
+	// Validate before storing
+	if err := g.validateWebLink(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	g.union = bts
 	return err
+}
+
+// validateFile validates a File value
+func (g *GetCollaboration_Response_Item_AllOf0_OneOf) validateFile(val File) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateFolder validates a Folder value
+func (g *GetCollaboration_Response_Item_AllOf0_OneOf) validateFolder(val Folder) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateWebLink validates a WebLink value
+func (g *GetCollaboration_Response_Item_AllOf0_OneOf) validateWebLink(val WebLink) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (g GetCollaboration_Response_Item_AllOf0_OneOf) MarshalJSON() ([]byte, error) {

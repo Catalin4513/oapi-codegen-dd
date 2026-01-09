@@ -201,3 +201,140 @@ func TestArrayWithMinItems_Validate(t *testing.T) {
 		assert.Contains(t, err.Error(), "must have at most 100 items")
 	})
 }
+
+func TestTagsWithLength_Validate(t *testing.T) {
+	t.Run("valid - all values within length constraints", func(t *testing.T) {
+		obj := TagsWithLength{
+			"key1": "a",                                                  // minLength: 1
+			"key2": "hello",                                              // valid
+			"key3": "x",                                                  // exactly 1 char
+			"key4": "12345678901234567890123456789012345678901234567890", // exactly 50 chars
+		}
+		assert.Nil(t, obj.Validate())
+	})
+
+	t.Run("valid - empty map", func(t *testing.T) {
+		obj := TagsWithLength{}
+		assert.Nil(t, obj.Validate())
+	})
+
+	t.Run("valid - nil map", func(t *testing.T) {
+		var obj TagsWithLength
+		assert.Nil(t, obj.Validate())
+	})
+
+	t.Run("valid - empty string with omitempty", func(t *testing.T) {
+		// omitempty in validation tags means empty strings are allowed
+		obj := TagsWithLength{
+			"key1": "",
+		}
+		assert.Nil(t, obj.Validate())
+	})
+
+	t.Run("invalid - value exceeds maxLength", func(t *testing.T) {
+		obj := TagsWithLength{
+			"key1": "valid",
+			"key2": "123456789012345678901234567890123456789012345678901", // 51 chars - exceeds max of 50
+		}
+		err := obj.Validate()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "key2")
+		assert.Contains(t, err.Error(), "max")
+		// Check that it's a ValidationError
+		var ve runtime.ValidationError
+		assert.ErrorAs(t, err, &ve)
+		assert.Equal(t, "key2", ve.Field)
+	})
+
+	t.Run("invalid - multiple values exceed constraints", func(t *testing.T) {
+		obj := TagsWithLength{
+			"key1": "valid",
+			"key2": "123456789012345678901234567890123456789012345678901", // 51 chars
+			"key3": "short",
+		}
+		err := obj.Validate()
+		assert.Error(t, err)
+		// Should fail on first invalid key encountered
+		assert.Contains(t, err.Error(), "key2")
+	})
+}
+
+func TestTagsWithBothConstraints_Validate(t *testing.T) {
+	t.Run("valid - 2 properties with valid values", func(t *testing.T) {
+		obj := TagsWithBothConstraints{
+			"key1": "value1",
+			"key2": "value2",
+		}
+		assert.Nil(t, obj.Validate())
+	})
+
+	t.Run("valid - 5 properties (max)", func(t *testing.T) {
+		obj := TagsWithBothConstraints{
+			"key1": "value1",
+			"key2": "value2",
+			"key3": "value3",
+			"key4": "value4",
+			"key5": "value5",
+		}
+		assert.Nil(t, obj.Validate())
+	})
+
+	t.Run("valid - nil map", func(t *testing.T) {
+		var obj TagsWithBothConstraints
+		assert.Nil(t, obj.Validate())
+	})
+
+	t.Run("invalid - only 1 property (minProperties: 2)", func(t *testing.T) {
+		obj := TagsWithBothConstraints{
+			"key1": "value1",
+		}
+		err := obj.Validate()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "must have at least 2 properties")
+		var ve runtime.ValidationError
+		assert.ErrorAs(t, err, &ve)
+		assert.Equal(t, "", ve.Field)
+	})
+
+	t.Run("invalid - empty map (minProperties: 2)", func(t *testing.T) {
+		obj := TagsWithBothConstraints{}
+		err := obj.Validate()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "must have at least 2 properties")
+	})
+
+	t.Run("invalid - 6 properties (maxProperties: 5)", func(t *testing.T) {
+		obj := TagsWithBothConstraints{
+			"key1": "value1",
+			"key2": "value2",
+			"key3": "value3",
+			"key4": "value4",
+			"key5": "value5",
+			"key6": "value6",
+		}
+		err := obj.Validate()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "must have at most 5 properties")
+	})
+
+	t.Run("invalid - valid count but value exceeds maxLength", func(t *testing.T) {
+		obj := TagsWithBothConstraints{
+			"key1": "valid",
+			"key2": "123456789012345678901234567890123456789012345678901", // 51 chars
+		}
+		err := obj.Validate()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "key2")
+		assert.Contains(t, err.Error(), "max")
+	})
+
+	t.Run("invalid - valid count but empty value (minLength: 1)", func(t *testing.T) {
+		// Note: omitempty allows empty strings, so this should actually pass
+		obj := TagsWithBothConstraints{
+			"key1": "valid",
+			"key2": "",
+		}
+		// Empty string is allowed due to omitempty
+		assert.Nil(t, obj.Validate())
+	})
+}

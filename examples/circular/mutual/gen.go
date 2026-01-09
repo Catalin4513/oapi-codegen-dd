@@ -290,7 +290,7 @@ func (f File_Links) Validate() error {
 
 type FileLink struct {
 	Created  int               `json:"created" validate:"required"`
-	File     FileLink_File     `json:"file" validate:"required"`
+	File     FileLink_File     `json:"file"`
 	ID       string            `json:"id" validate:"required,max=5000"`
 	Livemode *bool             `json:"livemode,omitempty"`
 	Metadata map[string]string `json:"metadata,omitempty"`
@@ -445,6 +445,9 @@ func (u *User_Avatar) UnmarshalJSON(data []byte) error {
 type GetFiles_Response []GetFiles_Response_Item
 
 func (g GetFiles_Response) Validate() error {
+	if g == nil {
+		return nil
+	}
 	for i, item := range g {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -545,8 +548,8 @@ func (f *File_Author_AnyOf) Validate() error {
 		}
 	}
 	if f.IsB() {
-		if v, ok := any(f.B).(runtime.Validator); ok {
-			return v.Validate()
+		if err := unionTypesValidate.Var(f.B, "max=50"); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -558,8 +561,8 @@ type FileLink_File_AnyOf struct {
 
 func (f *FileLink_File_AnyOf) Validate() error {
 	if f.IsA() {
-		if v, ok := any(f.A).(runtime.Validator); ok {
-			return v.Validate()
+		if err := unionTypesValidate.Var(f.A, "max=5000"); err != nil {
+			return err
 		}
 	}
 	if f.IsB() {
@@ -581,8 +584,8 @@ func (u *User_Avatar_AnyOf) Validate() error {
 		}
 	}
 	if u.IsB() {
-		if v, ok := any(u.B).(runtime.Validator); ok {
-			return v.Validate()
+		if err := unionTypesValidate.Var(u.B, "max=50"); err != nil {
+			return err
 		}
 	}
 	return nil

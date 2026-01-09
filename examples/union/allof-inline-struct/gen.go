@@ -40,6 +40,9 @@ func init() {
 type GetBase_Response_Items []GetBase_Response_Items_Item
 
 func (g GetBase_Response_Items) Validate() error {
+	if g == nil {
+		return nil
+	}
 	for i, item := range g {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {

@@ -170,7 +170,9 @@ func init() {
         {{ end }}
 
         {{- range $td.Schema.Properties }}
-            {{ if and .Schema.RefType}}
+            {{/* Only generate runtime.UnmarshalJSON for allOf embedded fields (no JSON field name) */}}
+            {{/* Regular fields with JSON names are already handled by the type alias unmarshal above */}}
+            {{ if and .Schema.RefType (eq .JsonFieldName "")}}
                 {{/* Initialize pointer types for struct-based RefTypes (unions, allOf, named structs) */}}
                 {{/* Skip initialization only for enums (have EnumValues) */}}
                 {{/* Struct types can always be initialized with composite literals */}}

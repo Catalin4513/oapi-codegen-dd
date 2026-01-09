@@ -928,3 +928,52 @@ func TestGoSchema_ValidateDecl_RefTypePrecedence_OverGoType(t *testing.T) {
 	`
 	assertCodeEqual(t, expected, result)
 }
+
+func TestGoSchema_ValidateDecl_PrimitiveWithValidationTags(t *testing.T) {
+	// Test that primitive types with validation tags generate proper validation code
+	schema := GoSchema{
+		GoType: "string",
+		Constraints: Constraints{
+			ValidationTags: []string{"omitempty", "min=4", "max=7"},
+		},
+	}
+
+	result := schema.ValidateDecl("s", "schemaTypesValidate")
+	expected := `
+		if err := schemaTypesValidate.Var(s, "omitempty,min=4,max=7"); err != nil {
+			return err
+		}
+		return nil
+	`
+	assertCodeEqual(t, expected, result)
+}
+
+func TestGoSchema_ValidateDecl_PrimitiveWithoutValidationTags(t *testing.T) {
+	// Test that primitive types without validation tags just return nil
+	schema := GoSchema{
+		GoType: "string",
+	}
+
+	result := schema.ValidateDecl("s", "schemaTypesValidate")
+	expected := `return nil`
+	assertCodeEqual(t, expected, result)
+}
+
+func TestGoSchema_ValidateDecl_IntegerWithValidationTags(t *testing.T) {
+	// Test that integer types with validation tags generate proper validation code
+	schema := GoSchema{
+		GoType: "int",
+		Constraints: Constraints{
+			ValidationTags: []string{"omitempty", "gte=1", "lte=100"},
+		},
+	}
+
+	result := schema.ValidateDecl("i", "schemaTypesValidate")
+	expected := `
+		if err := schemaTypesValidate.Var(i, "omitempty,gte=1,lte=100"); err != nil {
+			return err
+		}
+		return nil
+	`
+	assertCodeEqual(t, expected, result)
+}

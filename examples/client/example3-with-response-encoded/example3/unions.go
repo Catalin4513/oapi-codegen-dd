@@ -63,6 +63,9 @@ type GetUserUnion3_Response_OneOf struct {
 }
 
 func (g *GetUserUnion3_Response_OneOf) Validate() error {
+	// NOTE: Validation is not supported for unions with more than 2 elements.
+	// Validating would require unmarshaling against each possible type, which is inefficient.
+	// Use AsValidated<Type>() methods to validate after retrieving the specific type.
 	return nil
 }
 
@@ -76,8 +79,26 @@ func (g *GetUserUnion3_Response_OneOf) AsUser() (User, error) {
 	return UnmarshalAs[User](g.union)
 }
 
+// AsValidatedUser returns the union data inside the GetUserUnion3_Response_OneOf as a validated User
+func (g *GetUserUnion3_Response_OneOf) AsValidatedUser() (User, error) {
+	val, err := g.AsUser()
+	if err != nil {
+		var zero User
+		return zero, err
+	}
+	if err := g.validateUser(val); err != nil {
+		var zero User
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromUser overwrites any union data inside the GetUserUnion3_Response_OneOf as the provided User
 func (g *GetUserUnion3_Response_OneOf) FromUser(val User) error {
+	// Validate before storing
+	if err := g.validateUser(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	g.union = bts
 	return err
@@ -88,8 +109,26 @@ func (g *GetUserUnion3_Response_OneOf) AsString() (string, error) {
 	return UnmarshalAs[string](g.union)
 }
 
+// AsValidatedString returns the union data inside the GetUserUnion3_Response_OneOf as a validated string
+func (g *GetUserUnion3_Response_OneOf) AsValidatedString() (string, error) {
+	val, err := g.AsString()
+	if err != nil {
+		var zero string
+		return zero, err
+	}
+	if err := g.validateString(val); err != nil {
+		var zero string
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromString overwrites any union data inside the GetUserUnion3_Response_OneOf as the provided string
 func (g *GetUserUnion3_Response_OneOf) FromString(val string) error {
+	// Validate before storing
+	if err := g.validateString(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	g.union = bts
 	return err
@@ -100,11 +139,53 @@ func (g *GetUserUnion3_Response_OneOf) AsInt() (int, error) {
 	return UnmarshalAs[int](g.union)
 }
 
+// AsValidatedInt returns the union data inside the GetUserUnion3_Response_OneOf as a validated int
+func (g *GetUserUnion3_Response_OneOf) AsValidatedInt() (int, error) {
+	val, err := g.AsInt()
+	if err != nil {
+		var zero int
+		return zero, err
+	}
+	if err := g.validateInt(val); err != nil {
+		var zero int
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromInt overwrites any union data inside the GetUserUnion3_Response_OneOf as the provided int
 func (g *GetUserUnion3_Response_OneOf) FromInt(val int) error {
+	// Validate before storing
+	if err := g.validateInt(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	g.union = bts
 	return err
+}
+
+// validateUser validates a User value
+func (g *GetUserUnion3_Response_OneOf) validateUser(val User) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateString validates a string value
+func (g *GetUserUnion3_Response_OneOf) validateString(val string) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateInt validates a int value
+func (g *GetUserUnion3_Response_OneOf) validateInt(val int) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (g GetUserUnion3_Response_OneOf) MarshalJSON() ([]byte, error) {

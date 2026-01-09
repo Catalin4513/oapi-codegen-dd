@@ -59,6 +59,53 @@ func (c Constraints) IsEqual(other Constraints) bool {
 		slices.Equal(c.ValidationTags, other.ValidationTags)
 }
 
+// Count returns the number of validation constraints.
+// This is useful for determining which schema is "stricter" when deduplicating union elements.
+func (c Constraints) Count() int {
+	count := 0
+
+	// String constraints
+	if c.MinLength != nil {
+		count++
+	}
+	if c.MaxLength != nil {
+		count++
+	}
+	if c.Pattern != nil {
+		count++
+	}
+
+	// Numeric constraints
+	if c.Min != nil {
+		count++
+	}
+	if c.Max != nil {
+		count++
+	}
+
+	// Array constraints
+	if c.MinItems != nil {
+		count++
+	}
+	if c.MaxItems != nil {
+		count++
+	}
+
+	// Object constraints
+	if c.MinProperties != nil {
+		count++
+	}
+	if c.MaxProperties != nil {
+		count++
+	}
+
+	// ValidationTags includes additional constraints like enum, format, etc.
+	// Each tag represents a constraint
+	count += len(c.ValidationTags)
+
+	return count
+}
+
 func newConstraints(schema *base.Schema, opts ConstraintsContext) Constraints {
 	if schema == nil {
 		return Constraints{}
@@ -69,6 +116,7 @@ func newConstraints(schema *base.Schema, opts ConstraintsContext) Constraints {
 	isBoolean := slices.Contains(schema.Type, "boolean")
 	isString := slices.Contains(schema.Type, "string")
 	isArray := slices.Contains(schema.Type, "array")
+	isObject := schema.Type == nil || slices.Contains(schema.Type, "object")
 	var validationTags []string
 
 	name := opts.name
@@ -91,6 +139,16 @@ func newConstraints(schema *base.Schema, opts ConstraintsContext) Constraints {
 		// otherwise validation will always fail with `false` value.
 		required = false
 		nullable = hasNilType
+	}
+
+	// Don't add "required" validation tag for object types (structs)
+	// Objects should be validated by calling their .Validate() method, not by validator.Var()
+	if required && isObject {
+		required = false
+		// Still mark as nullable if it's not required, so we get omitempty
+		if hasNilType {
+			nullable = true
+		}
 	}
 
 	if required && nullable {

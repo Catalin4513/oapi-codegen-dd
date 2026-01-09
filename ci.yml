@@ -16,11 +16,11 @@ pipeline:
               tty: true
               resources:
                 limits:
+                  memory: 16Gi
+                  cpu: 16
+                requests:
                   memory: 8Gi
                   cpu: 8
-                requests:
-                  memory: 4Gi
-                  cpu: 4
       stages:
         - name: CI Checks
           parallel:
@@ -62,19 +62,28 @@ pipeline:
                         passwordVariable: GITHUB_TOKEN
                     script: |-
                       set -euo pipefail
-                      
+
                       # Configure git for private dependencies
                       git config --global url."https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
-                      
+
                       # Download dependencies
                       echo "Downloading Go modules..."
                       go mod download
-                      
-                      # Run test-ci target (includes test and test-integration)
+
+                      # Run generate and check for uncommitted changes
+                      echo "Running make generate..."
+                      make generate
+                      if ! git diff --exit-code; then
+                        echo "ERROR: make generate produced uncommitted changes"
+                        echo "Please run 'make generate' locally and commit the changes"
+                        exit 1
+                      fi
+
                       echo "Running test-ci..."
                       make test-ci
+                      
                       echo "Running integration tests..."
                       make fetch-specs
-                      INTEGRATION_MAX_CONCURRENCY=10 go test -v -tags=integration -count=1 -timeout=15m .
+                      INTEGRATION_MAX_CONCURRENCY=50 go test -v -tags=integration -count=1 -timeout=15m .
                   - type: codeCov
                     container: go

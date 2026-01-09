@@ -31,7 +31,7 @@ func init() {
 }
 
 type PointRequest struct {
-	Location PointRequestOneOf `json:"location" validate:"required"`
+	Location PointRequestOneOf `json:"location"`
 }
 
 func (p PointRequest) Validate() error {
@@ -93,7 +93,7 @@ func (p *PointRequestOneOf) UnmarshalJSON(data []byte) error {
 }
 
 type TimeBasedLocation struct {
-	Time TimeInterval `json:"time" validate:"required"`
+	Time TimeInterval `json:"time"`
 }
 
 func (t TimeBasedLocation) Validate() error {
@@ -114,7 +114,7 @@ func (d DistanceBasedLocation) Validate() error {
 }
 
 type TimeInterval struct {
-	Interval TimeIntervalType `json:"interval" validate:"required"`
+	Interval TimeIntervalType `json:"interval"`
 }
 
 func (t TimeInterval) Validate() error {

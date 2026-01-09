@@ -14,23 +14,14 @@ func init() {
 	runtime.RegisterCustomTypeFunc(headerTypesValidate)
 }
 
-type MSN string
-
-func (m MSN) Validate() error {
-	return nil
-}
+type MSN = string
 
 type GetClientHeaders struct {
 	MerchantSerialNumber MSN `json:"Merchant-Serial-Number" validate:"required,max=7,min=4"`
 }
 
 func (g GetClientHeaders) Validate() error {
-	if v, ok := any(g.MerchantSerialNumber).(runtime.Validator); ok {
-		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("MerchantSerialNumber", err)
-		}
-	}
-	return nil
+	return headerTypesValidate.Struct(g)
 }
 
 type UpdateClientHeaders struct {
@@ -38,10 +29,5 @@ type UpdateClientHeaders struct {
 }
 
 func (u UpdateClientHeaders) Validate() error {
-	if v, ok := any(u.MerchantSerialNumber).(runtime.Validator); ok {
-		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("MerchantSerialNumber", err)
-		}
-	}
-	return nil
+	return headerTypesValidate.Struct(u)
 }

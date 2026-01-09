@@ -109,6 +109,9 @@ func (v VariantC) Validate() error {
 type GetFiles_Response []GetFiles_Response_Item
 
 func (g GetFiles_Response) Validate() error {
+	if g == nil {
+		return nil
+	}
 	for i, item := range g {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {

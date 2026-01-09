@@ -1,0 +1,52 @@
+openapi: 3.0.0
+info:
+  title: Primitives
+  description: An example of primitive types
+  version: 1.0.0
+
+paths:
+
+components:
+  schemas:
+    response:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          oneOf:
+            - $ref: '#/components/schemas/user'
+            - type: string
+              minLength: 3
+        friend:
+          anyOf:
+            - $ref: '#/components/schemas/user'
+            - type: string
+              minLength: 3
+            - type: integer
+              minimum: 1
+    payload:
+      type: object
+      required:
+        - user
+        - created-at
+      properties:
+        user:
+          oneOf:
+            - $ref: '#/components/schemas/user'
+            - type: string
+              minLength: 10
+        created-at:
+          type: string
+          format: date-time
+        updated-at:
+          type: string
+          format: date-time
+
+    user:
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer

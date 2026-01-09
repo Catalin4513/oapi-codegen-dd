@@ -53,6 +53,9 @@ func (t TypeB) Validate() error {
 type Test_Response_Items []Test_Response_Items_Item
 
 func (t Test_Response_Items) Validate() error {
+	if t == nil {
+		return nil
+	}
 	for i, item := range t {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -115,6 +118,9 @@ func (t *Test_Response_Items_Item) UnmarshalJSON(data []byte) error {
 type Test_ErrorResponse_Items []Test_ErrorResponse_Items_Item
 
 func (t Test_ErrorResponse_Items) Validate() error {
+	if t == nil {
+		return nil
+	}
 	for i, item := range t {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -177,6 +183,9 @@ func (t *Test_ErrorResponse_Items_Item) UnmarshalJSON(data []byte) error {
 type Test_ErrorResponse_Items1 []Test_ErrorResponse_Items_Item
 
 func (t Test_ErrorResponse_Items1) Validate() error {
+	if t == nil {
+		return nil
+	}
 	for i, item := range t {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {

@@ -135,6 +135,9 @@ type Payload_OneOf struct {
 }
 
 func (p *Payload_OneOf) Validate() error {
+	// NOTE: Validation is not supported for unions with more than 2 elements.
+	// Validating would require unmarshaling against each possible type, which is inefficient.
+	// Use AsValidated<Type>() methods to validate after retrieving the specific type.
 	return nil
 }
 
@@ -148,8 +151,26 @@ func (p *Payload_OneOf) AsPayloadA() (PayloadA, error) {
 	return UnmarshalAs[PayloadA](p.union)
 }
 
+// AsValidatedPayloadA returns the union data inside the Payload_OneOf as a validated PayloadA
+func (p *Payload_OneOf) AsValidatedPayloadA() (PayloadA, error) {
+	val, err := p.AsPayloadA()
+	if err != nil {
+		var zero PayloadA
+		return zero, err
+	}
+	if err := p.validatePayloadA(val); err != nil {
+		var zero PayloadA
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromPayloadA overwrites any union data inside the Payload_OneOf as the provided PayloadA
 func (p *Payload_OneOf) FromPayloadA(val PayloadA) error {
+	// Validate before storing
+	if err := p.validatePayloadA(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
@@ -160,8 +181,26 @@ func (p *Payload_OneOf) AsPayloadB() (PayloadB, error) {
 	return UnmarshalAs[PayloadB](p.union)
 }
 
+// AsValidatedPayloadB returns the union data inside the Payload_OneOf as a validated PayloadB
+func (p *Payload_OneOf) AsValidatedPayloadB() (PayloadB, error) {
+	val, err := p.AsPayloadB()
+	if err != nil {
+		var zero PayloadB
+		return zero, err
+	}
+	if err := p.validatePayloadB(val); err != nil {
+		var zero PayloadB
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromPayloadB overwrites any union data inside the Payload_OneOf as the provided PayloadB
 func (p *Payload_OneOf) FromPayloadB(val PayloadB) error {
+	// Validate before storing
+	if err := p.validatePayloadB(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
@@ -172,11 +211,53 @@ func (p *Payload_OneOf) AsPayloadC() (PayloadC, error) {
 	return UnmarshalAs[PayloadC](p.union)
 }
 
+// AsValidatedPayloadC returns the union data inside the Payload_OneOf as a validated PayloadC
+func (p *Payload_OneOf) AsValidatedPayloadC() (PayloadC, error) {
+	val, err := p.AsPayloadC()
+	if err != nil {
+		var zero PayloadC
+		return zero, err
+	}
+	if err := p.validatePayloadC(val); err != nil {
+		var zero PayloadC
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromPayloadC overwrites any union data inside the Payload_OneOf as the provided PayloadC
 func (p *Payload_OneOf) FromPayloadC(val PayloadC) error {
+	// Validate before storing
+	if err := p.validatePayloadC(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
+}
+
+// validatePayloadA validates a PayloadA value
+func (p *Payload_OneOf) validatePayloadA(val PayloadA) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validatePayloadB validates a PayloadB value
+func (p *Payload_OneOf) validatePayloadB(val PayloadB) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validatePayloadC validates a PayloadC value
+func (p *Payload_OneOf) validatePayloadC(val PayloadC) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (p Payload_OneOf) MarshalJSON() ([]byte, error) {

@@ -49,8 +49,9 @@ type GoSchema struct {
 	UnionElements []UnionElement
 	Discriminator *Discriminator
 
-	DefineViaAlias bool
-	OpenAPISchema  *base.Schema
+	DefineViaAlias   bool
+	IsPrimitiveAlias bool
+	OpenAPISchema    *base.Schema
 }
 
 func (s GoSchema) IsRef() bool {
@@ -86,6 +87,94 @@ func (s GoSchema) GetAdditionalTypeDefs() []TypeDefinition {
 	return s.AdditionalTypes
 }
 
+// NeedsValidation returns true if this schema represents a type that might have a Validate() method.
+// This includes:
+// - Types with RefType set (references to other types, inline types)
+// - Component references (GoType is set but not a primitive type and not a primitive alias)
+// - Struct types (has properties)
+// - Union types (has union elements)
+// - Types with validation constraints
+func (s GoSchema) NeedsValidation() bool {
+	// External refs don't need validation (they're from other packages)
+	if s.IsExternalRef() {
+		return false
+	}
+
+	// If RefType is set, it's a reference to another type that might have Validate()
+	if s.RefType != "" {
+		return true
+	}
+
+	// If it's a primitive alias, it doesn't have Validate()
+	if s.IsPrimitiveAlias {
+		return false
+	}
+
+	// If it has validation tags, it needs validation
+	if len(s.Constraints.ValidationTags) > 0 {
+		return true
+	}
+
+	// If it has properties or union elements, it needs validation
+	if len(s.Properties) > 0 || len(s.UnionElements) > 0 {
+		return true
+	}
+
+	// Check if GoType is a component reference (not a primitive type)
+	// Primitive types: string, int, int32, int64, float32, float64, bool, time.Time, byte
+	// Also check for pointer types and array/map/struct types
+	typeDecl := s.TypeDecl()
+	if typeDecl == "" || typeDecl == "any" {
+		return false
+	}
+
+	// Check if it's a primitive type
+	if isPrimitiveType(typeDecl) || isPrimitiveType(strings.TrimPrefix(typeDecl, "*")) {
+		return false
+	}
+
+	// If it starts with struct/map/[], it's handled elsewhere
+	if strings.HasPrefix(typeDecl, "struct") || strings.HasPrefix(typeDecl, "map[") || strings.HasPrefix(typeDecl, "[]") {
+		return false
+	}
+
+	// Otherwise, it's likely a component reference that might have Validate()
+	return true
+}
+
+// ContainsUnions returns true if this schema or any of its nested schemas contain union types.
+// This is used to determine if we can use simple validate.Struct() or need custom validation logic.
+func (s GoSchema) ContainsUnions() bool {
+	// Direct check: is this schema itself a union?
+	if len(s.UnionElements) > 0 {
+		return true
+	}
+
+	// Check properties recursively
+	for _, prop := range s.Properties {
+		if prop.Schema.ContainsUnions() {
+			return true
+		}
+	}
+
+	// Check array items
+	if s.ArrayType != nil && s.ArrayType.ContainsUnions() {
+		return true
+	}
+
+	// Check map values
+	if s.AdditionalPropertiesType != nil && s.AdditionalPropertiesType.ContainsUnions() {
+		return true
+	}
+
+	// Note: We don't check RefTypes here because:
+	// 1. If it's an internal ref, the referenced type will have its own Validate() method
+	// 2. If it's an external ref, we can't know if it contains unions
+	// 3. The validation will be delegated to the referenced type's Validate() method anyway
+
+	return false
+}
+
 // ValidateDecl generates the body of the Validate() method for this schema.
 // It returns the Go code that should appear inside the Validate() method.
 // The alias parameter is the receiver variable name (e.g., "p" for "func (p Person) Validate()").
@@ -93,12 +182,29 @@ func (s GoSchema) GetAdditionalTypeDefs() []TypeDefinition {
 func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
 	var lines []string
 
+	// OPTIMIZATION: If this is a struct with no unions anywhere in its tree,
+	// AND no properties need custom validation (like RefTypes),
+	// we can use the simple validate.Struct() approach instead of custom validation.
+	// This is much cleaner and more efficient.
+	typeDecl := s.TypeDecl()
+	if strings.HasPrefix(typeDecl, "struct") && len(s.Properties) > 0 && !s.ContainsUnions() {
+		// Check if any property needs custom validation
+		needsCustom := false
+		for _, prop := range s.Properties {
+			if prop.needsCustomValidation() {
+				needsCustom = true
+				break
+			}
+		}
+		if !needsCustom {
+			return fmt.Sprintf("return %s.Struct(%s)", validatorVar, alias)
+		}
+	}
+
 	// Handle array types
 	if s.ArrayType != nil {
-		hasConstraints := s.Constraints.MinItems != nil || s.Constraints.MaxItems != nil
-
-		// If nullable and has constraints, check for nil first
-		if s.Constraints.Nullable != nil && *s.Constraints.Nullable && hasConstraints {
+		// If nullable, allow nil (minItems constraint only applies to non-nil arrays)
+		if s.Constraints.Nullable != nil && *s.Constraints.Nullable {
 			lines = append(lines, fmt.Sprintf("if %s == nil {", alias))
 			lines = append(lines, "    return nil")
 			lines = append(lines, "}")
@@ -116,29 +222,22 @@ func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
 			lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at most %d items, got %%d\", len(%s)))", *s.Constraints.MaxItems, alias))
 			lines = append(lines, "}")
 		}
-		// Validate array items if they have constraints or are custom types
-		needsItemValidation := false
-		if s.ArrayType.RefType != "" && !s.ArrayType.IsExternalRef() {
-			needsItemValidation = true
-		} else if len(s.ArrayType.Constraints.ValidationTags) > 0 {
-			needsItemValidation = true
-		}
-
-		if needsItemValidation {
+		// Validate array items if they need validation
+		if s.ArrayType.NeedsValidation() {
 			lines = append(lines, "for i, item := range "+alias+" {")
 
-			// If items have a Validate() method, call it
-			if s.ArrayType.RefType != "" && !s.ArrayType.IsExternalRef() {
+			// If items have validation tags, use validator.Var()
+			if len(s.ArrayType.Constraints.ValidationTags) > 0 {
+				tags := strings.Join(s.ArrayType.Constraints.ValidationTags, ",")
+				lines = append(lines, fmt.Sprintf("    if err := %s.Var(item, \"%s\"); err != nil {", validatorVar, tags))
+				lines = append(lines, "        return runtime.NewValidationErrorFromError(fmt.Sprintf(\"[%d]\", i), err)")
+				lines = append(lines, "    }")
+			} else {
+				// Otherwise, try to call Validate() method (for RefTypes, structs, unions)
 				lines = append(lines, "    if v, ok := any(item).(runtime.Validator); ok {")
 				lines = append(lines, "        if err := v.Validate(); err != nil {")
 				lines = append(lines, "            return runtime.NewValidationErrorFromError(fmt.Sprintf(\"[%d]\", i), err)")
 				lines = append(lines, "        }")
-				lines = append(lines, "    }")
-			} else if len(s.ArrayType.Constraints.ValidationTags) > 0 {
-				// Otherwise use validator tags
-				tags := strings.Join(s.ArrayType.Constraints.ValidationTags, ",")
-				lines = append(lines, fmt.Sprintf("    if err := %s.Var(item, \"%s\"); err != nil {", validatorVar, tags))
-				lines = append(lines, "        return runtime.NewValidationErrorFromError(fmt.Sprintf(\"[%d]\", i), err)")
 				lines = append(lines, "    }")
 			}
 
@@ -158,7 +257,6 @@ func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
 
 	// If this schema has properties but GoType is a reference to another type
 	// (not a struct/map/slice), delegate to the underlying type
-	typeDecl := s.TypeDecl()
 	if len(s.Properties) > 0 && !strings.HasPrefix(typeDecl, "struct") &&
 		!strings.HasPrefix(typeDecl, "map[") && !strings.HasPrefix(typeDecl, "[]") {
 		// This is a type definition like "type X Y" where Y is another type
@@ -177,8 +275,6 @@ func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
 
 	// If no custom validation needed
 	if !hasCustomValidation {
-		typeDecl := s.TypeDecl()
-
 		// Handle map types (from additionalProperties)
 		if strings.HasPrefix(typeDecl, "map[") {
 			hasConstraints := s.Constraints.MinProperties != nil || s.Constraints.MaxProperties != nil
@@ -202,22 +298,42 @@ func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
 				lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at most %d properties, got %%d\", len(%s)))", *s.Constraints.MaxProperties, alias))
 				lines = append(lines, "}")
 			}
-			// Validate each value if it implements Validator
-			if s.AdditionalPropertiesType != nil && s.AdditionalPropertiesType.RefType != "" && !s.AdditionalPropertiesType.IsExternalRef() {
-				lines = append(lines, "for k, v := range "+alias+" {")
-				lines = append(lines, "    if validator, ok := any(v).(runtime.Validator); ok {")
-				lines = append(lines, "        if err := validator.Validate(); err != nil {")
-				lines = append(lines, "            return runtime.NewValidationErrorFromError(k, err)")
-				lines = append(lines, "        }")
-				lines = append(lines, "    }")
-				lines = append(lines, "}")
+			// Validate each value if it needs validation
+			if s.AdditionalPropertiesType != nil {
+				// Check if map values have validation tags (for primitive types)
+				if len(s.AdditionalPropertiesType.Constraints.ValidationTags) > 0 {
+					tags := strings.Join(s.AdditionalPropertiesType.Constraints.ValidationTags, ",")
+					lines = append(lines, "for k, v := range "+alias+" {")
+					lines = append(lines, fmt.Sprintf("    if err := %s.Var(v, \"%s\"); err != nil {", validatorVar, tags))
+					lines = append(lines, "        return runtime.NewValidationErrorFromError(k, err)")
+					lines = append(lines, "    }")
+					lines = append(lines, "}")
+				} else if s.AdditionalPropertiesType.NeedsValidation() {
+					// For complex types (structs, unions, etc.), call Validate() method
+					lines = append(lines, "for k, v := range "+alias+" {")
+					lines = append(lines, "    if validator, ok := any(v).(runtime.Validator); ok {")
+					lines = append(lines, "        if err := validator.Validate(); err != nil {")
+					lines = append(lines, "            return runtime.NewValidationErrorFromError(k, err)")
+					lines = append(lines, "        }")
+					lines = append(lines, "    }")
+					lines = append(lines, "}")
+				}
 			}
 			lines = append(lines, "return nil")
 			return strings.Join(lines, "\n")
 		}
 
-		// For other non-struct types (slices, primitives), there's nothing to validate structurally
+		// For other non-struct types (slices, primitives)
 		if strings.HasPrefix(typeDecl, "[]") || len(s.Properties) == 0 {
+			// Check if the schema itself has validation tags (for primitive types)
+			if len(s.Constraints.ValidationTags) > 0 {
+				tags := strings.Join(s.Constraints.ValidationTags, ",")
+				lines = append(lines, fmt.Sprintf("if err := %s.Var(%s, \"%s\"); err != nil {", validatorVar, alias, tags))
+				lines = append(lines, "    return err")
+				lines = append(lines, "}")
+				lines = append(lines, "return nil")
+				return strings.Join(lines, "\n")
+			}
 			return "return nil"
 		}
 
@@ -392,6 +508,8 @@ func GenerateGoSchema(schemaProxy *base.SchemaProxy, options ParseOptions) (GoSc
 
 			// Check if we have a type definition for this reference that might have a different name
 			// (e.g., due to x-go-name extension)
+			// Also check if the referenced type is a primitive alias
+			isPrimitiveAlias := false
 			if options.currentTypes != nil {
 				// Try to find the type definition by looking through all types
 				// We need to match by the schema reference, not the Go type name
@@ -404,17 +522,43 @@ func GenerateGoSchema(schemaProxy *base.SchemaProxy, options ParseOptions) (GoSc
 						if expectedRef == ref {
 							// Found the type definition, use its actual Go name
 							refType = td.Name
+
+							// Check if this is a primitive type alias
+							// e.g., type MsnBool = bool
+							if td.IsAlias() && isPrimitiveType(td.Schema.GoType) {
+								isPrimitiveAlias = true
+							}
 							break
 						}
 					}
 				}
 			}
 
+			// If we didn't find it in currentTypes (which might be empty during initial processing),
+			// check the OpenAPI schema directly to see if it's a primitive type
+			// BUT: Don't mark enum types as primitive aliases - they have custom Validate() methods
+			if !isPrimitiveAlias && schema != nil && schema.Type != nil && len(schema.Type) > 0 {
+				schemaType := schema.Type[0]
+				// Primitive types: string, number, integer, boolean
+				// But NOT if they have enum values (enums need custom validation)
+				hasEnumValues := len(schema.Enum) > 0
+				if !hasEnumValues && (schemaType == "string" || schemaType == "number" ||
+					schemaType == "integer" || schemaType == "boolean") {
+					isPrimitiveAlias = true
+				}
+			}
+
+			// Return the schema with the resolved type name
+			// Note: We don't set RefType for component references because:
+			// 1. RefType affects TypeDecl() which would change the type name used in struct fields
+			// 2. Component references already have their own type definitions with Validate() methods
+			// 3. The validation will be delegated via the type assertion in Property.needsCustomValidation()
 			return GoSchema{
-				GoType:         refType,
-				DefineViaAlias: true,
-				Description:    schema.Description,
-				OpenAPISchema:  schema,
+				GoType:           refType,
+				DefineViaAlias:   true,
+				IsPrimitiveAlias: isPrimitiveAlias,
+				Description:      schema.Description,
+				OpenAPISchema:    schema,
 			}, nil
 		}
 

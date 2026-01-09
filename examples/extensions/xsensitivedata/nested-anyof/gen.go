@@ -279,16 +279,12 @@ func (c *CreditCardPayment) UnmarshalJSON(data []byte) error {
 		*c = CreditCardPayment(tmp)
 	}
 
-	if err := runtime.UnmarshalJSON(data, &c.Type); err != nil {
-		return fmt.Errorf("Type unmarshal: %w", err)
-	}
-
 	return nil
 }
 
 type BankTransferPayment struct {
 	Type           BankTransferPaymentType            `json:"type" validate:"required"`
-	AccountDetails BankTransferPayment_AccountDetails `json:"accountDetails" validate:"required"`
+	AccountDetails BankTransferPayment_AccountDetails `json:"accountDetails"`
 }
 
 func (b BankTransferPayment) Validate() error {
@@ -431,10 +427,6 @@ func (d *DomesticAccount) UnmarshalJSON(data []byte) error {
 		*d = DomesticAccount(tmp)
 	}
 
-	if err := runtime.UnmarshalJSON(data, &d.AccountType); err != nil {
-		return fmt.Errorf("AccountType unmarshal: %w", err)
-	}
-
 	return nil
 }
 
@@ -521,18 +513,6 @@ func (i *InternationalAccount) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		*i = InternationalAccount(tmp)
-	}
-
-	if err := runtime.UnmarshalJSON(data, &i.AccountType); err != nil {
-		return fmt.Errorf("AccountType unmarshal: %w", err)
-	}
-
-	if i.BeneficiaryDetails == nil {
-		i.BeneficiaryDetails = &InternationalAccount_BeneficiaryDetails{}
-	}
-
-	if err := runtime.UnmarshalJSON(data, i.BeneficiaryDetails); err != nil {
-		return fmt.Errorf("BeneficiaryDetails unmarshal: %w", err)
 	}
 
 	return nil
@@ -689,10 +669,6 @@ func (p *PersonalBeneficiary) UnmarshalJSON(data []byte) error {
 		*p = PersonalBeneficiary(tmp)
 	}
 
-	if err := runtime.UnmarshalJSON(data, &p.BeneficiaryType); err != nil {
-		return fmt.Errorf("BeneficiaryType unmarshal: %w", err)
-	}
-
 	return nil
 }
 
@@ -756,10 +732,6 @@ func (b *BusinessBeneficiary) UnmarshalJSON(data []byte) error {
 		*b = BusinessBeneficiary(tmp)
 	}
 
-	if err := runtime.UnmarshalJSON(data, &b.BeneficiaryType); err != nil {
-		return fmt.Errorf("BeneficiaryType unmarshal: %w", err)
-	}
-
 	return nil
 }
 
@@ -815,10 +787,6 @@ func (d *DigitalWalletPayment) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		*d = DigitalWalletPayment(tmp)
-	}
-
-	if err := runtime.UnmarshalJSON(data, &d.Type); err != nil {
-		return fmt.Errorf("Type unmarshal: %w", err)
 	}
 
 	return nil
@@ -923,6 +891,9 @@ type PaymentMethod_AnyOf struct {
 }
 
 func (p *PaymentMethod_AnyOf) Validate() error {
+	// NOTE: Validation is not supported for unions with more than 2 elements.
+	// Validating would require unmarshaling against each possible type, which is inefficient.
+	// Use AsValidated<Type>() methods to validate after retrieving the specific type.
 	return nil
 }
 
@@ -936,8 +907,26 @@ func (p *PaymentMethod_AnyOf) AsCreditCardPayment() (CreditCardPayment, error) {
 	return UnmarshalAs[CreditCardPayment](p.union)
 }
 
+// AsValidatedCreditCardPayment returns the union data inside the PaymentMethod_AnyOf as a validated CreditCardPayment
+func (p *PaymentMethod_AnyOf) AsValidatedCreditCardPayment() (CreditCardPayment, error) {
+	val, err := p.AsCreditCardPayment()
+	if err != nil {
+		var zero CreditCardPayment
+		return zero, err
+	}
+	if err := p.validateCreditCardPayment(val); err != nil {
+		var zero CreditCardPayment
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromCreditCardPayment overwrites any union data inside the PaymentMethod_AnyOf as the provided CreditCardPayment
 func (p *PaymentMethod_AnyOf) FromCreditCardPayment(val CreditCardPayment) error {
+	// Validate before storing
+	if err := p.validateCreditCardPayment(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
@@ -948,8 +937,26 @@ func (p *PaymentMethod_AnyOf) AsBankTransferPayment() (BankTransferPayment, erro
 	return UnmarshalAs[BankTransferPayment](p.union)
 }
 
+// AsValidatedBankTransferPayment returns the union data inside the PaymentMethod_AnyOf as a validated BankTransferPayment
+func (p *PaymentMethod_AnyOf) AsValidatedBankTransferPayment() (BankTransferPayment, error) {
+	val, err := p.AsBankTransferPayment()
+	if err != nil {
+		var zero BankTransferPayment
+		return zero, err
+	}
+	if err := p.validateBankTransferPayment(val); err != nil {
+		var zero BankTransferPayment
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromBankTransferPayment overwrites any union data inside the PaymentMethod_AnyOf as the provided BankTransferPayment
 func (p *PaymentMethod_AnyOf) FromBankTransferPayment(val BankTransferPayment) error {
+	// Validate before storing
+	if err := p.validateBankTransferPayment(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
@@ -960,11 +967,53 @@ func (p *PaymentMethod_AnyOf) AsDigitalWalletPayment() (DigitalWalletPayment, er
 	return UnmarshalAs[DigitalWalletPayment](p.union)
 }
 
+// AsValidatedDigitalWalletPayment returns the union data inside the PaymentMethod_AnyOf as a validated DigitalWalletPayment
+func (p *PaymentMethod_AnyOf) AsValidatedDigitalWalletPayment() (DigitalWalletPayment, error) {
+	val, err := p.AsDigitalWalletPayment()
+	if err != nil {
+		var zero DigitalWalletPayment
+		return zero, err
+	}
+	if err := p.validateDigitalWalletPayment(val); err != nil {
+		var zero DigitalWalletPayment
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromDigitalWalletPayment overwrites any union data inside the PaymentMethod_AnyOf as the provided DigitalWalletPayment
 func (p *PaymentMethod_AnyOf) FromDigitalWalletPayment(val DigitalWalletPayment) error {
+	// Validate before storing
+	if err := p.validateDigitalWalletPayment(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
+}
+
+// validateCreditCardPayment validates a CreditCardPayment value
+func (p *PaymentMethod_AnyOf) validateCreditCardPayment(val CreditCardPayment) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateBankTransferPayment validates a BankTransferPayment value
+func (p *PaymentMethod_AnyOf) validateBankTransferPayment(val BankTransferPayment) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateDigitalWalletPayment validates a DigitalWalletPayment value
+func (p *PaymentMethod_AnyOf) validateDigitalWalletPayment(val DigitalWalletPayment) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (p PaymentMethod_AnyOf) MarshalJSON() ([]byte, error) {

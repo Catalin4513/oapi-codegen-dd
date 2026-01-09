@@ -117,3 +117,73 @@ func TestExpressionCircularReference(t *testing.T) {
 func strPtr(s string) *string {
 	return &s
 }
+
+func TestExpressions_Validate(t *testing.T) {
+	t.Run("valid - has 1 item (minItems: 1)", func(t *testing.T) {
+		exprs := Expressions{
+			Expression{
+				Dimensions: &DimensionValues{
+					Key:    strPtr("service"),
+					Values: []string{"EC2"},
+				},
+			},
+		}
+		assert.Nil(t, exprs.Validate())
+	})
+
+	t.Run("valid - has multiple items", func(t *testing.T) {
+		exprs := Expressions{
+			Expression{
+				Dimensions: &DimensionValues{
+					Key:    strPtr("service"),
+					Values: []string{"EC2"},
+				},
+			},
+			Expression{
+				Dimensions: &DimensionValues{
+					Key:    strPtr("region"),
+					Values: []string{"us-east-1"},
+				},
+			},
+		}
+		assert.Nil(t, exprs.Validate())
+	})
+
+	t.Run("valid - nil array", func(t *testing.T) {
+		var exprs Expressions
+		assert.Nil(t, exprs.Validate())
+	})
+
+	t.Run("invalid - empty array (minItems: 1)", func(t *testing.T) {
+		exprs := Expressions{}
+		err := exprs.Validate()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "must have at least 1 items")
+		assert.Contains(t, err.Error(), "got 0")
+	})
+
+	t.Run("valid - array with empty Expression struct", func(t *testing.T) {
+		// Expression is a struct, not a pointer, so it can't be nil
+		// But it can be an empty struct with all fields as zero values
+		exprs := Expressions{
+			Expression{}, // empty struct - all fields are nil/empty
+		}
+		// This should be valid - the array has 1 item (satisfies minItems: 1)
+		// The empty Expression itself is valid (all fields are optional)
+		assert.Nil(t, exprs.Validate())
+	})
+
+	t.Run("invalid - array with Expression that has invalid nested Expressions", func(t *testing.T) {
+		// Create an Expression with an empty Or array (violates minItems: 1)
+		exprs := Expressions{
+			Expression{
+				Or: Expressions{}, // empty array - violates minItems: 1
+			},
+		}
+		err := exprs.Validate()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "[0]")
+		assert.Contains(t, err.Error(), "Or")
+		assert.Contains(t, err.Error(), "must have at least 1 items")
+	})
+}

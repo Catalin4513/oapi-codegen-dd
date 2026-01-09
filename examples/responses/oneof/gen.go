@@ -124,6 +124,9 @@ type ProcessPayment_Response_OneOf struct {
 }
 
 func (p *ProcessPayment_Response_OneOf) Validate() error {
+	// NOTE: Validation is not supported for unions with more than 2 elements.
+	// Validating would require unmarshaling against each possible type, which is inefficient.
+	// Use AsValidated<Type>() methods to validate after retrieving the specific type.
 	return nil
 }
 
@@ -137,8 +140,26 @@ func (p *ProcessPayment_Response_OneOf) AsResponseA() (ResponseA, error) {
 	return UnmarshalAs[ResponseA](p.union)
 }
 
+// AsValidatedResponseA returns the union data inside the ProcessPayment_Response_OneOf as a validated ResponseA
+func (p *ProcessPayment_Response_OneOf) AsValidatedResponseA() (ResponseA, error) {
+	val, err := p.AsResponseA()
+	if err != nil {
+		var zero ResponseA
+		return zero, err
+	}
+	if err := p.validateResponseA(val); err != nil {
+		var zero ResponseA
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromResponseA overwrites any union data inside the ProcessPayment_Response_OneOf as the provided ResponseA
 func (p *ProcessPayment_Response_OneOf) FromResponseA(val ResponseA) error {
+	// Validate before storing
+	if err := p.validateResponseA(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
@@ -149,8 +170,26 @@ func (p *ProcessPayment_Response_OneOf) AsResponseB() (ResponseB, error) {
 	return UnmarshalAs[ResponseB](p.union)
 }
 
+// AsValidatedResponseB returns the union data inside the ProcessPayment_Response_OneOf as a validated ResponseB
+func (p *ProcessPayment_Response_OneOf) AsValidatedResponseB() (ResponseB, error) {
+	val, err := p.AsResponseB()
+	if err != nil {
+		var zero ResponseB
+		return zero, err
+	}
+	if err := p.validateResponseB(val); err != nil {
+		var zero ResponseB
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromResponseB overwrites any union data inside the ProcessPayment_Response_OneOf as the provided ResponseB
 func (p *ProcessPayment_Response_OneOf) FromResponseB(val ResponseB) error {
+	// Validate before storing
+	if err := p.validateResponseB(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
@@ -161,11 +200,53 @@ func (p *ProcessPayment_Response_OneOf) AsResponseC() (ResponseC, error) {
 	return UnmarshalAs[ResponseC](p.union)
 }
 
+// AsValidatedResponseC returns the union data inside the ProcessPayment_Response_OneOf as a validated ResponseC
+func (p *ProcessPayment_Response_OneOf) AsValidatedResponseC() (ResponseC, error) {
+	val, err := p.AsResponseC()
+	if err != nil {
+		var zero ResponseC
+		return zero, err
+	}
+	if err := p.validateResponseC(val); err != nil {
+		var zero ResponseC
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromResponseC overwrites any union data inside the ProcessPayment_Response_OneOf as the provided ResponseC
 func (p *ProcessPayment_Response_OneOf) FromResponseC(val ResponseC) error {
+	// Validate before storing
+	if err := p.validateResponseC(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	p.union = bts
 	return err
+}
+
+// validateResponseA validates a ResponseA value
+func (p *ProcessPayment_Response_OneOf) validateResponseA(val ResponseA) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateResponseB validates a ResponseB value
+func (p *ProcessPayment_Response_OneOf) validateResponseB(val ResponseB) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateResponseC validates a ResponseC value
+func (p *ProcessPayment_Response_OneOf) validateResponseC(val ResponseC) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (p ProcessPayment_Response_OneOf) MarshalJSON() ([]byte, error) {

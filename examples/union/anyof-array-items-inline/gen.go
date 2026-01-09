@@ -275,6 +275,9 @@ func (b BaseError) Validate() error {
 type BaseError_Issues []BaseError_Issues_Item
 
 func (b BaseError_Issues) Validate() error {
+	if b == nil {
+		return nil
+	}
 	for i, item := range b {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -312,6 +315,9 @@ func (s SpecificError) Validate() error {
 type SpecificError_Issues []SpecificError_Issues_Item
 
 func (s SpecificError_Issues) Validate() error {
+	if s == nil {
+		return nil
+	}
 	for i, item := range s {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -391,6 +397,9 @@ func (c CombinedError) Validate() error {
 type CombinedError_Issues []CombinedError_Issues_Item
 
 func (c CombinedError_Issues) Validate() error {
+	if c == nil {
+		return nil
+	}
 	for i, item := range c {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -623,6 +632,9 @@ type SpecificError_Issues_AnyOf struct {
 }
 
 func (s *SpecificError_Issues_AnyOf) Validate() error {
+	// NOTE: Validation is not supported for unions with more than 2 elements.
+	// Validating would require unmarshaling against each possible type, which is inefficient.
+	// Use AsValidated<Type>() methods to validate after retrieving the specific type.
 	return nil
 }
 
@@ -636,8 +648,26 @@ func (s *SpecificError_Issues_AnyOf) AsSpecificError_Issues_AnyOf_0() (SpecificE
 	return UnmarshalAs[SpecificError_Issues_AnyOf_0](s.union)
 }
 
+// AsValidatedSpecificError_Issues_AnyOf_0 returns the union data inside the SpecificError_Issues_AnyOf as a validated SpecificError_Issues_AnyOf_0
+func (s *SpecificError_Issues_AnyOf) AsValidatedSpecificError_Issues_AnyOf_0() (SpecificError_Issues_AnyOf_0, error) {
+	val, err := s.AsSpecificError_Issues_AnyOf_0()
+	if err != nil {
+		var zero SpecificError_Issues_AnyOf_0
+		return zero, err
+	}
+	if err := s.validateSpecificError_Issues_AnyOf_0(val); err != nil {
+		var zero SpecificError_Issues_AnyOf_0
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromSpecificError_Issues_AnyOf_0 overwrites any union data inside the SpecificError_Issues_AnyOf as the provided SpecificError_Issues_AnyOf_0
 func (s *SpecificError_Issues_AnyOf) FromSpecificError_Issues_AnyOf_0(val SpecificError_Issues_AnyOf_0) error {
+	// Validate before storing
+	if err := s.validateSpecificError_Issues_AnyOf_0(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	s.union = bts
 	return err
@@ -648,8 +678,26 @@ func (s *SpecificError_Issues_AnyOf) AsSpecificError_Issues_AnyOf_1() (SpecificE
 	return UnmarshalAs[SpecificError_Issues_AnyOf_1](s.union)
 }
 
+// AsValidatedSpecificError_Issues_AnyOf_1 returns the union data inside the SpecificError_Issues_AnyOf as a validated SpecificError_Issues_AnyOf_1
+func (s *SpecificError_Issues_AnyOf) AsValidatedSpecificError_Issues_AnyOf_1() (SpecificError_Issues_AnyOf_1, error) {
+	val, err := s.AsSpecificError_Issues_AnyOf_1()
+	if err != nil {
+		var zero SpecificError_Issues_AnyOf_1
+		return zero, err
+	}
+	if err := s.validateSpecificError_Issues_AnyOf_1(val); err != nil {
+		var zero SpecificError_Issues_AnyOf_1
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromSpecificError_Issues_AnyOf_1 overwrites any union data inside the SpecificError_Issues_AnyOf as the provided SpecificError_Issues_AnyOf_1
 func (s *SpecificError_Issues_AnyOf) FromSpecificError_Issues_AnyOf_1(val SpecificError_Issues_AnyOf_1) error {
+	// Validate before storing
+	if err := s.validateSpecificError_Issues_AnyOf_1(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	s.union = bts
 	return err
@@ -660,11 +708,53 @@ func (s *SpecificError_Issues_AnyOf) AsSpecificError_Issues_AnyOf_2() (SpecificE
 	return UnmarshalAs[SpecificError_Issues_AnyOf_2](s.union)
 }
 
+// AsValidatedSpecificError_Issues_AnyOf_2 returns the union data inside the SpecificError_Issues_AnyOf as a validated SpecificError_Issues_AnyOf_2
+func (s *SpecificError_Issues_AnyOf) AsValidatedSpecificError_Issues_AnyOf_2() (SpecificError_Issues_AnyOf_2, error) {
+	val, err := s.AsSpecificError_Issues_AnyOf_2()
+	if err != nil {
+		var zero SpecificError_Issues_AnyOf_2
+		return zero, err
+	}
+	if err := s.validateSpecificError_Issues_AnyOf_2(val); err != nil {
+		var zero SpecificError_Issues_AnyOf_2
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromSpecificError_Issues_AnyOf_2 overwrites any union data inside the SpecificError_Issues_AnyOf as the provided SpecificError_Issues_AnyOf_2
 func (s *SpecificError_Issues_AnyOf) FromSpecificError_Issues_AnyOf_2(val SpecificError_Issues_AnyOf_2) error {
+	// Validate before storing
+	if err := s.validateSpecificError_Issues_AnyOf_2(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	s.union = bts
 	return err
+}
+
+// validateSpecificError_Issues_AnyOf_0 validates a SpecificError_Issues_AnyOf_0 value
+func (s *SpecificError_Issues_AnyOf) validateSpecificError_Issues_AnyOf_0(val SpecificError_Issues_AnyOf_0) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateSpecificError_Issues_AnyOf_1 validates a SpecificError_Issues_AnyOf_1 value
+func (s *SpecificError_Issues_AnyOf) validateSpecificError_Issues_AnyOf_1(val SpecificError_Issues_AnyOf_1) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateSpecificError_Issues_AnyOf_2 validates a SpecificError_Issues_AnyOf_2 value
+func (s *SpecificError_Issues_AnyOf) validateSpecificError_Issues_AnyOf_2(val SpecificError_Issues_AnyOf_2) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (s SpecificError_Issues_AnyOf) MarshalJSON() ([]byte, error) {
@@ -684,6 +774,9 @@ type CombinedError_Issues_AnyOf struct {
 }
 
 func (c *CombinedError_Issues_AnyOf) Validate() error {
+	// NOTE: Validation is not supported for unions with more than 2 elements.
+	// Validating would require unmarshaling against each possible type, which is inefficient.
+	// Use AsValidated<Type>() methods to validate after retrieving the specific type.
 	return nil
 }
 
@@ -697,8 +790,26 @@ func (c *CombinedError_Issues_AnyOf) AsCombinedError_Issues_AnyOf_0() (CombinedE
 	return UnmarshalAs[CombinedError_Issues_AnyOf_0](c.union)
 }
 
+// AsValidatedCombinedError_Issues_AnyOf_0 returns the union data inside the CombinedError_Issues_AnyOf as a validated CombinedError_Issues_AnyOf_0
+func (c *CombinedError_Issues_AnyOf) AsValidatedCombinedError_Issues_AnyOf_0() (CombinedError_Issues_AnyOf_0, error) {
+	val, err := c.AsCombinedError_Issues_AnyOf_0()
+	if err != nil {
+		var zero CombinedError_Issues_AnyOf_0
+		return zero, err
+	}
+	if err := c.validateCombinedError_Issues_AnyOf_0(val); err != nil {
+		var zero CombinedError_Issues_AnyOf_0
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromCombinedError_Issues_AnyOf_0 overwrites any union data inside the CombinedError_Issues_AnyOf as the provided CombinedError_Issues_AnyOf_0
 func (c *CombinedError_Issues_AnyOf) FromCombinedError_Issues_AnyOf_0(val CombinedError_Issues_AnyOf_0) error {
+	// Validate before storing
+	if err := c.validateCombinedError_Issues_AnyOf_0(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	c.union = bts
 	return err
@@ -709,8 +820,26 @@ func (c *CombinedError_Issues_AnyOf) AsCombinedError_Issues_AnyOf_1() (CombinedE
 	return UnmarshalAs[CombinedError_Issues_AnyOf_1](c.union)
 }
 
+// AsValidatedCombinedError_Issues_AnyOf_1 returns the union data inside the CombinedError_Issues_AnyOf as a validated CombinedError_Issues_AnyOf_1
+func (c *CombinedError_Issues_AnyOf) AsValidatedCombinedError_Issues_AnyOf_1() (CombinedError_Issues_AnyOf_1, error) {
+	val, err := c.AsCombinedError_Issues_AnyOf_1()
+	if err != nil {
+		var zero CombinedError_Issues_AnyOf_1
+		return zero, err
+	}
+	if err := c.validateCombinedError_Issues_AnyOf_1(val); err != nil {
+		var zero CombinedError_Issues_AnyOf_1
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromCombinedError_Issues_AnyOf_1 overwrites any union data inside the CombinedError_Issues_AnyOf as the provided CombinedError_Issues_AnyOf_1
 func (c *CombinedError_Issues_AnyOf) FromCombinedError_Issues_AnyOf_1(val CombinedError_Issues_AnyOf_1) error {
+	// Validate before storing
+	if err := c.validateCombinedError_Issues_AnyOf_1(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	c.union = bts
 	return err
@@ -721,11 +850,53 @@ func (c *CombinedError_Issues_AnyOf) AsCombinedError_Issues_AnyOf_2() (CombinedE
 	return UnmarshalAs[CombinedError_Issues_AnyOf_2](c.union)
 }
 
+// AsValidatedCombinedError_Issues_AnyOf_2 returns the union data inside the CombinedError_Issues_AnyOf as a validated CombinedError_Issues_AnyOf_2
+func (c *CombinedError_Issues_AnyOf) AsValidatedCombinedError_Issues_AnyOf_2() (CombinedError_Issues_AnyOf_2, error) {
+	val, err := c.AsCombinedError_Issues_AnyOf_2()
+	if err != nil {
+		var zero CombinedError_Issues_AnyOf_2
+		return zero, err
+	}
+	if err := c.validateCombinedError_Issues_AnyOf_2(val); err != nil {
+		var zero CombinedError_Issues_AnyOf_2
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromCombinedError_Issues_AnyOf_2 overwrites any union data inside the CombinedError_Issues_AnyOf as the provided CombinedError_Issues_AnyOf_2
 func (c *CombinedError_Issues_AnyOf) FromCombinedError_Issues_AnyOf_2(val CombinedError_Issues_AnyOf_2) error {
+	// Validate before storing
+	if err := c.validateCombinedError_Issues_AnyOf_2(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	c.union = bts
 	return err
+}
+
+// validateCombinedError_Issues_AnyOf_0 validates a CombinedError_Issues_AnyOf_0 value
+func (c *CombinedError_Issues_AnyOf) validateCombinedError_Issues_AnyOf_0(val CombinedError_Issues_AnyOf_0) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateCombinedError_Issues_AnyOf_1 validates a CombinedError_Issues_AnyOf_1 value
+func (c *CombinedError_Issues_AnyOf) validateCombinedError_Issues_AnyOf_1(val CombinedError_Issues_AnyOf_1) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateCombinedError_Issues_AnyOf_2 validates a CombinedError_Issues_AnyOf_2 value
+func (c *CombinedError_Issues_AnyOf) validateCombinedError_Issues_AnyOf_2(val CombinedError_Issues_AnyOf_2) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (c CombinedError_Issues_AnyOf) MarshalJSON() ([]byte, error) {

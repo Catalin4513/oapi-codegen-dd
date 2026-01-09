@@ -48,14 +48,7 @@ type UpdateClientErrorResponse struct {
 }
 
 func (u UpdateClientErrorResponse) Validate() error {
-	if u.Code != nil {
-		if v, ok := any(u.Code).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Code", err)
-			}
-		}
-	}
-	return nil
+	return schemaTypesValidate.Struct(u)
 }
 
 type ErrorCode = string

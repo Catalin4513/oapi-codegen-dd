@@ -424,6 +424,9 @@ func (g GetPost_Response_Metadata) Validate() error {
 type ListComments_Response []ListComments_Response_Item
 
 func (l ListComments_Response) Validate() error {
+	if l == nil {
+		return nil
+	}
 	for i, item := range l {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {

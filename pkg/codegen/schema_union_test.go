@@ -93,7 +93,10 @@ func TestGenerateGoSchema_generateUnion(t *testing.T) {
 		assert.Equal(t, 1, len(res.AdditionalTypes))
 		assert.Equal(t, "User_OneOf", res.AdditionalTypes[0].Name)
 		assert.Equal(t, "struct {\nunion json.RawMessage\n}", res.AdditionalTypes[0].Schema.GoType)
-		assert.Equal(t, []UnionElement{"User", "Error", "string"}, res.AdditionalTypes[0].Schema.UnionElements)
+		assert.Equal(t, 3, len(res.AdditionalTypes[0].Schema.UnionElements))
+		assert.Equal(t, "User", res.AdditionalTypes[0].Schema.UnionElements[0].TypeName)
+		assert.Equal(t, "Error", res.AdditionalTypes[0].Schema.UnionElements[1].TypeName)
+		assert.Equal(t, "string", res.AdditionalTypes[0].Schema.UnionElements[2].TypeName)
 	})
 }
 
@@ -241,5 +244,105 @@ paths:
 		// Test with property that has no enum
 		value := extractDiscriminatorValue(schema.OneOf[0], "type")
 		assert.Equal(t, "", value)
+	})
+}
+
+func TestDeduplicateUnionElements_StricterWins(t *testing.T) {
+	t.Run("keeps element with more constraints", func(t *testing.T) {
+		minLen := int64(3)
+		maxLen := int64(10)
+		min := float64(1)
+
+		elements := []UnionElement{
+			{
+				TypeName: "string",
+				Schema: GoSchema{
+					GoType: "string",
+					Constraints: Constraints{
+						MinLength: &minLen,
+					},
+				},
+			},
+			{
+				TypeName: "string",
+				Schema: GoSchema{
+					GoType: "string",
+					Constraints: Constraints{
+						MinLength: &minLen,
+						MaxLength: &maxLen,
+					},
+				},
+			},
+			{
+				TypeName: "int",
+				Schema: GoSchema{
+					GoType: "int",
+					Constraints: Constraints{
+						Min: &min,
+					},
+				},
+			},
+		}
+
+		result := deduplicateUnionElements(elements)
+
+		assert.Len(t, result, 2)
+		assert.Equal(t, "string", result[0].TypeName)
+		assert.Equal(t, "int", result[1].TypeName)
+
+		// Should keep the stricter string (with both minLength and maxLength)
+		assert.NotNil(t, result[0].Schema.Constraints.MinLength)
+		assert.NotNil(t, result[0].Schema.Constraints.MaxLength)
+		assert.Equal(t, int64(3), *result[0].Schema.Constraints.MinLength)
+		assert.Equal(t, int64(10), *result[0].Schema.Constraints.MaxLength)
+	})
+
+	t.Run("first wins when constraints are equal", func(t *testing.T) {
+		minLen1 := int64(3)
+		minLen2 := int64(5)
+
+		elements := []UnionElement{
+			{
+				TypeName: "string",
+				Schema: GoSchema{
+					GoType: "string",
+					Constraints: Constraints{
+						MinLength: &minLen1,
+					},
+				},
+			},
+			{
+				TypeName: "string",
+				Schema: GoSchema{
+					GoType: "string",
+					Constraints: Constraints{
+						MinLength: &minLen2,
+					},
+				},
+			},
+		}
+
+		result := deduplicateUnionElements(elements)
+
+		assert.Len(t, result, 1)
+		assert.Equal(t, "string", result[0].TypeName)
+		// Should keep the first one (minLength: 3)
+		assert.Equal(t, int64(3), *result[0].Schema.Constraints.MinLength)
+	})
+
+	t.Run("preserves order", func(t *testing.T) {
+		elements := []UnionElement{
+			{TypeName: "User", Schema: GoSchema{GoType: "User"}},
+			{TypeName: "Error", Schema: GoSchema{GoType: "Error"}},
+			{TypeName: "string", Schema: GoSchema{GoType: "string"}},
+			{TypeName: "User", Schema: GoSchema{GoType: "User"}}, // duplicate
+		}
+
+		result := deduplicateUnionElements(elements)
+
+		assert.Len(t, result, 3)
+		assert.Equal(t, "User", result[0].TypeName)
+		assert.Equal(t, "Error", result[1].TypeName)
+		assert.Equal(t, "string", result[2].TypeName)
 	})
 }

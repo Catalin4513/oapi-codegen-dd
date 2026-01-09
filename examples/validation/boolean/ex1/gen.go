@@ -53,7 +53,7 @@ func (p PostUsersResponse) Validate() error {
 }
 
 type PostBillingPortalConfigurationsConfigurationResponse struct {
-	Features PortalFeatures `json:"features" validate:"required"`
+	Features PortalFeatures `json:"features"`
 }
 
 func (p PostBillingPortalConfigurationsConfigurationResponse) Validate() error {
@@ -87,7 +87,7 @@ func (u User) Validate() error {
 }
 
 type PortalFeatures struct {
-	InvoiceHistory PortalInvoiceList `json:"invoice_history" validate:"required"`
+	InvoiceHistory PortalInvoiceList `json:"invoice_history"`
 }
 
 func (p PortalFeatures) Validate() error {

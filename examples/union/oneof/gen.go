@@ -199,6 +199,9 @@ func (o *Order_Description) UnmarshalJSON(data []byte) error {
 type Order_Images []Order_Images_Item
 
 func (o Order_Images) Validate() error {
+	if o == nil {
+		return nil
+	}
 	for i, item := range o {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -318,6 +321,9 @@ type Order_Product_OneOf struct {
 }
 
 func (o *Order_Product_OneOf) Validate() error {
+	// NOTE: Validation is not supported for unions with more than 2 elements.
+	// Validating would require unmarshaling against each possible type, which is inefficient.
+	// Use AsValidated<Type>() methods to validate after retrieving the specific type.
 	return nil
 }
 
@@ -331,8 +337,26 @@ func (o *Order_Product_OneOf) AsVersionA() (VersionA, error) {
 	return UnmarshalAs[VersionA](o.union)
 }
 
+// AsValidatedVersionA returns the union data inside the Order_Product_OneOf as a validated VersionA
+func (o *Order_Product_OneOf) AsValidatedVersionA() (VersionA, error) {
+	val, err := o.AsVersionA()
+	if err != nil {
+		var zero VersionA
+		return zero, err
+	}
+	if err := o.validateVersionA(val); err != nil {
+		var zero VersionA
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromVersionA overwrites any union data inside the Order_Product_OneOf as the provided VersionA
 func (o *Order_Product_OneOf) FromVersionA(val VersionA) error {
+	// Validate before storing
+	if err := o.validateVersionA(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	o.union = bts
 	return err
@@ -343,8 +367,26 @@ func (o *Order_Product_OneOf) AsVersionB() (VersionB, error) {
 	return UnmarshalAs[VersionB](o.union)
 }
 
+// AsValidatedVersionB returns the union data inside the Order_Product_OneOf as a validated VersionB
+func (o *Order_Product_OneOf) AsValidatedVersionB() (VersionB, error) {
+	val, err := o.AsVersionB()
+	if err != nil {
+		var zero VersionB
+		return zero, err
+	}
+	if err := o.validateVersionB(val); err != nil {
+		var zero VersionB
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromVersionB overwrites any union data inside the Order_Product_OneOf as the provided VersionB
 func (o *Order_Product_OneOf) FromVersionB(val VersionB) error {
+	// Validate before storing
+	if err := o.validateVersionB(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	o.union = bts
 	return err
@@ -355,8 +397,26 @@ func (o *Order_Product_OneOf) AsBool() (bool, error) {
 	return UnmarshalAs[bool](o.union)
 }
 
+// AsValidatedBool returns the union data inside the Order_Product_OneOf as a validated bool
+func (o *Order_Product_OneOf) AsValidatedBool() (bool, error) {
+	val, err := o.AsBool()
+	if err != nil {
+		var zero bool
+		return zero, err
+	}
+	if err := o.validateBool(val); err != nil {
+		var zero bool
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromBool overwrites any union data inside the Order_Product_OneOf as the provided bool
 func (o *Order_Product_OneOf) FromBool(val bool) error {
+	// Validate before storing
+	if err := o.validateBool(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	o.union = bts
 	return err
@@ -367,11 +427,61 @@ func (o *Order_Product_OneOf) AsOrder_Product_OneOf_3() (Order_Product_OneOf_3, 
 	return UnmarshalAs[Order_Product_OneOf_3](o.union)
 }
 
+// AsValidatedOrder_Product_OneOf_3 returns the union data inside the Order_Product_OneOf as a validated Order_Product_OneOf_3
+func (o *Order_Product_OneOf) AsValidatedOrder_Product_OneOf_3() (Order_Product_OneOf_3, error) {
+	val, err := o.AsOrder_Product_OneOf_3()
+	if err != nil {
+		var zero Order_Product_OneOf_3
+		return zero, err
+	}
+	if err := o.validateOrder_Product_OneOf_3(val); err != nil {
+		var zero Order_Product_OneOf_3
+		return zero, err
+	}
+	return val, nil
+}
+
 // FromOrder_Product_OneOf_3 overwrites any union data inside the Order_Product_OneOf as the provided Order_Product_OneOf_3
 func (o *Order_Product_OneOf) FromOrder_Product_OneOf_3(val Order_Product_OneOf_3) error {
+	// Validate before storing
+	if err := o.validateOrder_Product_OneOf_3(val); err != nil {
+		return err
+	}
 	bts, err := json.Marshal(val)
 	o.union = bts
 	return err
+}
+
+// validateVersionA validates a VersionA value
+func (o *Order_Product_OneOf) validateVersionA(val VersionA) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateVersionB validates a VersionB value
+func (o *Order_Product_OneOf) validateVersionB(val VersionB) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateBool validates a bool value
+func (o *Order_Product_OneOf) validateBool(val bool) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// validateOrder_Product_OneOf_3 validates a Order_Product_OneOf_3 value
+func (o *Order_Product_OneOf) validateOrder_Product_OneOf_3(val Order_Product_OneOf_3) error {
+	if v, ok := any(val).(runtime.Validator); ok {
+		return v.Validate()
+	}
+	return nil
 }
 
 func (o Order_Product_OneOf) MarshalJSON() ([]byte, error) {

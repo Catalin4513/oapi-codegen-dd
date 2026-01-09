@@ -78,41 +78,40 @@ func (p Property) IsPointerType() bool {
 
 // needsCustomValidation returns true if this property needs custom validation logic
 // (i.e., calling Validate() method) instead of just using validator tags.
+//
+// The logic:
+// 1. Check the type first (primitive vs custom)
+// 2. If primitive type with validation tags → use validator.Var() (return false)
+// 3. If custom type (even with validation tags) → call .Validate() (return true)
+// 4. If primitive type without validation tags → skip validation (return false)
 func (p Property) needsCustomValidation() bool {
-	// Inline union (RefType with no JsonFieldName)
-	if p.Schema.RefType != "" && p.JsonFieldName == "" {
-		return true
+	// Get the type definition
+	typeDef := p.Schema.TypeDecl()
+
+	// Empty type means no validation needed
+	if typeDef == "" {
+		return false
 	}
 
-	// Property with union elements
-	if len(p.Schema.UnionElements) > 0 {
-		return true
+	// Check if it's a primitive type or primitive alias
+	isPrimitive := p.Schema.IsPrimitiveAlias ||
+		isPrimitiveType(typeDef) ||
+		strings.HasPrefix(typeDef, "[]") ||
+		strings.HasPrefix(typeDef, "map[")
+
+	// If it's a primitive type with validation tags, use validator.Var()
+	if isPrimitive && len(p.Constraints.ValidationTags) > 0 {
+		return false
 	}
 
-	// Named ref (RefType with JsonFieldName)
-	if p.Schema.RefType != "" && p.JsonFieldName != "" {
-		return true
+	// If it's a primitive type without validation tags, skip validation
+	if isPrimitive {
+		return false
 	}
 
-	// Custom Go type that's not a primitive
-	if p.Schema.GoType != "" {
-		typeDef := p.Schema.TypeDecl()
-
-		// Inline arrays and maps of primitives don't need custom validation
-		if strings.HasPrefix(typeDef, "[]") || strings.HasPrefix(typeDef, "map[") {
-			return false
-		}
-
-		primitives := []string{"string", "int", "int32", "int64", "float32", "float64", "bool", "time.Time"}
-		for _, prim := range primitives {
-			if typeDef == prim {
-				return false
-			}
-		}
-		return true
-	}
-
-	return false
+	// For custom types (structs, unions, etc.), always call .Validate()
+	// even if they have validation tags (the tags are ignored for custom types)
+	return true
 }
 
 func createPropertyGoFieldName(jsonName string, extensions map[string]any) string {

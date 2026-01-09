@@ -18,6 +18,32 @@ import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 )
 
+// goPrimitiveTypes is a set of Go primitive type names.
+// This is used to determine whether a type needs special handling (e.g., type definitions in unions).
+var goPrimitiveTypes = map[string]bool{
+	"string":    true,
+	"int":       true,
+	"int8":      true,
+	"int16":     true,
+	"int32":     true,
+	"int64":     true,
+	"uint":      true,
+	"uint8":     true,
+	"uint16":    true,
+	"uint32":    true,
+	"uint64":    true,
+	"float":     true,
+	"float32":   true,
+	"float64":   true,
+	"bool":      true,
+	"time.Time": true,
+}
+
+// isPrimitiveType returns true if the given type string is a Go primitive type.
+func isPrimitiveType(typeDef string) bool {
+	return goPrimitiveTypes[typeDef]
+}
+
 // oapiSchemaToGoType converts an OpenApi schema into a Go type definition for
 // all non-object types.
 func oapiSchemaToGoType(schema *base.Schema, options ParseOptions) (GoSchema, error) {
@@ -199,16 +225,11 @@ func oapiSchemaToGoType(schema *base.Schema, options ParseOptions) (GoSchema, er
 			goType = "uuid.UUID"
 		}
 
-		// Don't use alias if we have length constraints that need validation
-		// (we can't add methods to type aliases)
-		defineViaAlias := true
-		if goType == "string" && (constraints.MinLength != nil || constraints.MaxLength != nil) {
-			defineViaAlias = false
-		}
-
+		// Always use alias for primitives - validation will be handled
+		// at the object level using validation tags
 		return GoSchema{
 			GoType:              goType,
-			DefineViaAlias:      defineViaAlias,
+			DefineViaAlias:      true,
 			SkipOptionalPointer: skipOptionalPointer,
 			Description:         schema.Description,
 			OpenAPISchema:       schema,

@@ -18,36 +18,27 @@ import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 )
 
-// UnionElement describe a union element, based on the prefix externalRef\d+ and real ref name from external schema.
-type UnionElement string
+// UnionElement describes a union element with its type and schema (including constraints).
+type UnionElement struct {
+	// TypeName is the Go type name (e.g., "User", "string", "int")
+	TypeName string
 
-// Method generate union method name for template functions `As/From`.
+	// Schema contains the full schema including constraints (minLength, minimum, etc.)
+	Schema GoSchema
+}
+
+// String returns the type name for backward compatibility with templates
+func (u UnionElement) String() string {
+	return u.TypeName
+}
+
+// Method generates union method name for template functions `As/From`.
 func (u UnionElement) Method() string {
 	var method string
-	for _, part := range strings.Split(string(u), `.`) {
+	for _, part := range strings.Split(u.TypeName, `.`) {
 		method += UppercaseFirstCharacter(part)
 	}
 	return method
-}
-
-// goPrimitiveTypes is a set of Go primitive type names used to determine
-// whether a type needs a separate type definition in unions.
-var goPrimitiveTypes = map[string]bool{
-	"string":  true,
-	"int":     true,
-	"int8":    true,
-	"int16":   true,
-	"int32":   true,
-	"int64":   true,
-	"uint":    true,
-	"uint8":   true,
-	"uint16":  true,
-	"uint32":  true,
-	"uint64":  true,
-	"float":   true,
-	"float32": true,
-	"float64": true,
-	"bool":    true,
 }
 
 func generateUnion(elements []*base.SchemaProxy, discriminator *base.Discriminator, options ParseOptions) (GoSchema, error) {
@@ -196,7 +187,10 @@ func generateUnion(elements []*base.SchemaProxy, discriminator *base.Discriminat
 				outSchema.Discriminator.Mapping[discriminatorValue] = elementSchema.GoType
 			}
 		}
-		outSchema.UnionElements = append(outSchema.UnionElements, UnionElement(elementSchema.GoType))
+		outSchema.UnionElements = append(outSchema.UnionElements, UnionElement{
+			TypeName: elementSchema.GoType,
+			Schema:   elementSchema,
+		})
 	}
 
 	// Deduplicate union elements to avoid generating duplicate methods
@@ -209,19 +203,36 @@ func generateUnion(elements []*base.SchemaProxy, discriminator *base.Discriminat
 	return outSchema, nil
 }
 
-// deduplicateUnionElements removes duplicate union elements while preserving order
+// deduplicateUnionElements removes duplicate union elements while preserving order.
+// When duplicates are found, it keeps the "stricter" one (the one with more validation constraints).
+// If both have the same number of constraints, the first one wins.
 func deduplicateUnionElements(elements []UnionElement) []UnionElement {
-	seen := make(map[UnionElement]bool)
+	seen := make(map[string]int) // maps TypeName to index in result
 	result := make([]UnionElement, 0, len(elements))
 
 	for _, elem := range elements {
-		if !seen[elem] {
-			seen[elem] = true
+		if existingIdx, found := seen[elem.TypeName]; !found {
+			// First occurrence - add it
+			seen[elem.TypeName] = len(result)
 			result = append(result, elem)
+		} else {
+			// Duplicate found - keep the stricter one
+			existing := result[existingIdx]
+			if isStricterElement(elem, existing) {
+				result[existingIdx] = elem
+			}
 		}
 	}
 
 	return result
+}
+
+// isStricterElement returns true if elem1 has more validation constraints than elem2.
+// This helps us keep the more restrictive definition when deduplicating union elements.
+func isStricterElement(elem1, elem2 UnionElement) bool {
+	count1 := elem1.Schema.Constraints.Count()
+	count2 := elem2.Schema.Constraints.Count()
+	return count1 > count2
 }
 
 // extractDiscriminatorValue attempts to extract the discriminator value from a schema.

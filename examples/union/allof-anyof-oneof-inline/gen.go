@@ -60,6 +60,9 @@ func (c CreateUserBody_User) Validate() error {
 type CreateUserBody_Pages []CreateUserBody_Pages_Item
 
 func (c CreateUserBody_Pages) Validate() error {
+	if c == nil {
+		return nil
+	}
 	for i, item := range c {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
