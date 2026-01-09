@@ -167,7 +167,7 @@ func TestUsersWithRequiredFields_Validate(t *testing.T) {
 		}
 		err := obj.Validate()
 		assert.Error(t, err)
-		assert.Equal(t, "user1.Email: is required", err.Error())
+		assert.Equal(t, "user1.Email is required", err.Error())
 
 		var ve runtime.ValidationError
 		assert.ErrorAs(t, err, &ve)
@@ -246,7 +246,7 @@ func TestTagsWithLength_Validate(t *testing.T) {
 		}
 		err := obj.Validate()
 		assert.Error(t, err)
-		assert.Equal(t, "key2: length must be less than or equal to 50", err.Error())
+		assert.Equal(t, "key2 length must be less than or equal to 50", err.Error())
 
 		var ve runtime.ValidationError
 		assert.ErrorAs(t, err, &ve)
@@ -334,7 +334,7 @@ func TestTagsWithBothConstraints_Validate(t *testing.T) {
 		}
 		err := obj.Validate()
 		assert.Error(t, err)
-		assert.Equal(t, "key2: length must be less than or equal to 50", err.Error())
+		assert.Equal(t, "key2 length must be less than or equal to 50", err.Error())
 	})
 
 	t.Run("invalid - valid count but empty value (minLength: 1)", func(t *testing.T) {

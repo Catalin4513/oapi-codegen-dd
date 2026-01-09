@@ -74,11 +74,10 @@ type ValidationError struct {
 }
 
 func (e ValidationError) Error() string {
-	field := e.Field
-	if field != "" {
-		field = fmt.Sprintf("%s: ", field)
+	if e.Field != "" {
+		return fmt.Sprintf("%s %s", e.Field, e.Message)
 	}
-	return fmt.Sprintf("%s%s", field, e.Message)
+	return e.Message
 }
 
 // Unwrap returns the underlying error for error wrapping support
@@ -142,11 +141,11 @@ type ValidationErrors []ValidationError
 func (ve ValidationErrors) Error() string {
 	var messages []string
 	for _, e := range ve {
-		field := e.Field
-		if field != "" {
-			field = fmt.Sprintf("%s: ", field)
+		if e.Field != "" {
+			messages = append(messages, fmt.Sprintf("%s %s", e.Field, e.Message))
+		} else {
+			messages = append(messages, e.Message)
 		}
-		messages = append(messages, fmt.Sprintf("%s%s", field, e.Message))
 	}
 	return strings.Join(messages, "\n")
 }
