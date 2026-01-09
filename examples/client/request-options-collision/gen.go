@@ -101,7 +101,7 @@ func (o *GetTest1RequestOptions) GetPathParams() (map[string]any, error) {
 
 // GetQuery returns the query params as a map.
 func (o *GetTest1RequestOptions) GetQuery() (map[string]any, error) {
-	return asMap[any](o.Query)
+	return runtime.AsMap[any](o.Query)
 }
 
 // GetBody returns the payload in any type that can be marshalled to JSON by the client.
@@ -112,23 +112,6 @@ func (o *GetTest1RequestOptions) GetBody() any {
 // GetHeader returns the headers as a map.
 func (o *GetTest1RequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
-}
-
-func asMap[V any](v any) (map[string]V, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-
-	var m map[string]V
-	err = json.Unmarshal(res, &m)
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 var queryTypesValidate *validator.Validate

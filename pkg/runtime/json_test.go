@@ -18,6 +18,80 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestAsMap(t *testing.T) {
+	t.Run("converts struct to map[string]any", func(t *testing.T) {
+		type TestStruct struct {
+			Name  string `json:"name"`
+			Age   int    `json:"age"`
+			Email string `json:"email,omitempty"`
+		}
+
+		input := TestStruct{Name: "John", Age: 30}
+		result, err := AsMap[any](input)
+
+		require.NoError(t, err)
+		assert.Equal(t, "John", result["name"])
+		assert.Equal(t, float64(30), result["age"]) // JSON numbers unmarshal as float64
+		assert.NotContains(t, result, "email")      // omitempty field not present
+	})
+
+	t.Run("converts struct to map[string]string", func(t *testing.T) {
+		type HeaderStruct struct {
+			Authorization string `json:"authorization"`
+			ContentType   string `json:"content-type"`
+		}
+
+		input := HeaderStruct{Authorization: "Bearer token", ContentType: "application/json"}
+		result, err := AsMap[string](input)
+
+		require.NoError(t, err)
+		assert.Equal(t, "Bearer token", result["authorization"])
+		assert.Equal(t, "application/json", result["content-type"])
+	})
+
+	t.Run("returns nil for nil input", func(t *testing.T) {
+		result, err := AsMap[any](nil)
+
+		require.NoError(t, err)
+		assert.Nil(t, result)
+	})
+
+	t.Run("handles pointer fields", func(t *testing.T) {
+		type TestStruct struct {
+			Name  *string `json:"name,omitempty"`
+			Count *int    `json:"count,omitempty"`
+		}
+
+		name := "test"
+		count := 42
+		input := TestStruct{Name: &name, Count: &count}
+		result, err := AsMap[any](input)
+
+		require.NoError(t, err)
+		assert.Equal(t, "test", result["name"])
+		assert.Equal(t, float64(42), result["count"])
+	})
+
+	t.Run("handles nested structs", func(t *testing.T) {
+		type Address struct {
+			City string `json:"city"`
+		}
+		type Person struct {
+			Name    string  `json:"name"`
+			Address Address `json:"address"`
+		}
+
+		input := Person{Name: "John", Address: Address{City: "NYC"}}
+		result, err := AsMap[any](input)
+
+		require.NoError(t, err)
+		assert.Equal(t, "John", result["name"])
+		address, ok := result["address"].(map[string]any)
+		require.True(t, ok)
+		assert.Equal(t, "NYC", address["city"])
+	})
+}
+
 var (
 	outputJSON, outputIndentJSON, outputNonexistentJSON string
 	input                                               = `

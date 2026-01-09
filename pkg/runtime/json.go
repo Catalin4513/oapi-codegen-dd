@@ -252,6 +252,26 @@ func classify(b []byte) jsonKind {
 	}
 }
 
+// AsMap converts any value to a map[string]V by marshaling to JSON and unmarshaling back.
+// This is useful for converting structured types to maps for query params, path params, and headers.
+// Returns nil if the input is nil.
+func AsMap[V any](v any) (map[string]V, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+
+	var m map[string]V
+	err = json.Unmarshal(res, &m)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // CoalesceOrMerge implements generic wrapper semantics:
 // - 0 non-null parts  -> "null"
 // - 1 non-null part   -> that value as-is (object/array/scalar)

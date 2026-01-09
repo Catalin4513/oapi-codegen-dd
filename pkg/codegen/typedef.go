@@ -54,7 +54,7 @@ func (t TypeDefinition) IsOptional() bool {
 
 // GetErrorResponse generates a Go code snippet that returns an error response
 // based on the predefined spec error path.
-func (t TypeDefinition) GetErrorResponse(errTypes map[string]string, alias string) string {
+func (t TypeDefinition) GetErrorResponse(errTypes map[string]string, alias string, typeSchemaMap map[string]GoSchema) string {
 	unknownRes := `return "unknown error"`
 
 	key := t.Name
@@ -74,6 +74,14 @@ func (t TypeDefinition) GetErrorResponse(errTypes map[string]string, alias strin
 			if prop.JsonFieldName == part {
 				callPath = append(callPath, keyValue[string, Property]{prop.GoName, prop})
 				schema = prop.Schema
+
+				// If the property references another type, resolve it
+				if schema.GoType != "" && len(schema.Properties) == 0 {
+					if resolvedSchema, ok := typeSchemaMap[schema.GoType]; ok {
+						schema = resolvedSchema
+					}
+				}
+
 				found = true
 				break
 			}

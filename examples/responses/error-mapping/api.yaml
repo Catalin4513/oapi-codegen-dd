@@ -1,0 +1,64 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Error Mapping
+paths:
+  /files:
+    get:
+      operationId: getFiles
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Files"
+          description:
+        "400":
+          $ref: "#/components/responses/InvalidRequestError"
+        "500":
+          $ref: "#/components/responses/Problem"
+
+components:
+  responses:
+    InvalidRequestError:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: "#/components/schemas/ErrorData"
+    Problem:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+  schemas:
+    Files:
+      type: object
+      properties:
+        name:
+          type: string
+    ErrorData:
+      type: object
+      properties:
+        type:
+          type: string
+          example: invalid_request_error
+        message:
+          type: string
+          description: A human readable description of the error.
+          example: The account doesn't have enough funds for this payment.
+        code:
+          type: string
+          nullable: true
+        param:
+          type: string
+          nullable: true
+      required:
+        - message

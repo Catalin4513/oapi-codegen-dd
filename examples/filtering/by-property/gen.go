@@ -153,23 +153,6 @@ func (o *UpdateClientRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
-func asMap[V any](v any) (map[string]V, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-
-	var m map[string]V
-	err = json.Unmarshal(res, &m)
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 var bodyTypesValidate *validator.Validate
 
 func init() {

@@ -34,6 +34,7 @@ func init() {
 {{ $config := .config }}
 {{ $loc := .specLocation }}
 {{ $responseErrors := .responseErrors }}
+{{ $typeSchemaMap := .typeSchemaMap }}
 {{ $isParam := or (eq $loc "path") (eq $loc "query") (eq $loc "header") (eq $loc "body") (eq $loc "schema") (eq $loc "union") }}
 {{ $isResponse := eq $loc "response" }}
 {{ $shouldValidate := or $isParam (and $isResponse $config.Generate.ResponseValidators) }}
@@ -59,7 +60,7 @@ func init() {
     {{ $alias := $loc | fst | lower }}
     func ({{$alias}} {{$td.Name}}) Error() string {
         {{- if index $config.ErrorMapping $td.Name}}
-        {{ $td.GetErrorResponse $config.ErrorMapping $alias }}
+        {{ $td.GetErrorResponse $config.ErrorMapping $alias $typeSchemaMap }}
         {{ else }}
         return "unmapped client error"
         {{ end -}}
@@ -191,9 +192,10 @@ func init() {
 
 {{ $config := .Config }}
 {{ $responseErrors := .ResponseErrors }}
+{{ $typeSchemaMap := .TypeSchemaMap }}
 
 {{- range .Types}}{{ $td := . }}
 {{ if not $td.Schema.UnionElements }}
-  {{ template "typeDef" (dict "type" $td "config" $config "specLocation" $loc "responseErrors" $responseErrors) }}
+  {{ template "typeDef" (dict "type" $td "config" $config "specLocation" $loc "responseErrors" $responseErrors "typeSchemaMap" $typeSchemaMap) }}
 {{ end }}
 {{ end }}

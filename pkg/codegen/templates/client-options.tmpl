@@ -79,7 +79,7 @@ func (o *{{$op.ID | ucFirst}}RequestOptions) Validate() error {
 // GetPathParams returns the path params as a map.
 func (o *{{$op.ID | ucFirst}}RequestOptions) GetPathParams() (map[string]any, error) {
     {{- if $op.PathParams -}}
-    return asMap[any](o.PathParams)
+    return runtime.AsMap[any](o.PathParams)
     {{- else -}}
     return nil, nil
     {{- end}}
@@ -88,7 +88,7 @@ func (o *{{$op.ID | ucFirst}}RequestOptions) GetPathParams() (map[string]any, er
 // GetQuery returns the query params as a map.
 func (o *{{$op.ID | ucFirst}}RequestOptions) GetQuery() (map[string]any, error) {
     {{- if $op.Query -}}
-    return asMap[any](o.Query)
+    return runtime.AsMap[any](o.Query)
     {{- else -}}
     return nil, nil
     {{- end}}
@@ -106,7 +106,7 @@ func (o *{{$op.ID | ucFirst}}RequestOptions) GetBody() any {
 // GetHeader returns the headers as a map.
 func (o *{{$op.ID | ucFirst}}RequestOptions) GetHeader() (map[string]string, error) {
     {{- if $op.Header -}}
-    return asMap[string](o.Header)
+    return runtime.AsMap[string](o.Header)
     {{- else -}}
     return nil, nil
     {{- end}}
@@ -115,20 +115,3 @@ func (o *{{$op.ID | ucFirst}}RequestOptions) GetHeader() (map[string]string, err
 {{end}}
 
 {{end}}
-
-func asMap[V any](v any) (map[string]V, error) {
-    if v == nil {
-        return nil, nil
-    }
-    res, err := json.Marshal(v)
-    if err != nil {
-        return nil, err
-    }
-
-    var m map[string]V
-    err = json.Unmarshal(res, &m)
-    if err != nil {
-        return nil, err
-    }
-    return m, nil
-}

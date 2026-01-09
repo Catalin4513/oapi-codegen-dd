@@ -72,23 +72,6 @@ var _ ClientInterface = (*Client)(nil)
 
 var clientOptionsValidate = validator.New(validator.WithRequiredStructEnabled())
 
-func asMap[V any](v any) (map[string]V, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-
-	var m map[string]V
-	err = json.Unmarshal(res, &m)
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 type GetClientResponse struct {
 	Name string `json:"name" validate:"required"`
 	Age  *int   `json:"age,omitempty"`

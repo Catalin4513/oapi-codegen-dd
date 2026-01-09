@@ -88,7 +88,19 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 
 		isSuccess := false
 		refType := ""
+		isComponentRef := false
 		var err error
+
+		// Check if this response is a $ref to a component response
+		responseRef := response.GoLow().GetReference()
+		if responseRef != "" {
+			refType, err = refPathToGoType(responseRef)
+			if err != nil {
+				return nil, nil, fmt.Errorf("error turning reference (%s) into a Go type: %w", responseRef, err)
+			}
+			// Check if this is a component reference (vs a path reference)
+			isComponentRef = strings.HasPrefix(responseRef, "#/components/")
+		}
 
 		headers, err := generateResponseHeadersSchema(response.Headers.FromOldest(), operationID, options)
 		if err != nil {
@@ -174,38 +186,69 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 			continue
 		}
 
+		var responseName string
 		tag := ""
-		switch {
-		case contentType == "application/json":
-			tag = "JSON"
-		case isMediaTypeJson(contentType):
-			tag = mediaTypeToCamelCase(contentType)
-		case contentType == "application/x-www-form-urlencoded":
-			tag = "Formdata"
-		case strings.HasPrefix(contentType, "multipart/"):
-			tag = "Multipart"
-		case contentType == "text/plain":
-			tag = "Text"
+
+		// If this is a component reference AND the type exists (was processed by getComponentResponses),
+		// use the component name and don't create a duplicate TypeDefinition.
+		// Otherwise, generate a dynamic name and create a TypeDefinition.
+		componentTypeName := ""
+		if isComponentRef {
+			componentTypeName = schemaNameToTypeName(refType)
 		}
 
-		codeName := strconv.Itoa(status)
-		baseName := operationID + typeSuffix
-		nameSuffixes := []string{tag, tag + codeName}
-		responseName := generateTypeName(options.currentTypes, baseName, nameSuffixes)
+		// Check if the component type actually exists
+		_, componentTypeExists := options.currentTypes[componentTypeName]
+		componentTypeExists = componentTypeExists && componentTypeName != ""
 
-		if contentSchema.ArrayType != nil {
-			contentSchema, _ = replaceInlineTypes(contentSchema, options)
-		}
+		if componentTypeExists {
+			// Create an operation-specific alias to the component response type
+			// e.g., GetFilesErrorResponse = InvalidRequestError
+			aliasName := operationID + typeSuffix
 
-		td := TypeDefinition{
-			Name:           responseName,
-			Schema:         contentSchema,
-			SpecLocation:   SpecLocationResponse,
-			NeedsMarshaler: needsMarshaler(contentSchema),
+			// Create a type alias
+			td := TypeDefinition{
+				Name:           aliasName,
+				Schema:         GoSchema{RefType: componentTypeName, DefineViaAlias: true},
+				SpecLocation:   SpecLocationResponse,
+				NeedsMarshaler: false,
+			}
+			options.AddType(td)
+			typeDefinitions = append(typeDefinitions, td)
+			responseName = aliasName
+		} else {
+			switch {
+			case contentType == "application/json":
+				tag = "JSON"
+			case isMediaTypeJson(contentType):
+				tag = mediaTypeToCamelCase(contentType)
+			case contentType == "application/x-www-form-urlencoded":
+				tag = "Formdata"
+			case strings.HasPrefix(contentType, "multipart/"):
+				tag = "Multipart"
+			case contentType == "text/plain":
+				tag = "Text"
+			}
+
+			codeName := strconv.Itoa(status)
+			baseName := operationID + typeSuffix
+			nameSuffixes := []string{tag, tag + codeName}
+			responseName = generateTypeName(options.currentTypes, baseName, nameSuffixes)
+
+			if contentSchema.ArrayType != nil {
+				contentSchema, _ = replaceInlineTypes(contentSchema, options)
+			}
+
+			td := TypeDefinition{
+				Name:           responseName,
+				Schema:         contentSchema,
+				SpecLocation:   SpecLocationResponse,
+				NeedsMarshaler: needsMarshaler(contentSchema),
+			}
+			options.AddType(td)
+			typeDefinitions = append(typeDefinitions, td)
+			typeDefinitions = append(typeDefinitions, contentSchema.AdditionalTypes...)
 		}
-		options.AddType(td)
-		typeDefinitions = append(typeDefinitions, td)
-		typeDefinitions = append(typeDefinitions, contentSchema.AdditionalTypes...)
 
 		rcd := &ResponseContentDefinition{
 			ResponseName: responseName,

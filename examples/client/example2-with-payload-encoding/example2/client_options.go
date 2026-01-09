@@ -3,8 +3,6 @@
 package example2
 
 import (
-	"encoding/json"
-
 	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
@@ -49,21 +47,4 @@ func (o *CreateOrderRequestOptions) GetBody() any {
 // GetHeader returns the headers as a map.
 func (o *CreateOrderRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
-}
-
-func asMap[V any](v any) (map[string]V, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-
-	var m map[string]V
-	err = json.Unmarshal(res, &m)
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
 }

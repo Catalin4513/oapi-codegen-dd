@@ -36,7 +36,7 @@ func TestTypeDefinition_GetErrorResponse(t *testing.T) {
 				},
 			},
 		}
-		res := typ.GetErrorResponse(map[string]string{"ResError": "details"}, "e")
+		res := typ.GetErrorResponse(map[string]string{"ResError": "details"}, "e", map[string]GoSchema{})
 		expected := `res0 := e.Details
 return res0`
 		assert.Equal(t, expected, res)
@@ -64,7 +64,7 @@ return res0`
 				},
 			},
 		}
-		res := typ.GetErrorResponse(map[string]string{"ResError": "details"}, "e")
+		res := typ.GetErrorResponse(map[string]string{"ResError": "details"}, "e", map[string]GoSchema{})
 		expected := `res0 := e.Details
 if res0 == nil { return "unknown error" }
 res1 := *res0
@@ -95,7 +95,7 @@ return res1`
 				},
 			},
 		}
-		res := typ.GetErrorResponse(map[string]string{"ResError": "error.message"}, "e")
+		res := typ.GetErrorResponse(map[string]string{"ResError": "error.message"}, "e", map[string]GoSchema{})
 		expected := `res0 := e.ErrorData
 res1 := res0.Message
 return res1`
@@ -131,7 +131,7 @@ return res1`
 				},
 			},
 		}
-		res := typ.GetErrorResponse(map[string]string{"ResError": "data.details.message"}, "e")
+		res := typ.GetErrorResponse(map[string]string{"ResError": "data.details.message"}, "e", map[string]GoSchema{})
 		expected := `res0 := e.Data
 res1 := res0.Details
 res2 := res1.Message
@@ -173,7 +173,7 @@ return res2`
 				},
 			},
 		}
-		res := typ.GetErrorResponse(map[string]string{"ResError": "data.details.message"}, "e")
+		res := typ.GetErrorResponse(map[string]string{"ResError": "data.details.message"}, "e", map[string]GoSchema{})
 		expected := `res0 := e.Data
 if res0 == nil { return "unknown error" }
 res1 := *res0
@@ -186,4 +186,58 @@ res5 := *res4
 return res5`
 		assert.Equal(t, expected, res)
 	})
+
+	t.Run("property referencing another type", func(t *testing.T) {
+		// Define the referenced type
+		errorDataType := TypeDefinition{
+			Name: "ErrorData",
+			Schema: GoSchema{
+				Properties: []Property{
+					{
+						GoName:        "Message",
+						JsonFieldName: "message",
+						Schema: GoSchema{
+							GoType: "string",
+						},
+					},
+				},
+			},
+		}
+
+		// Define the main type that references ErrorData
+		typ := TypeDefinition{
+			Name: "InvalidRequestError",
+			Schema: GoSchema{
+				Properties: []Property{
+					{
+						GoName:        "ErrorData",
+						JsonFieldName: "error",
+						Schema: GoSchema{
+							GoType: "ErrorData",
+						},
+						Constraints: Constraints{
+							Nullable: boolPtr(true),
+						},
+					},
+				},
+			},
+		}
+
+		// Build a type schema map so the function can resolve the reference
+		typeSchemaMap := map[string]GoSchema{
+			"InvalidRequestError": typ.Schema,
+			"ErrorData":           errorDataType.Schema,
+		}
+		res := typ.GetErrorResponse(map[string]string{"InvalidRequestError": "error.message"}, "r", typeSchemaMap)
+		expected := `res0 := r.ErrorData
+if res0 == nil { return "unknown error" }
+res1 := *res0
+res2 := res1.Message
+return res2`
+		assert.Equal(t, expected, res)
+	})
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

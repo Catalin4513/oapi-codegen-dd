@@ -105,12 +105,12 @@ func (o *GetOrderRequestOptions) Validate() error {
 
 // GetPathParams returns the path params as a map.
 func (o *GetOrderRequestOptions) GetPathParams() (map[string]any, error) {
-	return asMap[any](o.PathParams)
+	return runtime.AsMap[any](o.PathParams)
 }
 
 // GetQuery returns the query params as a map.
 func (o *GetOrderRequestOptions) GetQuery() (map[string]any, error) {
-	return asMap[any](o.Query)
+	return runtime.AsMap[any](o.Query)
 }
 
 // GetBody returns the payload in any type that can be marshalled to JSON by the client.
@@ -121,23 +121,6 @@ func (o *GetOrderRequestOptions) GetBody() any {
 // GetHeader returns the headers as a map.
 func (o *GetOrderRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
-}
-
-func asMap[V any](v any) (map[string]V, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-
-	var m map[string]V
-	err = json.Unmarshal(res, &m)
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 var pathTypesValidate *validator.Validate

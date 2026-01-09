@@ -33,11 +33,11 @@ func NewDefaultClient(baseURL string, opts ...runtime.APIClientOption) (*Client,
 // ClientInterface is the interface for the API client.
 type ClientInterface interface {
 	// CreatePayment Create a payment
-	CreatePayment(ctx context.Context, options *CreatePaymentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreatePaymentResponseJSON201, error)
+	CreatePayment(ctx context.Context, options *CreatePaymentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreatePaymentResponse, error)
 }
 
 // CreatePayment Create a payment
-func (c *Client) CreatePayment(ctx context.Context, options *CreatePaymentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreatePaymentResponseJSON201, error) {
+func (c *Client) CreatePayment(ctx context.Context, options *CreatePaymentRequestOptions, reqEditors ...runtime.RequestEditorFn) (*CreatePaymentResponse, error) {
 	var err error
 	reqParams := runtime.RequestOptionsParameters{
 		RequestURL:  c.apiClient.GetBaseURL() + "/v1/payments",
@@ -51,13 +51,13 @@ func (c *Client) CreatePayment(ctx context.Context, options *CreatePaymentReques
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	responseParser := func(ctx context.Context, resp *runtime.Response) (*CreatePaymentResponseJSON201, error) {
+	responseParser := func(ctx context.Context, resp *runtime.Response) (*CreatePaymentResponse, error) {
 		bodyBytes := resp.Content
 		if resp.StatusCode != 201 {
 			return nil, runtime.NewClientAPIError(fmt.Errorf("unexpected status code: %d", resp.StatusCode),
 				runtime.WithStatusCode(resp.StatusCode))
 		}
-		target := new(CreatePaymentResponseJSON201)
+		target := new(CreatePaymentResponse)
 		if err = json.Unmarshal(bodyBytes, target); err != nil {
 			err = fmt.Errorf("error decoding response: %w", err)
 			return nil, err
@@ -116,23 +116,6 @@ func (o *CreatePaymentRequestOptions) GetHeader() (map[string]string, error) {
 	return nil, nil
 }
 
-func asMap[V any](v any) (map[string]V, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-
-	var m map[string]V
-	err = json.Unmarshal(res, &m)
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 var bodyTypesValidate *validator.Validate
 
 func init() {
@@ -145,15 +128,6 @@ type CreatePaymentBody = CreatePaymentRequest
 
 type Payment struct {
 	ResponsePaymentID *string `json:"responsePaymentId,omitempty"`
-}
-
-type CreatePaymentResponseJSON struct {
-	ResponsePaymentID *string `json:"responsePaymentId,omitempty"`
-}
-
-// CreatePaymentResponseJSON201 Schema for The `CreatePaymentResponse` object.
-type CreatePaymentResponseJSON201 struct {
-	RedirectURL *string `json:"redirectUrl,omitempty"`
 }
 
 var schemaTypesValidate *validator.Validate

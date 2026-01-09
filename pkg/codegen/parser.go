@@ -110,6 +110,7 @@ type EnumContext struct {
 // TplTypeContext is the context passed to templates to generate code for type definitions.
 type TplTypeContext struct {
 	Types          []TypeDefinition
+	TypeSchemaMap  map[string]GoSchema // Map of type names to schemas for cross-referencing
 	Imports        []string
 	SpecLocation   string
 	Config         Configuration
@@ -223,12 +224,24 @@ func (p *Parser) Parse() (GeneratedCode, error) {
 		responseErrs[respErr] = true
 	}
 
+	// Build a map of type names to schemas for cross-referencing
+	typeSchemaMap := make(map[string]GoSchema)
+	for _, tds := range p.ctx.TypeDefinitions {
+		for _, td := range tds {
+			typeSchemaMap[td.Name] = td.Schema
+		}
+	}
+	for _, td := range p.ctx.UnionTypes {
+		typeSchemaMap[td.Name] = td.Schema
+	}
+
 	for sl, tds := range p.ctx.TypeDefinitions {
 		if len(tds) == 0 {
 			continue
 		}
 		typesCtx := &TplTypeContext{
 			Types:          tds,
+			TypeSchemaMap:  typeSchemaMap,
 			SpecLocation:   string(sl),
 			Imports:        p.ctx.Imports,
 			Config:         p.cfg,
@@ -252,6 +265,7 @@ func (p *Parser) Parse() (GeneratedCode, error) {
 	if len(p.ctx.UnionTypes) > 0 {
 		out, err := p.ParseTemplates([]string{"types.tmpl", "union.tmpl"}, &TplTypeContext{
 			Types:          p.ctx.UnionTypes,
+			TypeSchemaMap:  typeSchemaMap,
 			SpecLocation:   "union",
 			Imports:        p.ctx.Imports,
 			Config:         p.cfg,
