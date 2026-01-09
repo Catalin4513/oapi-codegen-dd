@@ -48,21 +48,25 @@ type User struct {
 }
 
 func (u User) Validate() error {
+	var errors runtime.ValidationErrors
 	if u.Address != nil {
 		if v, ok := any(u.Address).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Address", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Address", err))
 			}
 		}
 	}
 	if u.Contact != nil {
 		if v, ok := any(u.Contact).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Contact", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Contact", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Address struct {
@@ -71,15 +75,7 @@ type Address struct {
 	ZipCode *string `json:"zipCode,omitempty"`
 }
 
-func (a Address) Validate() error {
-	return schemaTypesValidate.Struct(a)
-}
-
 type Contact struct {
 	Email *string `json:"email,omitempty"`
 	Phone *string `json:"phone,omitempty"`
-}
-
-func (c Contact) Validate() error {
-	return schemaTypesValidate.Struct(c)
 }

@@ -20,7 +20,10 @@ type GetNodesIDPath struct {
 }
 
 func (g GetNodesIDPath) Validate() error {
-	return pathTypesValidate.Struct(g)
+	if err := pathTypesValidate.Struct(g); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type GetNodesIDResponse struct {
@@ -40,8 +43,4 @@ type Node struct {
 	ID       *int    `json:"id,omitempty"`
 	Name     *string `json:"name,omitempty"`
 	Children []Node  `json:"children,omitempty"`
-}
-
-func (n Node) Validate() error {
-	return schemaTypesValidate.Struct(n)
 }

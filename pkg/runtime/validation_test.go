@@ -15,10 +15,13 @@
 package runtime
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRegisterCustomTypeFunc_WithEither(t *testing.T) {
@@ -72,11 +75,143 @@ func TestRegisterCustomTypeFunc_WithValidateVar(t *testing.T) {
 
 	t.Run("returns nil when no variant is active with Var", func(t *testing.T) {
 		either := Either[string, int]{} // N=0, no active variant
+
 		// The custom type function returns nil for inactive variants,
 		// which the validator treats as a zero value, not a validation error
 		err := v.Var(either, "required")
+
 		// This doesn't error because the validator sees nil from Value()
 		// Actual validation of inactive variants should be done via Validate() method
 		assert.NoError(t, err)
+	})
+}
+
+func TestConvertValidatorError(t *testing.T) {
+	v := validator.New(validator.WithRequiredStructEnabled())
+
+	t.Run("returns nil for nil error", func(t *testing.T) {
+		result := ConvertValidatorError(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("returns ValidationError as-is", func(t *testing.T) {
+		ve := NewValidationError("field", "message")
+		result := ConvertValidatorError(ve)
+		assert.Equal(t, ve, result)
+	})
+
+	t.Run("returns ValidationErrors as-is", func(t *testing.T) {
+		ves := ValidationErrors{
+			NewValidationError("field1", "message1"),
+			NewValidationError("field2", "message2"),
+		}
+		result := ConvertValidatorError(ves)
+		assert.Equal(t, ves, result)
+	})
+
+	t.Run("handles wrapped ValidationError", func(t *testing.T) {
+		ve := NewValidationError("field", "message")
+		wrapped := fmt.Errorf("wrapped: %w", ve)
+
+		result := ConvertValidatorError(wrapped)
+
+		assert.Equal(t, wrapped, result)
+
+		var unwrapped ValidationError
+		assert.True(t, errors.As(result, &unwrapped))
+		assert.Equal(t, "field", unwrapped.Field)
+		assert.Equal(t, "message", unwrapped.Message)
+	})
+
+	t.Run("handles wrapped ValidationErrors", func(t *testing.T) {
+		ves := ValidationErrors{
+			NewValidationError("field1", "message1"),
+		}
+		wrapped := fmt.Errorf("wrapped: %w", ves)
+
+		result := ConvertValidatorError(wrapped)
+
+		assert.Equal(t, wrapped, result)
+
+		var unwrapped ValidationErrors
+		assert.True(t, errors.As(result, &unwrapped))
+		assert.Len(t, unwrapped, 1)
+	})
+
+	t.Run("converts validator.ValidationErrors", func(t *testing.T) {
+		type TestStruct struct {
+			Name  string `validate:"required"`
+			Email string `validate:"required,email"`
+		}
+
+		ts := TestStruct{}
+		err := v.Struct(ts)
+		require.Error(t, err)
+
+		result := ConvertValidatorError(err)
+
+		var ves ValidationErrors
+		require.True(t, errors.As(result, &ves), "expected ValidationErrors type")
+		assert.NotEmpty(t, ves)
+	})
+
+	t.Run("converts wrapped validator.ValidationErrors", func(t *testing.T) {
+		type TestStruct struct {
+			Name string `validate:"required"`
+		}
+
+		ts := TestStruct{}
+		validatorErr := v.Struct(ts)
+		require.Error(t, validatorErr)
+
+		wrapped := fmt.Errorf("validation failed: %w", validatorErr)
+
+		result := ConvertValidatorError(wrapped)
+
+		var ves ValidationErrors
+		require.True(t, errors.As(result, &ves), "expected ValidationErrors type")
+		assert.NotEmpty(t, ves)
+	})
+
+	t.Run("converts generic error", func(t *testing.T) {
+		genericErr := errors.New("some error")
+
+		result := ConvertValidatorError(genericErr)
+
+		var ves ValidationErrors
+		require.True(t, errors.As(result, &ves), "expected ValidationErrors type")
+		assert.Len(t, ves, 0, "generic errors are not converted by NewValidationErrorsFromErrors")
+	})
+
+	t.Run("handles deeply wrapped ValidationError", func(t *testing.T) {
+		ve := NewValidationError("field", "message")
+		wrapped1 := fmt.Errorf("layer1: %w", ve)
+		wrapped2 := fmt.Errorf("layer2: %w", wrapped1)
+		wrapped3 := fmt.Errorf("layer3: %w", wrapped2)
+
+		result := ConvertValidatorError(wrapped3)
+
+		assert.Equal(t, wrapped3, result)
+
+		var unwrapped ValidationError
+		assert.True(t, errors.As(result, &unwrapped))
+		assert.Equal(t, "field", unwrapped.Field)
+	})
+
+	t.Run("handles deeply wrapped ValidationErrors", func(t *testing.T) {
+		ves := ValidationErrors{
+			NewValidationError("field1", "message1"),
+			NewValidationError("field2", "message2"),
+		}
+		wrapped1 := fmt.Errorf("layer1: %w", ves)
+		wrapped2 := fmt.Errorf("layer2: %w", wrapped1)
+
+		result := ConvertValidatorError(wrapped2)
+
+		assert.Equal(t, wrapped2, result)
+
+		var unwrapped ValidationErrors
+		assert.True(t, errors.As(result, &unwrapped))
+		assert.Len(t, unwrapped, 2)
 	})
 }

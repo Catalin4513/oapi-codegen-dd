@@ -21,51 +21,50 @@ type Items []any
 
 type Location map[string]any
 
-func (l Location) Validate() error {
-	return nil
-}
-
 type Users map[string]User
 
 func (u Users) Validate() error {
+	var errors runtime.ValidationErrors
 	for k, v := range u {
 		if validator, ok := any(v).(runtime.Validator); ok {
 			if err := validator.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(k, err)
+				errors = append(errors, runtime.NewValidationErrorFromError(k, err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type User struct {
 	Address map[string]any `json:"address,omitempty"`
 }
 
-func (u User) Validate() error {
-	return schemaTypesValidate.Struct(u)
-}
-
 type Pick1 map[string]Pick1_AdditionalProperties
 
 func (p Pick1) Validate() error {
+	if p == nil {
+		return nil
+	}
+	var errors runtime.ValidationErrors
 	for k, v := range p {
 		if validator, ok := any(v).(runtime.Validator); ok {
 			if err := validator.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(k, err)
+				errors = append(errors, runtime.NewValidationErrorFromError(k, err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type ReferenceWithRequiredExtra struct {
 	Index                *Reference           `json:"index,omitempty"`
 	AdditionalProperties map[string]Reference `json:"-"`
-}
-
-func (r ReferenceWithRequiredExtra) Validate() error {
-	return schemaTypesValidate.Struct(r)
 }
 
 // Getter for additional properties for ReferenceWithRequiredExtra. Returns the specified
@@ -136,10 +135,6 @@ func (r ReferenceWithRequiredExtra) MarshalJSON() ([]byte, error) {
 type RouteWithOptionalExtra struct {
 	Index                *Route           `json:"index,omitempty"`
 	AdditionalProperties map[string]Route `json:"-"`
-}
-
-func (r RouteWithOptionalExtra) Validate() error {
-	return schemaTypesValidate.Struct(r)
 }
 
 // Getter for additional properties for RouteWithOptionalExtra. Returns the specified
@@ -215,7 +210,7 @@ type ConfigWithMinProps map[string]string
 
 func (c ConfigWithMinProps) Validate() error {
 	if c == nil {
-		return nil
+		return runtime.NewValidationError("", fmt.Sprintf("must have at least 1 properties, got 0"))
 	}
 	if len(c) < 1 {
 		return runtime.NewValidationError("", fmt.Sprintf("must have at least 1 properties, got %d", len(c)))
@@ -226,9 +221,6 @@ func (c ConfigWithMinProps) Validate() error {
 type ConfigWithMaxProps map[string]string
 
 func (c ConfigWithMaxProps) Validate() error {
-	if c == nil {
-		return nil
-	}
 	if len(c) > 5 {
 		return runtime.NewValidationError("", fmt.Sprintf("must have at most 5 properties, got %d", len(c)))
 	}
@@ -239,28 +231,36 @@ type ConfigWithBothProps map[string]int
 
 func (c ConfigWithBothProps) Validate() error {
 	if c == nil {
-		return nil
+		return runtime.NewValidationError("", fmt.Sprintf("must have at least 2 properties, got 0"))
 	}
+	var errors runtime.ValidationErrors
 	if len(c) < 2 {
-		return runtime.NewValidationError("", fmt.Sprintf("must have at least 2 properties, got %d", len(c)))
+		errors = append(errors, runtime.NewValidationError("", fmt.Sprintf("must have at least 2 properties, got %d", len(c))))
 	}
 	if len(c) > 10 {
-		return runtime.NewValidationError("", fmt.Sprintf("must have at most 10 properties, got %d", len(c)))
+		errors = append(errors, runtime.NewValidationError("", fmt.Sprintf("must have at most 10 properties, got %d", len(c))))
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type UsersWithRequiredFields map[string]UsersWithRequiredFields_AdditionalProperties
 
 func (u UsersWithRequiredFields) Validate() error {
+	var errors runtime.ValidationErrors
 	for k, v := range u {
 		if validator, ok := any(v).(runtime.Validator); ok {
 			if err := validator.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(k, err)
+				errors = append(errors, runtime.NewValidationErrorFromError(k, err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type ArrayWithMinItems []string
@@ -269,13 +269,17 @@ func (a ArrayWithMinItems) Validate() error {
 	if a == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	if len(a) < 1 {
-		return runtime.NewValidationError("", fmt.Sprintf("must have at least 1 items, got %d", len(a)))
+		errors = append(errors, runtime.NewValidationError("", fmt.Sprintf("must have at least 1 items, got %d", len(a))))
 	}
 	if len(a) > 100 {
-		return runtime.NewValidationError("", fmt.Sprintf("must have at most 100 items, got %d", len(a)))
+		errors = append(errors, runtime.NewValidationError("", fmt.Sprintf("must have at most 100 items, got %d", len(a))))
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Username = string
@@ -285,38 +289,49 @@ type UserProfile struct {
 }
 
 func (u UserProfile) Validate() error {
-	return schemaTypesValidate.Struct(u)
+	if err := schemaTypesValidate.Struct(u); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type TagsWithLength map[string]string
 
 func (t TagsWithLength) Validate() error {
+	var errors runtime.ValidationErrors
 	for k, v := range t {
 		if err := schemaTypesValidate.Var(v, "omitempty,max=50,min=1"); err != nil {
-			return runtime.NewValidationErrorFromError(k, err)
+			errors = append(errors, runtime.NewValidationErrorFromError(k, err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type TagsWithBothConstraints map[string]string
 
 func (t TagsWithBothConstraints) Validate() error {
 	if t == nil {
-		return nil
+		return runtime.NewValidationError("", fmt.Sprintf("must have at least 2 properties, got 0"))
 	}
+	var errors runtime.ValidationErrors
 	if len(t) < 2 {
-		return runtime.NewValidationError("", fmt.Sprintf("must have at least 2 properties, got %d", len(t)))
+		errors = append(errors, runtime.NewValidationError("", fmt.Sprintf("must have at least 2 properties, got %d", len(t))))
 	}
 	if len(t) > 5 {
-		return runtime.NewValidationError("", fmt.Sprintf("must have at most 5 properties, got %d", len(t)))
+		errors = append(errors, runtime.NewValidationError("", fmt.Sprintf("must have at most 5 properties, got %d", len(t))))
 	}
 	for k, v := range t {
 		if err := schemaTypesValidate.Var(v, "omitempty,max=50,min=1"); err != nil {
-			return runtime.NewValidationErrorFromError(k, err)
+			errors = append(errors, runtime.NewValidationErrorFromError(k, err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 var unionTypesValidate *validator.Validate
@@ -331,14 +346,18 @@ type Pick1_AdditionalProperties struct {
 }
 
 func (p Pick1_AdditionalProperties) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.Pick1_AdditionalProperties_OneOf != nil {
 		if v, ok := any(p.Pick1_AdditionalProperties_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Pick1_AdditionalProperties_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Pick1_AdditionalProperties_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type UsersWithRequiredFields_AdditionalProperties struct {
@@ -348,7 +367,10 @@ type UsersWithRequiredFields_AdditionalProperties struct {
 }
 
 func (u UsersWithRequiredFields_AdditionalProperties) Validate() error {
-	return unionTypesValidate.Struct(u)
+	if err := unionTypesValidate.Struct(u); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {

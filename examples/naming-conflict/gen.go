@@ -42,21 +42,21 @@ type Source struct {
 }
 
 func (s Source) Validate() error {
+	var errors runtime.ValidationErrors
 	if s.CreditTransfer != nil {
 		if v, ok := any(s.CreditTransfer).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("CreditTransfer", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("CreditTransfer", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type SourceType struct {
 	Name    *string `json:"name,omitempty"`
 	Address *string `json:"address,omitempty"`
-}
-
-func (s SourceType) Validate() error {
-	return schemaTypesValidate.Struct(s)
 }

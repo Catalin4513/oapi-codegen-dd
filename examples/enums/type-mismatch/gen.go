@@ -114,33 +114,37 @@ type TestObject struct {
 }
 
 func (t TestObject) Validate() error {
+	var errors runtime.ValidationErrors
 	if t.OrderDirection != nil {
 		if v, ok := any(t.OrderDirection).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("OrderDirection", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("OrderDirection", err))
 			}
 		}
 	}
 	if t.Priority != nil {
 		if v, ok := any(t.Priority).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Priority", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Priority", err))
 			}
 		}
 	}
 	if t.StatusCode != nil {
 		if v, ok := any(t.StatusCode).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("StatusCode", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("StatusCode", err))
 			}
 		}
 	}
 	if t.Color != nil {
 		if v, ok := any(t.Color).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Color", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Color", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }

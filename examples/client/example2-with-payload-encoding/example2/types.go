@@ -21,24 +21,28 @@ type ClientType struct {
 }
 
 func (c ClientType) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(c.Name, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Name", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Name", err))
 	}
 	if c.Address != nil {
 		if v, ok := any(c.Address).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Address", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Address", err))
 			}
 		}
 	}
 	if c.Type != nil {
 		if v, ok := any(c.Type).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Type", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Address struct {
@@ -48,5 +52,8 @@ type Address struct {
 }
 
 func (a Address) Validate() error {
-	return schemaTypesValidate.Struct(a)
+	if err := schemaTypesValidate.Struct(a); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }

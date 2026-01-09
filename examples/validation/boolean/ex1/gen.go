@@ -19,7 +19,10 @@ type PostBillingPortalConfigurationsConfigurationPath struct {
 }
 
 func (p PostBillingPortalConfigurationsConfigurationPath) Validate() error {
-	return pathTypesValidate.Struct(p)
+	if err := pathTypesValidate.Struct(p); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 var bodyTypesValidate *validator.Validate
@@ -49,7 +52,10 @@ type PostUsersResponse struct {
 }
 
 func (p PostUsersResponse) Validate() error {
-	return responseTypesValidate.Struct(p)
+	if err := responseTypesValidate.Struct(p); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type PostBillingPortalConfigurationsConfigurationResponse struct {
@@ -57,12 +63,16 @@ type PostBillingPortalConfigurationsConfigurationResponse struct {
 }
 
 func (p PostBillingPortalConfigurationsConfigurationResponse) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(p.Features).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Features", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Features", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 var schemaTypesValidate *validator.Validate
@@ -83,7 +93,10 @@ type User struct {
 }
 
 func (u User) Validate() error {
-	return schemaTypesValidate.Struct(u)
+	if err := schemaTypesValidate.Struct(u); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type PortalFeatures struct {
@@ -91,19 +104,19 @@ type PortalFeatures struct {
 }
 
 func (p PortalFeatures) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(p.InvoiceHistory).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("InvoiceHistory", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("InvoiceHistory", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type PortalInvoiceList struct {
 	// Enabled Whether invoice history is enabled
 	Enabled bool `json:"enabled"`
-}
-
-func (p PortalInvoiceList) Validate() error {
-	return schemaTypesValidate.Struct(p)
 }

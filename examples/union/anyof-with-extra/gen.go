@@ -23,14 +23,18 @@ type ClientWithExtra struct {
 }
 
 func (c ClientWithExtra) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.ClientWithExtra_AnyOf != nil {
 		if v, ok := any(c.ClientWithExtra_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ClientWithExtra_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ClientWithExtra_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 // Getter for additional properties for ClientWithExtra. Returns the specified
@@ -107,10 +111,6 @@ func init() {
 
 type ClientWithExtra_AdditionalProperties struct {
 	Extra *string `json:"extra,omitempty"`
-}
-
-func (c ClientWithExtra_AdditionalProperties) Validate() error {
-	return unionTypesValidate.Struct(c)
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {

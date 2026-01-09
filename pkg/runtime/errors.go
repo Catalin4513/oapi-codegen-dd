@@ -76,7 +76,7 @@ type ValidationError struct {
 func (e ValidationError) Error() string {
 	field := e.Field
 	if field != "" {
-		field = fmt.Sprintf("%s ", field)
+		field = fmt.Sprintf("%s: ", field)
 	}
 	return fmt.Sprintf("%s%s", field, e.Message)
 }
@@ -92,14 +92,13 @@ func NewValidationError(field, message string) ValidationError {
 
 // NewValidationErrorFromError creates a ValidationError that wraps an underlying error
 func NewValidationErrorFromError(field string, err error) ValidationError {
+	// Handle validator.ValidationErrors
 	var validationErrors validator.ValidationErrors
 	if errors.As(err, &validationErrors) && len(validationErrors) > 0 {
-		// Get the first field error and convert its message
-		// Include the nested field name in the message
 		nestedField := validationErrors[0].Field()
 		message := convertFieldErrorMessage(validationErrors[0])
 		if nestedField != "" {
-			message = fmt.Sprintf("%s %s", nestedField, message)
+			field = fmt.Sprintf("%s.%s", field, nestedField)
 		}
 		return ValidationError{
 			Field:   field,
@@ -107,6 +106,34 @@ func NewValidationErrorFromError(field string, err error) ValidationError {
 			Err:     err,
 		}
 	}
+
+	// Handle our ValidationError - extract field and message separately
+	var ve ValidationError
+	if errors.As(err, &ve) {
+		if ve.Field != "" {
+			field = fmt.Sprintf("%s.%s", field, ve.Field)
+		}
+		return ValidationError{
+			Field:   field,
+			Message: ve.Message,
+			Err:     err,
+		}
+	}
+
+	// Handle our ValidationErrors - take the first one
+	var ves ValidationErrors
+	if errors.As(err, &ves) && len(ves) > 0 {
+		if ves[0].Field != "" {
+			field = fmt.Sprintf("%s.%s", field, ves[0].Field)
+		}
+		return ValidationError{
+			Field:   field,
+			Message: ves[0].Message,
+			Err:     err,
+		}
+	}
+
+	// For other errors, use the error message as-is
 	return ValidationError{Field: field, Message: err.Error(), Err: err}
 }
 
@@ -117,11 +144,19 @@ func (ve ValidationErrors) Error() string {
 	for _, e := range ve {
 		field := e.Field
 		if field != "" {
-			field = fmt.Sprintf("%s ", field)
+			field = fmt.Sprintf("%s: ", field)
 		}
 		messages = append(messages, fmt.Sprintf("%s%s", field, e.Message))
 	}
 	return strings.Join(messages, "\n")
+}
+
+func (ve ValidationErrors) Unwrap() []error {
+	errs := make([]error, len(ve))
+	for i, e := range ve {
+		errs[i] = e
+	}
+	return errs
 }
 
 // NewValidationErrorsFromError creates a new ValidationErrors from a single error.

@@ -156,14 +156,18 @@ type PaymentMethod struct {
 }
 
 func (p PaymentMethod) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.PaymentMethod_AnyOf != nil {
 		if v, ok := any(p.PaymentMethod_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("PaymentMethod_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("PaymentMethod_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (p PaymentMethod) MarshalJSON() ([]byte, error) {
@@ -208,22 +212,26 @@ type CreditCardPayment struct {
 }
 
 func (c CreditCardPayment) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(c.Type).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Type", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(c.CardNumber, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("CardNumber", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("CardNumber", err))
 	}
 	if c.BillingAddress != nil {
 		if v, ok := any(c.BillingAddress).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("BillingAddress", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("BillingAddress", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (c CreditCardPayment) MarshalJSON() ([]byte, error) {
@@ -288,17 +296,21 @@ type BankTransferPayment struct {
 }
 
 func (b BankTransferPayment) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(b.Type).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Type", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 		}
 	}
 	if v, ok := any(b.AccountDetails).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("AccountDetails", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("AccountDetails", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type BankTransferPayment_AccountDetails struct {
@@ -306,14 +318,18 @@ type BankTransferPayment_AccountDetails struct {
 }
 
 func (b BankTransferPayment_AccountDetails) Validate() error {
+	var errors runtime.ValidationErrors
 	if b.BankTransferPayment_AccountDetails_AnyOf != nil {
 		if v, ok := any(b.BankTransferPayment_AccountDetails_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("BankTransferPayment_AccountDetails_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("BankTransferPayment_AccountDetails_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (b BankTransferPayment_AccountDetails) MarshalJSON() ([]byte, error) {
@@ -358,25 +374,29 @@ type DomesticAccount struct {
 }
 
 func (d DomesticAccount) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(d.AccountType).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("AccountType", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("AccountType", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(d.RoutingNumber, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("RoutingNumber", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("RoutingNumber", err))
 	}
 	if err := schemaTypesValidate.Var(d.AccountNumber, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("AccountNumber", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("AccountNumber", err))
 	}
 	if d.AccountHolder != nil {
 		if v, ok := any(d.AccountHolder).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("AccountHolder", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("AccountHolder", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (d DomesticAccount) MarshalJSON() ([]byte, error) {
@@ -439,32 +459,36 @@ type InternationalAccount struct {
 }
 
 func (i InternationalAccount) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(i.AccountType).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("AccountType", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("AccountType", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(i.Iban, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Iban", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Iban", err))
 	}
 	if err := schemaTypesValidate.Var(i.SwiftCode, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("SwiftCode", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("SwiftCode", err))
 	}
 	if i.AccountHolder != nil {
 		if v, ok := any(i.AccountHolder).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("AccountHolder", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("AccountHolder", err))
 			}
 		}
 	}
 	if i.BeneficiaryDetails != nil {
 		if v, ok := any(i.BeneficiaryDetails).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("BeneficiaryDetails", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("BeneficiaryDetails", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (i InternationalAccount) MarshalJSON() ([]byte, error) {
@@ -523,14 +547,18 @@ type InternationalAccount_BeneficiaryDetails struct {
 }
 
 func (i InternationalAccount_BeneficiaryDetails) Validate() error {
+	var errors runtime.ValidationErrors
 	if i.InternationalAccount_BeneficiaryDetails_AnyOf != nil {
 		if v, ok := any(i.InternationalAccount_BeneficiaryDetails_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("InternationalAccount_BeneficiaryDetails_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("InternationalAccount_BeneficiaryDetails_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (i InternationalAccount_BeneficiaryDetails) MarshalJSON() ([]byte, error) {
@@ -577,22 +605,26 @@ type PersonalBeneficiary struct {
 }
 
 func (p PersonalBeneficiary) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(p.BeneficiaryType).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("BeneficiaryType", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("BeneficiaryType", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(p.FullName, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("FullName", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("FullName", err))
 	}
 	if p.DateOfBirth != nil {
 		if v, ok := any(p.DateOfBirth).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("DateOfBirth", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("DateOfBirth", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (p PersonalBeneficiary) MarshalJSON() ([]byte, error) {
@@ -679,15 +711,19 @@ type BusinessBeneficiary struct {
 }
 
 func (b BusinessBeneficiary) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(b.BeneficiaryType).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("BeneficiaryType", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("BeneficiaryType", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(b.CompanyName, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("CompanyName", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("CompanyName", err))
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (b BusinessBeneficiary) MarshalJSON() ([]byte, error) {
@@ -741,15 +777,19 @@ type DigitalWalletPayment struct {
 }
 
 func (d DigitalWalletPayment) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(d.Type).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Type", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(d.WalletID, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("WalletID", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("WalletID", err))
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (d DigitalWalletPayment) MarshalJSON() ([]byte, error) {
@@ -798,17 +838,9 @@ type Address struct {
 	ZipCode *string `json:"zipCode,omitempty"`
 }
 
-func (a Address) Validate() error {
-	return schemaTypesValidate.Struct(a)
-}
-
 type AccountHolder struct {
 	Name  *string `json:"name,omitempty"`
 	Email *string `json:"email,omitempty" sensitive:""`
-}
-
-func (a AccountHolder) Validate() error {
-	return schemaTypesValidate.Struct(a)
 }
 
 func (a AccountHolder) MarshalJSON() ([]byte, error) {

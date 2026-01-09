@@ -46,7 +46,7 @@ func init() {
     type {{$td.Name}} {{if $td.IsAlias}}={{end}} {{$td.Schema.TypeDecl}}
 
     {{ if $shouldValidate }}
-    {{ if and (not $td.IsAlias) (not $td.Schema.UnionElements) (not $td.Schema.IsAnyType) }}
+    {{ if and (not $td.IsAlias) (not $td.Schema.UnionElements) (not $td.Schema.IsAnyType) $td.Schema.NeedsValidation }}
     func ({{$alias}} {{$td.Name}}) Validate() error {
         {{ $td.Schema.ValidateDecl $alias $validatorVar }}
     }

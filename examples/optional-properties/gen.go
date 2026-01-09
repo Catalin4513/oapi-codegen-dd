@@ -139,20 +139,20 @@ type Purchase struct {
 }
 
 func (p Purchase) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.User != nil {
 		if v, ok := any(p.User).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("User", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("User", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type User struct {
 	Name *string `json:"name,omitempty"`
-}
-
-func (u User) Validate() error {
-	return schemaTypesValidate.Struct(u)
 }

@@ -22,10 +22,6 @@ type SearchQuery struct {
 	Limit *int `json:"limit,omitempty"`
 }
 
-func (s SearchQuery) Validate() error {
-	return queryTypesValidate.Struct(s)
-}
-
 type SearchResponse struct {
 	Results []string `json:"results,omitempty"`
 	Count   *int     `json:"count,omitempty"`

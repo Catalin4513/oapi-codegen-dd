@@ -69,24 +69,12 @@ type ResponseA struct {
 	A *string `json:"a,omitempty"`
 }
 
-func (r ResponseA) Validate() error {
-	return schemaTypesValidate.Struct(r)
-}
-
 type ResponseB struct {
 	B *string `json:"b,omitempty"`
 }
 
-func (r ResponseB) Validate() error {
-	return schemaTypesValidate.Struct(r)
-}
-
 type ResponseC struct {
 	C *string `json:"c,omitempty"`
-}
-
-func (r ResponseC) Validate() error {
-	return schemaTypesValidate.Struct(r)
 }
 
 var unionTypesValidate *validator.Validate

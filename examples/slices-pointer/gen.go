@@ -22,22 +22,22 @@ func (p Payments) Validate() error {
 	if p == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	if len(p) < 1 {
-		return runtime.NewValidationError("", fmt.Sprintf("must have at least 1 items, got %d", len(p)))
+		errors = append(errors, runtime.NewValidationError("", fmt.Sprintf("must have at least 1 items, got %d", len(p))))
 	}
 	for i, item := range p {
 		if err := schemaTypesValidate.Var(item, "omitempty,min=3"); err != nil {
-			return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+			errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Data map[string]any
-
-func (d Data) Validate() error {
-	return nil
-}
 
 type User struct {
 	Payments Payments       `json:"payments,omitempty"`
@@ -47,15 +47,19 @@ type User struct {
 }
 
 func (u User) Validate() error {
-	if v, ok := any(u.Payments).(runtime.Validator); ok {
+	var errors runtime.ValidationErrors
+	if v, ok := any(u.Payments).(runtime.Validator); ok && v != nil {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Payments", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Payments", err))
 		}
 	}
-	if v, ok := any(u.Data).(runtime.Validator); ok {
+	if v, ok := any(u.Data).(runtime.Validator); ok && v != nil {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Data", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Data", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }

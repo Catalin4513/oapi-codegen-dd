@@ -48,7 +48,7 @@ func TestNewValidationError(t *testing.T) {
 
 	t.Run("non-empty field", func(t *testing.T) {
 		err := NewValidationError("foo", "is required")
-		assert.Equal(t, "foo is required", err.Error())
+		assert.Equal(t, "foo: is required", err.Error())
 	})
 }
 
@@ -115,12 +115,10 @@ func TestNewValidationErrorFromError(t *testing.T) {
 		originalErr := errors.New("min length is 3")
 		validationErr := NewValidationErrorFromError("Name", originalErr)
 
-		// Check field and message
 		assert.Equal(t, "Name", validationErr.Field)
 		assert.Equal(t, "min length is 3", validationErr.Message)
-		assert.Equal(t, "Name min length is 3", validationErr.Error())
+		assert.Equal(t, "Name: min length is 3", validationErr.Error())
 
-		// Check that original error is preserved
 		assert.Equal(t, originalErr, validationErr.Err)
 		assert.True(t, errors.Is(validationErr, originalErr))
 	})
@@ -132,16 +130,13 @@ func TestNewValidationErrorFromError(t *testing.T) {
 
 		validationErr := NewValidationErrorFromError("Name", err)
 
-		// Check that message is converted using convertFieldErrorMessage
 		assert.Equal(t, "Name", validationErr.Field)
 		assert.Equal(t, "length must be greater than or equal to 3", validationErr.Message)
-		assert.Equal(t, "Name length must be greater than or equal to 3", validationErr.Error())
+		assert.Equal(t, "Name: length must be greater than or equal to 3", validationErr.Error())
 
-		// Check that we can unwrap to the original validator error
 		assert.NotNil(t, validationErr.Err)
 		assert.Equal(t, err, validationErr.Unwrap())
 
-		// Check that we can use errors.As to get the validator error
 		var validatorErr validator.ValidationErrors
 		assert.True(t, errors.As(validationErr, &validatorErr))
 	})
@@ -184,7 +179,7 @@ func TestNewValidationErrorFromError(t *testing.T) {
 
 				assert.Equal(t, "TestField", validationErr.Field)
 				assert.Equal(t, tc.expectedMessage, validationErr.Message)
-				assert.Equal(t, "TestField "+tc.expectedMessage, validationErr.Error())
+				assert.Equal(t, "TestField: "+tc.expectedMessage, validationErr.Error())
 				assert.Equal(t, err, validationErr.Err)
 			})
 		}
@@ -218,7 +213,7 @@ func TestNewValidationErrorFromError(t *testing.T) {
 
 			assert.Equal(t, "Amount", validationErr.Field)
 			assert.Equal(t, "must be greater than or equal to 0", validationErr.Message)
-			assert.Equal(t, "Amount must be greater than or equal to 0", validationErr.Error())
+			assert.Equal(t, "Amount: must be greater than or equal to 0", validationErr.Error())
 			assert.Equal(t, err, validationErr.Err)
 		})
 	})

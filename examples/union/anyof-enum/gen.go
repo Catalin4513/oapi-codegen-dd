@@ -48,14 +48,18 @@ type Rendering struct {
 }
 
 func (r Rendering) Validate() error {
+	var errors runtime.ValidationErrors
 	if r.Options != nil {
 		if v, ok := any(r.Options).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Options", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Options", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Rendering_Options struct {
@@ -63,14 +67,18 @@ type Rendering_Options struct {
 }
 
 func (r Rendering_Options) Validate() error {
+	var errors runtime.ValidationErrors
 	if r.Rendering_Options_AnyOf != nil {
 		if v, ok := any(r.Rendering_Options_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Rendering_Options_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Rendering_Options_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (r Rendering_Options) MarshalJSON() ([]byte, error) {
@@ -120,19 +128,23 @@ type Rendering_Options_AnyOf_0 struct {
 }
 
 func (r Rendering_Options_AnyOf_0) Validate() error {
+	var errors runtime.ValidationErrors
 	if r.AmountTaxDisplay != nil {
 		if v, ok := any(r.AmountTaxDisplay).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("AmountTaxDisplay", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("AmountTaxDisplay", err))
 			}
 		}
 	}
 	if r.Template != nil {
 		if err := unionTypesValidate.Var(r.Template, "omitempty,max=5000"); err != nil {
-			return runtime.NewValidationErrorFromError("Template", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Template", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {

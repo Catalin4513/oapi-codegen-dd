@@ -20,12 +20,16 @@ type CreateOrderBody struct {
 }
 
 func (c CreateOrderBody) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.ClientType != nil {
 		if v, ok := any(c.ClientType).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ClientType", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ClientType", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }

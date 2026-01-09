@@ -21,21 +21,21 @@ func init() {
 // User info.
 type User struct{}
 
-func (u User) Validate() error {
-	return nil
-}
-
 type Address struct {
 	City *Address `json:"city,omitempty"`
 }
 
 func (a Address) Validate() error {
+	var errors runtime.ValidationErrors
 	if a.City != nil {
 		if v, ok := any(a.City).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("City", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("City", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }

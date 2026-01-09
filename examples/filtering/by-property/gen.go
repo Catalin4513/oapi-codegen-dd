@@ -196,17 +196,21 @@ type Person struct {
 }
 
 func (p Person) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(p.Name, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Name", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Name", err))
 	}
 	if p.Employment != nil {
 		if v, ok := any(p.Employment).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Employment", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Employment", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Job struct {
@@ -214,7 +218,10 @@ type Job struct {
 }
 
 func (j Job) Validate() error {
-	return schemaTypesValidate.Struct(j)
+	if err := schemaTypesValidate.Struct(j); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type UpdateClient_ErrorResponse_Data struct {
@@ -223,8 +230,4 @@ type UpdateClient_ErrorResponse_Data struct {
 
 	// Message Error message
 	Message *string `json:"message,omitempty"`
-}
-
-func (u UpdateClient_ErrorResponse_Data) Validate() error {
-	return schemaTypesValidate.Struct(u)
 }

@@ -134,15 +134,19 @@ type File struct {
 }
 
 func (f File) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(f.Type).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Type", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(f.ID, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("ID", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("ID", err))
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Folder struct {
@@ -152,15 +156,19 @@ type Folder struct {
 }
 
 func (f Folder) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(f.Type).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Type", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(f.ID, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("ID", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("ID", err))
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type WebLink struct {
@@ -170,15 +178,19 @@ type WebLink struct {
 }
 
 func (w WebLink) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(w.Type).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Type", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(w.ID, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("ID", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("ID", err))
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Collaboration struct {
@@ -188,24 +200,28 @@ type Collaboration struct {
 }
 
 func (c Collaboration) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(c.ID, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("ID", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("ID", err))
 	}
 	if c.Item != nil {
 		if v, ok := any(c.Item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Item", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Item", err))
 			}
 		}
 	}
 	if c.Role != nil {
 		if v, ok := any(c.Role).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Role", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Role", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Collaboration_Item1 struct {
@@ -213,14 +229,18 @@ type Collaboration_Item1 struct {
 }
 
 func (c Collaboration_Item1) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.Collaboration_Item_AllOf0 != nil {
 		if v, ok := any(c.Collaboration_Item_AllOf0).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Collaboration_Item_AllOf0", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Collaboration_Item_AllOf0", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (c Collaboration_Item1) MarshalJSON() ([]byte, error) {
@@ -262,14 +282,18 @@ type GetCollaboration_Response_Item1 struct {
 }
 
 func (g GetCollaboration_Response_Item1) Validate() error {
+	var errors runtime.ValidationErrors
 	if g.GetCollaboration_Response_Item_AllOf0 != nil {
 		if v, ok := any(g.GetCollaboration_Response_Item_AllOf0).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("GetCollaboration_Response_Item_AllOf0", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("GetCollaboration_Response_Item_AllOf0", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (g GetCollaboration_Response_Item1) MarshalJSON() ([]byte, error) {
@@ -318,14 +342,18 @@ type Collaboration_Item struct {
 }
 
 func (c Collaboration_Item) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.Collaboration_Item_AllOf0 != nil {
 		if v, ok := any(c.Collaboration_Item_AllOf0).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Collaboration_Item_AllOf0", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Collaboration_Item_AllOf0", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (c Collaboration_Item) MarshalJSON() ([]byte, error) {
@@ -367,14 +395,18 @@ type Collaboration_Item_AllOf0 struct {
 }
 
 func (c Collaboration_Item_AllOf0) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.Collaboration_Item_AllOf0_OneOf != nil {
 		if v, ok := any(c.Collaboration_Item_AllOf0_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Collaboration_Item_AllOf0_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Collaboration_Item_AllOf0_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (c Collaboration_Item_AllOf0) MarshalJSON() ([]byte, error) {
@@ -416,14 +448,18 @@ type GetCollaboration_Response_Item struct {
 }
 
 func (g GetCollaboration_Response_Item) Validate() error {
+	var errors runtime.ValidationErrors
 	if g.GetCollaboration_Response_Item_AllOf0 != nil {
 		if v, ok := any(g.GetCollaboration_Response_Item_AllOf0).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("GetCollaboration_Response_Item_AllOf0", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("GetCollaboration_Response_Item_AllOf0", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (g GetCollaboration_Response_Item) MarshalJSON() ([]byte, error) {
@@ -465,14 +501,18 @@ type GetCollaboration_Response_Item_AllOf0 struct {
 }
 
 func (g GetCollaboration_Response_Item_AllOf0) Validate() error {
+	var errors runtime.ValidationErrors
 	if g.GetCollaboration_Response_Item_AllOf0_OneOf != nil {
 		if v, ok := any(g.GetCollaboration_Response_Item_AllOf0_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("GetCollaboration_Response_Item_AllOf0_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("GetCollaboration_Response_Item_AllOf0_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (g GetCollaboration_Response_Item_AllOf0) MarshalJSON() ([]byte, error) {

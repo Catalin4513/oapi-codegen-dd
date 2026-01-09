@@ -25,7 +25,7 @@ func TestCreateUserBody_User_Validation(t *testing.T) {
 		}
 		err := user.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "ID")
+		assert.Equal(t, "ID: is required", err.Error())
 	})
 
 	t.Run("id above maximum", func(t *testing.T) {
@@ -34,7 +34,7 @@ func TestCreateUserBody_User_Validation(t *testing.T) {
 		}
 		err := user.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "ID")
+		assert.Equal(t, "ID: must be less than or equal to 999999", err.Error())
 	})
 
 	t.Run("score below minimum", func(t *testing.T) {
@@ -45,7 +45,7 @@ func TestCreateUserBody_User_Validation(t *testing.T) {
 		}
 		err := user.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Score")
+		assert.Equal(t, "Score: must be greater than or equal to 0", err.Error())
 	})
 
 	t.Run("score above maximum", func(t *testing.T) {
@@ -56,7 +56,7 @@ func TestCreateUserBody_User_Validation(t *testing.T) {
 		}
 		err := user.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Score")
+		assert.Equal(t, "Score: must be less than or equal to 100", err.Error())
 	})
 }
 
@@ -94,7 +94,7 @@ func TestCreateUserBody_Pages_Validation(t *testing.T) {
 		}
 		err := pages.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Limit")
+		assert.Equal(t, "Limit: is required", err.Error())
 	})
 
 	t.Run("limit above maximum", func(t *testing.T) {
@@ -103,7 +103,7 @@ func TestCreateUserBody_Pages_Validation(t *testing.T) {
 		}
 		err := pages.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Limit")
+		assert.Equal(t, "Limit: must be less than or equal to 1000", err.Error())
 	})
 
 	t.Run("tag1 exceeds maxLength", func(t *testing.T) {
@@ -114,7 +114,7 @@ func TestCreateUserBody_Pages_Validation(t *testing.T) {
 		}
 		err := pages.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Tag1")
+		assert.Equal(t, "Tag1: length must be less than or equal to 50", err.Error())
 	})
 
 	t.Run("tag2 below minLength", func(t *testing.T) {
@@ -125,7 +125,7 @@ func TestCreateUserBody_Pages_Validation(t *testing.T) {
 		}
 		err := pages.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Tag2")
+		assert.Equal(t, "Tag2: length must be greater than or equal to 1", err.Error())
 	})
 }
 
@@ -148,7 +148,7 @@ func TestCreateUserBody_Pages_AnyOf_Validation(t *testing.T) {
 		}
 		err := anyOf.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Offset")
+		assert.Equal(t, "Offset: must be greater than or equal to 0", err.Error())
 	})
 
 	t.Run("valid query", func(t *testing.T) {
@@ -169,7 +169,7 @@ func TestCreateUserBody_Pages_AnyOf_Validation(t *testing.T) {
 		}
 		err := anyOf.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Query")
+		assert.Equal(t, "Query: is required", err.Error())
 	})
 }
 
@@ -192,7 +192,7 @@ func TestCreateUserBody_Pages_OneOf_Validation(t *testing.T) {
 		}
 		err := oneOf.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "First")
+		assert.Equal(t, "First: is required", err.Error())
 	})
 
 	t.Run("valid last", func(t *testing.T) {
@@ -213,7 +213,7 @@ func TestCreateUserBody_Pages_OneOf_Validation(t *testing.T) {
 		}
 		err := oneOf.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Last")
+		assert.Equal(t, "Last: is required", err.Error())
 	})
 }
 
@@ -230,6 +230,7 @@ func TestCreateUserBody_Pages_Integration(t *testing.T) {
 
 		err := pages.Validate()
 		require.Error(t, err)
+
 		// Should fail on Tag1 validation
 		assert.Contains(t, err.Error(), "Tag1")
 	})
@@ -248,6 +249,7 @@ func TestCreateUserBody_Pages_Integration(t *testing.T) {
 
 		err := pages.Validate()
 		require.Error(t, err)
+
 		// Should fail on Offset validation in the union
 		assert.Contains(t, err.Error(), "Offset")
 	})

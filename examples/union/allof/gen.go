@@ -22,14 +22,18 @@ type Order struct {
 }
 
 func (o Order) Validate() error {
+	var errors runtime.ValidationErrors
 	if o.Client != nil {
 		if v, ok := any(o.Client).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Client", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Client", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Order_Client struct {
@@ -39,7 +43,10 @@ type Order_Client struct {
 }
 
 func (o Order_Client) Validate() error {
-	return schemaTypesValidate.Struct(o)
+	if err := schemaTypesValidate.Struct(o); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type Identity struct {
@@ -48,14 +55,13 @@ type Identity struct {
 }
 
 func (i Identity) Validate() error {
-	return schemaTypesValidate.Struct(i)
+	if err := schemaTypesValidate.Struct(i); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type Verification struct {
 	Same     *int    `json:"same,omitempty"`
 	Verifier *string `json:"verifier,omitempty"`
-}
-
-func (v Verification) Validate() error {
-	return schemaTypesValidate.Struct(v)
 }

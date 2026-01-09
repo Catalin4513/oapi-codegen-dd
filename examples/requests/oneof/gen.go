@@ -23,14 +23,18 @@ type ProcessPaymentBody struct {
 }
 
 func (p ProcessPaymentBody) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.ProcessPaymentBody_OneOf != nil {
 		if v, ok := any(p.ProcessPaymentBody_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ProcessPaymentBody_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ProcessPaymentBody_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (p ProcessPaymentBody) MarshalJSON() ([]byte, error) {
@@ -78,24 +82,12 @@ type PayloadA struct {
 	A *string `json:"a,omitempty"`
 }
 
-func (p PayloadA) Validate() error {
-	return schemaTypesValidate.Struct(p)
-}
-
 type PayloadB struct {
 	B *string `json:"b,omitempty"`
 }
 
-func (p PayloadB) Validate() error {
-	return schemaTypesValidate.Struct(p)
-}
-
 type PayloadC struct {
 	C *string `json:"c,omitempty"`
-}
-
-func (p PayloadC) Validate() error {
-	return schemaTypesValidate.Struct(p)
 }
 
 var unionTypesValidate *validator.Validate

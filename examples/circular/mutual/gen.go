@@ -174,47 +174,51 @@ type File struct {
 }
 
 func (f File) Validate() error {
+	var errors runtime.ValidationErrors
 	if f.Filename != nil {
 		if err := schemaTypesValidate.Var(f.Filename, "omitempty,max=5000"); err != nil {
-			return runtime.NewValidationErrorFromError("Filename", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Filename", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(f.ID, "required,max=5000"); err != nil {
-		return runtime.NewValidationErrorFromError("ID", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("ID", err))
 	}
 	if f.Author != nil {
 		if v, ok := any(f.Author).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Author", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Author", err))
 			}
 		}
 	}
 	if f.Links != nil {
 		if v, ok := any(f.Links).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Links", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Links", err))
 			}
 		}
 	}
 	if v, ok := any(f.Object).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Object", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Object", err))
 		}
 	}
 	if v, ok := any(f.Purpose).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Purpose", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Purpose", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(f.Size, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Size", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Size", err))
 	}
 	if f.Title != nil {
 		if err := schemaTypesValidate.Var(f.Title, "omitempty,max=5000"); err != nil {
-			return runtime.NewValidationErrorFromError("Title", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Title", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type File_Author struct {
@@ -222,14 +226,18 @@ type File_Author struct {
 }
 
 func (f File_Author) Validate() error {
+	var errors runtime.ValidationErrors
 	if f.File_Author_AnyOf != nil {
 		if v, ok := any(f.File_Author_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("File_Author_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("File_Author_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (f File_Author) MarshalJSON() ([]byte, error) {
@@ -274,18 +282,22 @@ type File_Links struct {
 }
 
 func (f File_Links) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(f.Data, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Data", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Data", err))
 	}
 	if v, ok := any(f.Object).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Object", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Object", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(f.URL, "required,max=5000"); err != nil {
-		return runtime.NewValidationErrorFromError("URL", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("URL", err))
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type FileLink struct {
@@ -299,30 +311,34 @@ type FileLink struct {
 }
 
 func (f FileLink) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(f.Created, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Created", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Created", err))
 	}
 	if v, ok := any(f.File).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("File", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("File", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(f.ID, "required,max=5000"); err != nil {
-		return runtime.NewValidationErrorFromError("ID", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("ID", err))
 	}
 	if f.Object != nil {
 		if v, ok := any(f.Object).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Object", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Object", err))
 			}
 		}
 	}
 	if f.URL != nil {
 		if err := schemaTypesValidate.Var(f.URL, "omitempty,max=5000"); err != nil {
-			return runtime.NewValidationErrorFromError("URL", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("URL", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type FileLink_File struct {
@@ -330,14 +346,18 @@ type FileLink_File struct {
 }
 
 func (f FileLink_File) Validate() error {
+	var errors runtime.ValidationErrors
 	if f.FileLink_File_AnyOf != nil {
 		if v, ok := any(f.FileLink_File_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("FileLink_File_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("FileLink_File_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (f FileLink_File) MarshalJSON() ([]byte, error) {
@@ -380,17 +400,21 @@ type User struct {
 }
 
 func (u User) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(u.ID, "required,max=50"); err != nil {
-		return runtime.NewValidationErrorFromError("ID", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("ID", err))
 	}
 	if u.Avatar != nil {
 		if v, ok := any(u.Avatar).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Avatar", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Avatar", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type User_Avatar struct {
@@ -398,14 +422,18 @@ type User_Avatar struct {
 }
 
 func (u User_Avatar) Validate() error {
+	var errors runtime.ValidationErrors
 	if u.User_Avatar_AnyOf != nil {
 		if v, ok := any(u.User_Avatar_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("User_Avatar_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("User_Avatar_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (u User_Avatar) MarshalJSON() ([]byte, error) {
@@ -448,14 +476,18 @@ func (g GetFiles_Response) Validate() error {
 	if g == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	for i, item := range g {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+				errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type GetFiles_Response_Item struct {
@@ -463,14 +495,18 @@ type GetFiles_Response_Item struct {
 }
 
 func (g GetFiles_Response_Item) Validate() error {
+	var errors runtime.ValidationErrors
 	if g.GetFiles_Response_OneOf != nil {
 		if v, ok := any(g.GetFiles_Response_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("GetFiles_Response_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("GetFiles_Response_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (g GetFiles_Response_Item) MarshalJSON() ([]byte, error) {

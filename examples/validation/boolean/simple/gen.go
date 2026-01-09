@@ -34,7 +34,10 @@ type PostUsersResponse struct {
 }
 
 func (p PostUsersResponse) Validate() error {
-	return responseTypesValidate.Struct(p)
+	if err := responseTypesValidate.Struct(p); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 var schemaTypesValidate *validator.Validate
@@ -55,5 +58,8 @@ type User struct {
 }
 
 func (u User) Validate() error {
-	return schemaTypesValidate.Struct(u)
+	if err := schemaTypesValidate.Struct(u); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }

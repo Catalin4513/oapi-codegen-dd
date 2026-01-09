@@ -262,39 +262,25 @@ type BaseError struct {
 }
 
 func (b BaseError) Validate() error {
+	var errors runtime.ValidationErrors
 	if b.Issues != nil {
 		if v, ok := any(b.Issues).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Issues", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Issues", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type BaseError_Issues []BaseError_Issues_Item
 
-func (b BaseError_Issues) Validate() error {
-	if b == nil {
-		return nil
-	}
-	for i, item := range b {
-		if v, ok := any(item).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
-			}
-		}
-	}
-	return nil
-}
-
 type BaseError_Issues_Item struct {
 	Field *string `json:"field,omitempty"`
 	Issue *string `json:"issue,omitempty"`
-}
-
-func (b BaseError_Issues_Item) Validate() error {
-	return schemaTypesValidate.Struct(b)
 }
 
 type SpecificError struct {
@@ -302,14 +288,18 @@ type SpecificError struct {
 }
 
 func (s SpecificError) Validate() error {
+	var errors runtime.ValidationErrors
 	if s.Issues != nil {
 		if v, ok := any(s.Issues).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Issues", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Issues", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type SpecificError_Issues []SpecificError_Issues_Item
@@ -318,14 +308,18 @@ func (s SpecificError_Issues) Validate() error {
 	if s == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	for i, item := range s {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+				errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type SpecificError_Issues_Item struct {
@@ -333,14 +327,18 @@ type SpecificError_Issues_Item struct {
 }
 
 func (s SpecificError_Issues_Item) Validate() error {
+	var errors runtime.ValidationErrors
 	if s.SpecificError_Issues_AnyOf != nil {
 		if v, ok := any(s.SpecificError_Issues_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("SpecificError_Issues_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("SpecificError_Issues_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (s SpecificError_Issues_Item) MarshalJSON() ([]byte, error) {
@@ -384,14 +382,18 @@ type CombinedError struct {
 }
 
 func (c CombinedError) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.Issues != nil {
 		if v, ok := any(c.Issues).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Issues", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Issues", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type CombinedError_Issues []CombinedError_Issues_Item
@@ -400,14 +402,18 @@ func (c CombinedError_Issues) Validate() error {
 	if c == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	for i, item := range c {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+				errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type CombinedError_Issues_Item struct {
@@ -415,14 +421,18 @@ type CombinedError_Issues_Item struct {
 }
 
 func (c CombinedError_Issues_Item) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.CombinedError_Issues_AnyOf != nil {
 		if v, ok := any(c.CombinedError_Issues_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("CombinedError_Issues_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("CombinedError_Issues_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (c CombinedError_Issues_Item) MarshalJSON() ([]byte, error) {
@@ -472,21 +482,25 @@ type SpecificError_Issues_AnyOf_0 struct {
 }
 
 func (s SpecificError_Issues_AnyOf_0) Validate() error {
+	var errors runtime.ValidationErrors
 	if s.Issue != nil {
 		if v, ok := any(s.Issue).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Issue", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Issue", err))
 			}
 		}
 	}
 	if s.Description != nil {
 		if v, ok := any(s.Description).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Description", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Description", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type SpecificError_Issues_AnyOf_1 struct {
@@ -495,21 +509,25 @@ type SpecificError_Issues_AnyOf_1 struct {
 }
 
 func (s SpecificError_Issues_AnyOf_1) Validate() error {
+	var errors runtime.ValidationErrors
 	if s.Issue != nil {
 		if v, ok := any(s.Issue).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Issue", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Issue", err))
 			}
 		}
 	}
 	if s.Description != nil {
 		if v, ok := any(s.Description).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Description", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Description", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type SpecificError_Issues_AnyOf_2 struct {
@@ -518,21 +536,25 @@ type SpecificError_Issues_AnyOf_2 struct {
 }
 
 func (s SpecificError_Issues_AnyOf_2) Validate() error {
+	var errors runtime.ValidationErrors
 	if s.Issue != nil {
 		if v, ok := any(s.Issue).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Issue", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Issue", err))
 			}
 		}
 	}
 	if s.Description != nil {
 		if v, ok := any(s.Description).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Description", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Description", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type CombinedError_Issues_AnyOf_0 struct {
@@ -541,21 +563,25 @@ type CombinedError_Issues_AnyOf_0 struct {
 }
 
 func (c CombinedError_Issues_AnyOf_0) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.Issue != nil {
 		if v, ok := any(c.Issue).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Issue", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Issue", err))
 			}
 		}
 	}
 	if c.Description != nil {
 		if v, ok := any(c.Description).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Description", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Description", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type CombinedError_Issues_AnyOf_1 struct {
@@ -564,21 +590,25 @@ type CombinedError_Issues_AnyOf_1 struct {
 }
 
 func (c CombinedError_Issues_AnyOf_1) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.Issue != nil {
 		if v, ok := any(c.Issue).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Issue", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Issue", err))
 			}
 		}
 	}
 	if c.Description != nil {
 		if v, ok := any(c.Description).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Description", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Description", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type CombinedError_Issues_AnyOf_2 struct {
@@ -587,21 +617,25 @@ type CombinedError_Issues_AnyOf_2 struct {
 }
 
 func (c CombinedError_Issues_AnyOf_2) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.Issue != nil {
 		if v, ok := any(c.Issue).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Issue", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Issue", err))
 			}
 		}
 	}
 	if c.Description != nil {
 		if v, ok := any(c.Description).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Description", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Description", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {

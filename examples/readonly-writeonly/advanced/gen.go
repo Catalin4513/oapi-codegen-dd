@@ -21,7 +21,10 @@ type GetUserPath struct {
 }
 
 func (g GetUserPath) Validate() error {
-	return pathTypesValidate.Struct(g)
+	if err := pathTypesValidate.Struct(g); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type UpdateUserPath struct {
@@ -29,7 +32,10 @@ type UpdateUserPath struct {
 }
 
 func (u UpdateUserPath) Validate() error {
-	return pathTypesValidate.Struct(u)
+	if err := pathTypesValidate.Struct(u); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 var bodyTypesValidate *validator.Validate
@@ -74,18 +80,22 @@ type CreateUserBody struct {
 }
 
 func (c CreateUserBody) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := bodyTypesValidate.Var(c.Name, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Name", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Name", err))
 	}
 	if v, ok := any(c.Email).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Email", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Email", err))
 		}
 	}
 	if err := bodyTypesValidate.Var(c.Password, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Password", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Password", err))
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type UpdateUserBody struct {
@@ -123,18 +133,22 @@ type UpdateUserBody struct {
 }
 
 func (u UpdateUserBody) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := bodyTypesValidate.Var(u.Name, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Name", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Name", err))
 	}
 	if v, ok := any(u.Email).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Email", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Email", err))
 		}
 	}
 	if err := bodyTypesValidate.Var(u.Password, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Password", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Password", err))
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type CreateUserResponse struct {
@@ -283,22 +297,26 @@ type User struct {
 }
 
 func (u User) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(u.ID, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("ID", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("ID", err))
 	}
 	if err := schemaTypesValidate.Var(u.Name, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Name", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Name", err))
 	}
 	if v, ok := any(u.Email).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Email", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Email", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(u.Password, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Password", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Password", err))
 	}
 	if err := schemaTypesValidate.Var(u.CreatedAt, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("CreatedAt", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("CreatedAt", err))
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }

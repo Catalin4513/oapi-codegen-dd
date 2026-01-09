@@ -19,17 +19,9 @@ type GetItemsQuery struct {
 	Filter *string `json:"filter,omitempty"`
 }
 
-func (g GetItemsQuery) Validate() error {
-	return queryTypesValidate.Struct(g)
-}
-
 type CreateItemQuery struct {
 	// Filter Filter items (first definition - string)
 	Filter *string `json:"filter,omitempty"`
-}
-
-func (c CreateItemQuery) Validate() error {
-	return queryTypesValidate.Struct(c)
 }
 
 type GetItemsResponse struct {

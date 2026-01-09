@@ -51,14 +51,18 @@ type OrgByIDResponseWrapperModel struct {
 }
 
 func (o OrgByIDResponseWrapperModel) Validate() error {
+	var errors runtime.ValidationErrors
 	if o.Response != nil {
 		if v, ok := any(o.Response).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Response", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Response", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type OrgModel struct {
@@ -69,19 +73,23 @@ type OrgModel struct {
 }
 
 func (o OrgModel) Validate() error {
+	var errors runtime.ValidationErrors
 	if o.Type != nil {
 		if v, ok := any(o.Type).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Type", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 			}
 		}
 	}
 	if o.Parent != nil {
 		if v, ok := any(o.Parent).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Parent", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Parent", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }

@@ -69,7 +69,7 @@ func TestPayments_Validate_PreservesOriginalError(t *testing.T) {
 		require.True(t, errors.As(err, &validationErr))
 
 		// This error is created directly, not from validator
-		assert.Contains(t, err.Error(), "must have at least 1 items")
+		assert.Equal(t, "must have at least 1 items, got 0", err.Error())
 	})
 }
 
@@ -82,21 +82,19 @@ func TestUser_Validate_PreservesOriginalError(t *testing.T) {
 		err := user.Validate()
 		require.Error(t, err)
 
-		// Check that it's a ValidationError for the Payments field
-		var validationErr runtime.ValidationError
-		require.True(t, errors.As(err, &validationErr))
-		assert.Equal(t, "Payments", validationErr.Field)
+		var validationErrs runtime.ValidationErrors
+		require.True(t, errors.As(err, &validationErrs))
+		require.Len(t, validationErrs, 1)
 
-		// Check that we can still unwrap to the underlying error
-		unwrapped := validationErr.Unwrap()
+		assert.Equal(t, "Payments", validationErrs[0].Field)
+
+		unwrapped := validationErrs[0].Unwrap()
 		require.NotNil(t, unwrapped)
 
-		// The unwrapped error should also be a ValidationError (from Payments.Validate())
 		var nestedErr runtime.ValidationError
 		assert.True(t, errors.As(unwrapped, &nestedErr))
 		assert.Equal(t, "[0]", nestedErr.Field)
 
-		// And we can still get to the validator error
 		var validatorErrs validator.ValidationErrors
 		assert.True(t, errors.As(err, &validatorErrs))
 	})

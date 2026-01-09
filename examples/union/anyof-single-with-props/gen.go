@@ -52,25 +52,13 @@ type BaseError struct {
 	Issues  []ErrorDetail `json:"issues,omitempty"`
 }
 
-func (b BaseError) Validate() error {
-	return schemaTypesValidate.Struct(b)
-}
-
 type ErrorDetail struct {
 	Field *string `json:"field,omitempty"`
 	Issue *string `json:"issue,omitempty"`
 }
 
-func (e ErrorDetail) Validate() error {
-	return schemaTypesValidate.Struct(e)
-}
-
 type SpecificError struct {
 	Issues []SpecificIssue `json:"issues,omitempty"`
-}
-
-func (s SpecificError) Validate() error {
-	return schemaTypesValidate.Struct(s)
 }
 
 type SpecificIssue struct {
@@ -80,22 +68,22 @@ type SpecificIssue struct {
 }
 
 func (s SpecificIssue) Validate() error {
+	var errors runtime.ValidationErrors
 	if s.Code != nil {
 		if v, ok := any(s.Code).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Code", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Code", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type CombinedError struct {
 	Name    *string         `json:"name,omitempty"`
 	Message *string         `json:"message,omitempty"`
 	Issues  []SpecificIssue `json:"issues,omitempty"`
-}
-
-func (c CombinedError) Validate() error {
-	return schemaTypesValidate.Struct(c)
 }

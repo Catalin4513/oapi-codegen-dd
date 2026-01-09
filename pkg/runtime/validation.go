@@ -15,6 +15,7 @@
 package runtime
 
 import (
+	"errors"
 	"reflect"
 
 	"github.com/go-playground/validator/v10"
@@ -57,4 +58,26 @@ func RegisterCustomTypeFunc(v *validator.Validate) {
 		}
 		return nil
 	})
+}
+
+// ConvertValidatorError converts a validator.ValidationErrors to our ValidationErrors type.
+// This provides a consistent error format across all validation errors.
+func ConvertValidatorError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	// Check if it's already our ValidationErrors type using errors.As to handle wrapped errors
+	var ves ValidationErrors
+	if errors.As(err, &ves) {
+		return err
+	}
+
+	var ve ValidationError
+	if errors.As(err, &ve) {
+		return err
+	}
+
+	// Use the existing NewValidationErrorsFromError which handles validator errors properly
+	return NewValidationErrorsFromError(err)
 }

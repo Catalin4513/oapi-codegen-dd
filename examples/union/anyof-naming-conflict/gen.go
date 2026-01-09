@@ -38,16 +38,8 @@ type TypeA struct {
 	A *string `json:"a,omitempty"`
 }
 
-func (t TypeA) Validate() error {
-	return schemaTypesValidate.Struct(t)
-}
-
 type TypeB struct {
 	B *int `json:"b,omitempty"`
-}
-
-func (t TypeB) Validate() error {
-	return schemaTypesValidate.Struct(t)
 }
 
 type Test_Response_Items []Test_Response_Items_Item
@@ -56,14 +48,18 @@ func (t Test_Response_Items) Validate() error {
 	if t == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	for i, item := range t {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+				errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Test_Response_Items_Item struct {
@@ -71,14 +67,18 @@ type Test_Response_Items_Item struct {
 }
 
 func (t Test_Response_Items_Item) Validate() error {
+	var errors runtime.ValidationErrors
 	if t.Test_Response_Items_AnyOf != nil {
 		if v, ok := any(t.Test_Response_Items_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Test_Response_Items_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Test_Response_Items_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (t Test_Response_Items_Item) MarshalJSON() ([]byte, error) {
@@ -121,14 +121,18 @@ func (t Test_ErrorResponse_Items) Validate() error {
 	if t == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	for i, item := range t {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+				errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Test_ErrorResponse_Items_Item struct {
@@ -136,14 +140,18 @@ type Test_ErrorResponse_Items_Item struct {
 }
 
 func (t Test_ErrorResponse_Items_Item) Validate() error {
+	var errors runtime.ValidationErrors
 	if t.Test_ErrorResponse_Items_AnyOf != nil {
 		if v, ok := any(t.Test_ErrorResponse_Items_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Test_ErrorResponse_Items_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Test_ErrorResponse_Items_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (t Test_ErrorResponse_Items_Item) MarshalJSON() ([]byte, error) {
@@ -186,14 +194,18 @@ func (t Test_ErrorResponse_Items1) Validate() error {
 	if t == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	for i, item := range t {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+				errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 var unionTypesValidate *validator.Validate

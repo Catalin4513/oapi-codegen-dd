@@ -116,10 +116,6 @@ type Files struct {
 	Name *string `json:"name,omitempty"`
 }
 
-func (f Files) Validate() error {
-	return schemaTypesValidate.Struct(f)
-}
-
 type ErrorData struct {
 	Type *string `json:"type,omitempty"`
 
@@ -130,5 +126,8 @@ type ErrorData struct {
 }
 
 func (e ErrorData) Validate() error {
-	return schemaTypesValidate.Struct(e)
+	if err := schemaTypesValidate.Struct(e); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }

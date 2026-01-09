@@ -26,14 +26,18 @@ type Order struct {
 }
 
 func (o Order) Validate() error {
+	var errors runtime.ValidationErrors
 	if o.Client != nil {
 		if v, ok := any(o.Client).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Client", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Client", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Order_Client struct {
@@ -41,14 +45,18 @@ type Order_Client struct {
 }
 
 func (o Order_Client) Validate() error {
+	var errors runtime.ValidationErrors
 	if o.Order_Client_AnyOf != nil {
 		if v, ok := any(o.Order_Client_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Order_Client_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Order_Client_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (o Order_Client) MarshalJSON() ([]byte, error) {
@@ -90,15 +98,14 @@ type Identity struct {
 }
 
 func (i Identity) Validate() error {
-	return schemaTypesValidate.Struct(i)
+	if err := schemaTypesValidate.Struct(i); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type Verification struct {
 	Verifier *string `json:"verifier,omitempty"`
-}
-
-func (v Verification) Validate() error {
-	return schemaTypesValidate.Struct(v)
 }
 
 var unionTypesValidate *validator.Validate

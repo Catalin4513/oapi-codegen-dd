@@ -20,26 +20,26 @@ type Client struct {
 }
 
 func (c Client) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(c.Name, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Name", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Name", err))
 	}
 	if c.ComplexField != nil {
 		if v, ok := any(c.ComplexField).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ComplexField", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ComplexField", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Client_ComplexField struct {
 	Name        *string `json:"name,omitempty"`
 	AccountName *string `json:"accountName,omitempty"`
-}
-
-func (c Client_ComplexField) Validate() error {
-	return schemaTypesValidate.Struct(c)
 }
 
 type ClientWithExtension struct {
@@ -48,24 +48,24 @@ type ClientWithExtension struct {
 }
 
 func (c ClientWithExtension) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(c.Name, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Name", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Name", err))
 	}
 	if c.ComplexField != nil {
 		if v, ok := any(c.ComplexField).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ComplexField", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ComplexField", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type ClientWithExtension_ComplexField struct {
 	Name        *string `json:"name,omitempty"`
 	AccountName *string `json:"accountName,omitempty"`
-}
-
-func (c ClientWithExtension_ComplexField) Validate() error {
-	return schemaTypesValidate.Struct(c)
 }

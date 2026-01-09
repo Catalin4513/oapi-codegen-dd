@@ -23,7 +23,3 @@ type Person struct {
 	ID  *int64 `json:"id,omitempty"`
 	Age *int32 `json:"age,omitempty"`
 }
-
-func (p Person) Validate() error {
-	return schemaTypesValidate.Struct(p)
-}

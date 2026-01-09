@@ -26,21 +26,25 @@ type ProcessPaymentBody struct {
 }
 
 func (p ProcessPaymentBody) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.C != nil {
 		if v, ok := any(p.C).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("C", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("C", err))
 			}
 		}
 	}
 	if p.D != nil {
 		if v, ok := any(p.D).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("D", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("D", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 var schemaTypesValidate *validator.Validate
@@ -55,14 +59,18 @@ type ProcessPaymentBody_C struct {
 }
 
 func (p ProcessPaymentBody_C) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.ProcessPaymentBody_C_OneOf != nil {
 		if v, ok := any(p.ProcessPaymentBody_C_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ProcessPaymentBody_C_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ProcessPaymentBody_C_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (p ProcessPaymentBody_C) MarshalJSON() ([]byte, error) {
@@ -104,14 +112,18 @@ type ProcessPaymentBody_D1 struct {
 }
 
 func (p ProcessPaymentBody_D1) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.ProcessPaymentBody_D_AllOf0 != nil {
 		if v, ok := any(p.ProcessPaymentBody_D_AllOf0).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ProcessPaymentBody_D_AllOf0", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ProcessPaymentBody_D_AllOf0", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (p ProcessPaymentBody_D1) MarshalJSON() ([]byte, error) {
@@ -160,14 +172,18 @@ type ProcessPaymentBody_D struct {
 }
 
 func (p ProcessPaymentBody_D) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.ProcessPaymentBody_D_AllOf0 != nil {
 		if v, ok := any(p.ProcessPaymentBody_D_AllOf0).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ProcessPaymentBody_D_AllOf0", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ProcessPaymentBody_D_AllOf0", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (p ProcessPaymentBody_D) MarshalJSON() ([]byte, error) {
@@ -209,14 +225,18 @@ type ProcessPaymentBody_D_AllOf0 struct {
 }
 
 func (p ProcessPaymentBody_D_AllOf0) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.ProcessPaymentBody_D_AllOf0_OneOf != nil {
 		if v, ok := any(p.ProcessPaymentBody_D_AllOf0_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ProcessPaymentBody_D_AllOf0_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ProcessPaymentBody_D_AllOf0_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (p ProcessPaymentBody_D_AllOf0) MarshalJSON() ([]byte, error) {
@@ -258,14 +278,18 @@ type ProcessPaymentBody_D_AllOf0_OneOf_0 struct {
 }
 
 func (p ProcessPaymentBody_D_AllOf0_OneOf_0) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf != nil {
 		if v, ok := any(p.ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ProcessPaymentBody_D_AllOf0_OneOf_0_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (p ProcessPaymentBody_D_AllOf0_OneOf_0) MarshalJSON() ([]byte, error) {

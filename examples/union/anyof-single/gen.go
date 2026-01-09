@@ -32,21 +32,25 @@ type Order struct {
 }
 
 func (o Order) Validate() error {
+	var errors runtime.ValidationErrors
 	if o.Client != nil {
 		if v, ok := any(o.Client).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Client", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Client", err))
 			}
 		}
 	}
 	if o.Verification != nil {
 		if v, ok := any(o.Verification).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Verification", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Verification", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Identity struct {
@@ -54,7 +58,10 @@ type Identity struct {
 }
 
 func (i Identity) Validate() error {
-	return schemaTypesValidate.Struct(i)
+	if err := schemaTypesValidate.Struct(i); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type Verification struct {
@@ -62,14 +69,18 @@ type Verification struct {
 }
 
 func (v Verification) Validate() error {
+	var errors runtime.ValidationErrors
 	if v.Verifier != nil {
 		if v, ok := any(v.Verifier).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Verifier", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Verifier", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Address struct {
@@ -78,20 +89,20 @@ type Address struct {
 }
 
 func (a Address) Validate() error {
+	var errors runtime.ValidationErrors
 	if a.Location != nil {
 		if v, ok := any(a.Location).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Location", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Location", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Location struct {
 	Description *string `json:"description,omitempty"`
-}
-
-func (l Location) Validate() error {
-	return schemaTypesValidate.Struct(l)
 }

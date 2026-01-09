@@ -49,21 +49,25 @@ type Order struct {
 }
 
 func (o Order) Validate() error {
+	var errors runtime.ValidationErrors
 	if o.Status != nil {
 		if v, ok := any(o.Status).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Status", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Status", err))
 			}
 		}
 	}
 	if o.Client != nil {
 		if v, ok := any(o.Client).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Client", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Client", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Order_Client struct {
@@ -74,27 +78,31 @@ type Order_Client struct {
 }
 
 func (o Order_Client) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(o.Name, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Name", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Name", err))
 	}
 	if err := schemaTypesValidate.Var(o.ID, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("ID", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("ID", err))
 	}
 	if o.Order_Client_AnyOf != nil {
 		if v, ok := any(o.Order_Client_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Order_Client_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Order_Client_AnyOf", err))
 			}
 		}
 	}
 	if o.Order_Client_OneOf != nil {
 		if v, ok := any(o.Order_Client_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Order_Client_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Order_Client_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (o Order_Client) MarshalJSON() ([]byte, error) {
@@ -168,7 +176,10 @@ type Client struct {
 }
 
 func (c Client) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if err := schemaTypesValidate.Struct(c); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type Identity struct {
@@ -176,15 +187,14 @@ type Identity struct {
 }
 
 func (i Identity) Validate() error {
-	return schemaTypesValidate.Struct(i)
+	if err := schemaTypesValidate.Struct(i); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type Verification struct {
 	Verifier *string `json:"verifier,omitempty"`
-}
-
-func (v Verification) Validate() error {
-	return schemaTypesValidate.Struct(v)
 }
 
 type Address struct {
@@ -192,16 +202,8 @@ type Address struct {
 	Country *string `json:"country,omitempty"`
 }
 
-func (a Address) Validate() error {
-	return schemaTypesValidate.Struct(a)
-}
-
 type Location struct {
 	Description *string `json:"description,omitempty"`
-}
-
-func (l Location) Validate() error {
-	return schemaTypesValidate.Struct(l)
 }
 
 var unionTypesValidate *validator.Validate

@@ -35,12 +35,16 @@ type PointRequest struct {
 }
 
 func (p PointRequest) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(p.Location).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Location", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Location", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type PointRequestOneOf struct {
@@ -48,14 +52,18 @@ type PointRequestOneOf struct {
 }
 
 func (p PointRequestOneOf) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.PointRequestOneOf_OneOf != nil {
 		if v, ok := any(p.PointRequestOneOf_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("PointRequestOneOf_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("PointRequestOneOf_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (p PointRequestOneOf) MarshalJSON() ([]byte, error) {
@@ -97,12 +105,16 @@ type TimeBasedLocation struct {
 }
 
 func (t TimeBasedLocation) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(t.Time).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Time", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Time", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type DistanceBasedLocation struct {
@@ -110,7 +122,10 @@ type DistanceBasedLocation struct {
 }
 
 func (d DistanceBasedLocation) Validate() error {
-	return schemaTypesValidate.Struct(d)
+	if err := schemaTypesValidate.Struct(d); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type TimeInterval struct {
@@ -118,12 +133,16 @@ type TimeInterval struct {
 }
 
 func (t TimeInterval) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(t.Interval).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Interval", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Interval", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type TimeIntervalType struct {
@@ -131,14 +150,18 @@ type TimeIntervalType struct {
 }
 
 func (t TimeIntervalType) Validate() error {
+	var errors runtime.ValidationErrors
 	if t.TimeIntervalType_OneOf != nil {
 		if v, ok := any(t.TimeIntervalType_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("TimeIntervalType_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("TimeIntervalType_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (t TimeIntervalType) MarshalJSON() ([]byte, error) {
@@ -181,7 +204,10 @@ type AbsoluteTimeRange struct {
 }
 
 func (a AbsoluteTimeRange) Validate() error {
-	return schemaTypesValidate.Struct(a)
+	if err := schemaTypesValidate.Struct(a); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type RelativeTimeDuration struct {
@@ -189,7 +215,10 @@ type RelativeTimeDuration struct {
 }
 
 func (r RelativeTimeDuration) Validate() error {
-	return schemaTypesValidate.Struct(r)
+	if err := schemaTypesValidate.Struct(r); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 var unionTypesValidate *validator.Validate

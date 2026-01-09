@@ -44,12 +44,16 @@ type Product struct {
 }
 
 func (p Product) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.Variations != nil {
 		if v, ok := any(p.Variations).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Variations", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Variations", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }

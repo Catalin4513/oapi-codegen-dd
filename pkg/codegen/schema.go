@@ -115,9 +115,53 @@ func (s GoSchema) NeedsValidation() bool {
 		return true
 	}
 
-	// If it has properties or union elements, it needs validation
-	if len(s.Properties) > 0 || len(s.UnionElements) > 0 {
+	// If it has union elements, it needs validation
+	if len(s.UnionElements) > 0 {
 		return true
+	}
+
+	// If it has properties, check if any of them need validation
+	if len(s.Properties) > 0 {
+		for _, prop := range s.Properties {
+			// Property has validation tags
+			if len(prop.Constraints.ValidationTags) > 0 {
+				return true
+			}
+			// Property needs custom validation (RefType, struct, union, etc.)
+			if prop.needsCustomValidation() {
+				return true
+			}
+		}
+		// No properties need validation
+		return false
+	}
+
+	// Check if it's a map with additionalProperties that need validation
+	if s.AdditionalPropertiesType != nil {
+		// Check if the map has minProperties/maxProperties constraints
+		if s.Constraints.MinProperties != nil || s.Constraints.MaxProperties != nil {
+			return true
+		}
+		// Check if the map value type needs validation
+		if s.AdditionalPropertiesType.NeedsValidation() {
+			return true
+		}
+		// No validation needed for this map
+		return false
+	}
+
+	// Check if it's an array with items that need validation
+	if s.ArrayType != nil {
+		// Check if the array has minItems/maxItems constraints
+		if s.Constraints.MinItems != nil || s.Constraints.MaxItems != nil {
+			return true
+		}
+		// Check if the array item type needs validation
+		if s.ArrayType.NeedsValidation() {
+			return true
+		}
+		// No validation needed for this array
+		return false
 	}
 
 	// Check if GoType is a component reference (not a primitive type)
@@ -197,29 +241,66 @@ func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
 			}
 		}
 		if !needsCustom {
-			return fmt.Sprintf("return %s.Struct(%s)", validatorVar, alias)
+			// Wrap validator.Struct() to convert errors to our ValidationErrors
+			lines = append(lines, fmt.Sprintf("if err := %s.Struct(%s); err != nil {", validatorVar, alias))
+			lines = append(lines, "    return runtime.ConvertValidatorError(err)")
+			lines = append(lines, "}")
+			lines = append(lines, "return nil")
+			return strings.Join(lines, "\n")
 		}
 	}
 
 	// Handle array types
 	if s.ArrayType != nil {
-		// If nullable, allow nil (minItems constraint only applies to non-nil arrays)
-		if s.Constraints.Nullable != nil && *s.Constraints.Nullable {
+		// Allow nil if:
+		// 1. Explicitly nullable (nullable: true in OpenAPI spec), OR
+		// 2. Optional (not required) - computed Constraints.Nullable is true for optional fields
+		//
+		// Reject nil only if:
+		// - Has minItems > 0 AND
+		// - Is required (Constraints.Nullable is false or nil)
+		isExplicitlyNullable := s.OpenAPISchema != nil && s.OpenAPISchema.Nullable != nil && *s.OpenAPISchema.Nullable
+		isOptional := s.Constraints.Nullable != nil && *s.Constraints.Nullable
+		hasMinItems := s.Constraints.MinItems != nil && *s.Constraints.MinItems > 0
+
+		if isExplicitlyNullable || isOptional {
+			// Nil is allowed for nullable or optional arrays
 			lines = append(lines, fmt.Sprintf("if %s == nil {", alias))
 			lines = append(lines, "    return nil")
 			lines = append(lines, "}")
+		} else if hasMinItems {
+			// Required array with minItems > 0: nil is invalid
+			lines = append(lines, fmt.Sprintf("if %s == nil {", alias))
+			lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at least %d items, got 0\"))", *s.Constraints.MinItems))
+			lines = append(lines, "}")
+		}
+
+		// Collect all constraint violations
+		needsErrorCollection := (s.Constraints.MinItems != nil && s.Constraints.MaxItems != nil) ||
+			(s.ArrayType.NeedsValidation())
+
+		if needsErrorCollection {
+			lines = append(lines, "var errors runtime.ValidationErrors")
 		}
 
 		// Check MinItems constraint
 		if s.Constraints.MinItems != nil {
 			lines = append(lines, fmt.Sprintf("if len(%s) < %d {", alias, *s.Constraints.MinItems))
-			lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at least %d items, got %%d\", len(%s)))", *s.Constraints.MinItems, alias))
+			if needsErrorCollection {
+				lines = append(lines, fmt.Sprintf("    errors = append(errors, runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at least %d items, got %%d\", len(%s))))", *s.Constraints.MinItems, alias))
+			} else {
+				lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at least %d items, got %%d\", len(%s)))", *s.Constraints.MinItems, alias))
+			}
 			lines = append(lines, "}")
 		}
 		// Check MaxItems constraint
 		if s.Constraints.MaxItems != nil {
 			lines = append(lines, fmt.Sprintf("if len(%s) > %d {", alias, *s.Constraints.MaxItems))
-			lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at most %d items, got %%d\", len(%s)))", *s.Constraints.MaxItems, alias))
+			if needsErrorCollection {
+				lines = append(lines, fmt.Sprintf("    errors = append(errors, runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at most %d items, got %%d\", len(%s))))", *s.Constraints.MaxItems, alias))
+			} else {
+				lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at most %d items, got %%d\", len(%s)))", *s.Constraints.MaxItems, alias))
+			}
 			lines = append(lines, "}")
 		}
 		// Validate array items if they need validation
@@ -230,20 +311,29 @@ func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
 			if len(s.ArrayType.Constraints.ValidationTags) > 0 {
 				tags := strings.Join(s.ArrayType.Constraints.ValidationTags, ",")
 				lines = append(lines, fmt.Sprintf("    if err := %s.Var(item, \"%s\"); err != nil {", validatorVar, tags))
-				lines = append(lines, "        return runtime.NewValidationErrorFromError(fmt.Sprintf(\"[%d]\", i), err)")
+				lines = append(lines, "        errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf(\"[%d]\", i), err))")
 				lines = append(lines, "    }")
 			} else {
 				// Otherwise, try to call Validate() method (for RefTypes, structs, unions)
 				lines = append(lines, "    if v, ok := any(item).(runtime.Validator); ok {")
 				lines = append(lines, "        if err := v.Validate(); err != nil {")
-				lines = append(lines, "            return runtime.NewValidationErrorFromError(fmt.Sprintf(\"[%d]\", i), err)")
+				lines = append(lines, "            errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf(\"[%d]\", i), err))")
 				lines = append(lines, "        }")
 				lines = append(lines, "    }")
 			}
 
 			lines = append(lines, "}")
 		}
-		lines = append(lines, "return nil")
+
+		// Return collected errors or nil
+		if needsErrorCollection {
+			lines = append(lines, "if len(errors) == 0 {")
+			lines = append(lines, "    return nil")
+			lines = append(lines, "}")
+			lines = append(lines, "return errors")
+		} else {
+			lines = append(lines, "return nil")
+		}
 		return strings.Join(lines, "\n")
 	}
 
@@ -277,25 +367,50 @@ func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
 	if !hasCustomValidation {
 		// Handle map types (from additionalProperties)
 		if strings.HasPrefix(typeDecl, "map[") {
-			hasConstraints := s.Constraints.MinProperties != nil || s.Constraints.MaxProperties != nil
+			// Only allow nil if explicitly nullable OR if there's no minProperties constraint
+			// If minProperties > 0 and not explicitly nullable, nil is invalid (nil = 0 properties)
+			// Check the OpenAPI schema's nullable field, not the computed Constraints.Nullable
+			// (which is true for non-required fields)
+			isExplicitlyNullable := s.OpenAPISchema != nil && s.OpenAPISchema.Nullable != nil && *s.OpenAPISchema.Nullable
+			hasMinProperties := s.Constraints.MinProperties != nil && *s.Constraints.MinProperties > 0
 
-			// If nullable and has constraints, check for nil first
-			if s.Constraints.Nullable != nil && *s.Constraints.Nullable && hasConstraints {
+			if isExplicitlyNullable {
 				lines = append(lines, fmt.Sprintf("if %s == nil {", alias))
 				lines = append(lines, "    return nil")
 				lines = append(lines, "}")
+			} else if hasMinProperties {
+				// Not explicitly nullable and has minProperties > 0: nil is invalid
+				lines = append(lines, fmt.Sprintf("if %s == nil {", alias))
+				lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at least %d properties, got 0\"))", *s.Constraints.MinProperties))
+				lines = append(lines, "}")
+			}
+
+			// Collect all constraint violations
+			needsErrorCollection := (s.Constraints.MinProperties != nil && s.Constraints.MaxProperties != nil) ||
+				(s.AdditionalPropertiesType != nil && len(s.AdditionalPropertiesType.Constraints.ValidationTags) > 0)
+
+			if needsErrorCollection {
+				lines = append(lines, "var errors runtime.ValidationErrors")
 			}
 
 			// Check MinProperties constraint
 			if s.Constraints.MinProperties != nil {
 				lines = append(lines, fmt.Sprintf("if len(%s) < %d {", alias, *s.Constraints.MinProperties))
-				lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at least %d properties, got %%d\", len(%s)))", *s.Constraints.MinProperties, alias))
+				if needsErrorCollection {
+					lines = append(lines, fmt.Sprintf("    errors = append(errors, runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at least %d properties, got %%d\", len(%s))))", *s.Constraints.MinProperties, alias))
+				} else {
+					lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at least %d properties, got %%d\", len(%s)))", *s.Constraints.MinProperties, alias))
+				}
 				lines = append(lines, "}")
 			}
 			// Check MaxProperties constraint
 			if s.Constraints.MaxProperties != nil {
 				lines = append(lines, fmt.Sprintf("if len(%s) > %d {", alias, *s.Constraints.MaxProperties))
-				lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at most %d properties, got %%d\", len(%s)))", *s.Constraints.MaxProperties, alias))
+				if needsErrorCollection {
+					lines = append(lines, fmt.Sprintf("    errors = append(errors, runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at most %d properties, got %%d\", len(%s))))", *s.Constraints.MaxProperties, alias))
+				} else {
+					lines = append(lines, fmt.Sprintf("    return runtime.NewValidationError(\"\", fmt.Sprintf(\"must have at most %d properties, got %%d\", len(%s)))", *s.Constraints.MaxProperties, alias))
+				}
 				lines = append(lines, "}")
 			}
 			// Validate each value if it needs validation
@@ -303,23 +418,52 @@ func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
 				// Check if map values have validation tags (for primitive types)
 				if len(s.AdditionalPropertiesType.Constraints.ValidationTags) > 0 {
 					tags := strings.Join(s.AdditionalPropertiesType.Constraints.ValidationTags, ",")
+					if !needsErrorCollection {
+						lines = append(lines, "var errors runtime.ValidationErrors")
+					}
 					lines = append(lines, "for k, v := range "+alias+" {")
 					lines = append(lines, fmt.Sprintf("    if err := %s.Var(v, \"%s\"); err != nil {", validatorVar, tags))
-					lines = append(lines, "        return runtime.NewValidationErrorFromError(k, err)")
+					lines = append(lines, "        errors = append(errors, runtime.NewValidationErrorFromError(k, err))")
 					lines = append(lines, "    }")
 					lines = append(lines, "}")
+					lines = append(lines, "if len(errors) == 0 {")
+					lines = append(lines, "    return nil")
+					lines = append(lines, "}")
+					lines = append(lines, "return errors")
 				} else if s.AdditionalPropertiesType.NeedsValidation() {
 					// For complex types (structs, unions, etc.), call Validate() method
+					if !needsErrorCollection {
+						lines = append(lines, "var errors runtime.ValidationErrors")
+					}
 					lines = append(lines, "for k, v := range "+alias+" {")
 					lines = append(lines, "    if validator, ok := any(v).(runtime.Validator); ok {")
 					lines = append(lines, "        if err := validator.Validate(); err != nil {")
-					lines = append(lines, "            return runtime.NewValidationErrorFromError(k, err)")
+					lines = append(lines, "            errors = append(errors, runtime.NewValidationErrorFromError(k, err))")
 					lines = append(lines, "        }")
 					lines = append(lines, "    }")
 					lines = append(lines, "}")
+					lines = append(lines, "if len(errors) == 0 {")
+					lines = append(lines, "    return nil")
+					lines = append(lines, "}")
+					lines = append(lines, "return errors")
+				} else if needsErrorCollection {
+					// We have constraints but no value validation
+					lines = append(lines, "if len(errors) == 0 {")
+					lines = append(lines, "    return nil")
+					lines = append(lines, "}")
+					lines = append(lines, "return errors")
+				} else {
+					lines = append(lines, "return nil")
 				}
+			} else if needsErrorCollection {
+				// We have constraints but no additionalProperties validation
+				lines = append(lines, "if len(errors) == 0 {")
+				lines = append(lines, "    return nil")
+				lines = append(lines, "}")
+				lines = append(lines, "return errors")
+			} else {
+				lines = append(lines, "return nil")
 			}
-			lines = append(lines, "return nil")
 			return strings.Join(lines, "\n")
 		}
 
@@ -338,10 +482,17 @@ func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
 		}
 
 		// For struct types, use validator.Struct()
-		return fmt.Sprintf("return %s.Struct(%s)", validatorVar, alias)
+		// Wrap validator.Struct() to convert errors to our ValidationErrors
+		lines = append(lines, fmt.Sprintf("if err := %s.Struct(%s); err != nil {", validatorVar, alias))
+		lines = append(lines, "    return runtime.ConvertValidatorError(err)")
+		lines = append(lines, "}")
+		lines = append(lines, "return nil")
+		return strings.Join(lines, "\n")
 	}
 
 	// Generate custom validation for each property
+	// Collect all errors instead of returning early
+	lines = append(lines, "var errors runtime.ValidationErrors")
 	for _, prop := range s.Properties {
 		if prop.needsCustomValidation() {
 			// Property needs custom validation - call Validate() method
@@ -349,16 +500,36 @@ func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
 				lines = append(lines, fmt.Sprintf("if %s.%s != nil {", alias, prop.GoName))
 				lines = append(lines, fmt.Sprintf("    if v, ok := any(%s.%s).(runtime.Validator); ok {", alias, prop.GoName))
 				lines = append(lines, "        if err := v.Validate(); err != nil {")
-				lines = append(lines, fmt.Sprintf("            return runtime.NewValidationErrorFromError(\"%s\", err)", prop.GoName))
+				lines = append(lines, fmt.Sprintf("            errors = append(errors, runtime.NewValidationErrorFromError(\"%s\", err))", prop.GoName))
 				lines = append(lines, "        }")
 				lines = append(lines, "    }")
 				lines = append(lines, "}")
 			} else {
-				lines = append(lines, fmt.Sprintf("if v, ok := any(%s.%s).(runtime.Validator); ok {", alias, prop.GoName))
-				lines = append(lines, "    if err := v.Validate(); err != nil {")
-				lines = append(lines, fmt.Sprintf("        return runtime.NewValidationErrorFromError(\"%s\", err)", prop.GoName))
-				lines = append(lines, "    }")
-				lines = append(lines, "}")
+				// For non-pointer types, we still need to handle the case where the field
+				// might be nil (e.g., slices, maps, interfaces).
+				// If the field is optional (nullable), we should check for nil before validating.
+				// This is safe because:
+				// - For structs: they can't be nil (unless they're interfaces), so the check is a no-op
+				// - For slices/maps: they can be nil, and we want to skip validation if they are
+				// - For interfaces: they can be nil, and we want to skip validation if they are
+				isOptional := prop.Constraints.Nullable != nil && *prop.Constraints.Nullable
+
+				if isOptional {
+					// For optional fields, check if nil before validating
+					// Use type assertion to check if the value implements Validator
+					// If it does and is not nil, validate it
+					lines = append(lines, fmt.Sprintf("if v, ok := any(%s.%s).(runtime.Validator); ok && v != nil {", alias, prop.GoName))
+					lines = append(lines, "    if err := v.Validate(); err != nil {")
+					lines = append(lines, fmt.Sprintf("        errors = append(errors, runtime.NewValidationErrorFromError(\"%s\", err))", prop.GoName))
+					lines = append(lines, "    }")
+					lines = append(lines, "}")
+				} else {
+					lines = append(lines, fmt.Sprintf("if v, ok := any(%s.%s).(runtime.Validator); ok {", alias, prop.GoName))
+					lines = append(lines, "    if err := v.Validate(); err != nil {")
+					lines = append(lines, fmt.Sprintf("        errors = append(errors, runtime.NewValidationErrorFromError(\"%s\", err))", prop.GoName))
+					lines = append(lines, "    }")
+					lines = append(lines, "}")
+				}
 			}
 		} else if len(prop.Constraints.ValidationTags) > 0 {
 			// Property with validation tags - use Var()
@@ -366,18 +537,21 @@ func (s GoSchema) ValidateDecl(alias string, validatorVar string) string {
 			if prop.IsPointerType() {
 				lines = append(lines, fmt.Sprintf("if %s.%s != nil {", alias, prop.GoName))
 				lines = append(lines, fmt.Sprintf("    if err := %s.Var(%s.%s, \"%s\"); err != nil {", validatorVar, alias, prop.GoName, tags))
-				lines = append(lines, fmt.Sprintf("        return runtime.NewValidationErrorFromError(\"%s\", err)", prop.GoName))
+				lines = append(lines, fmt.Sprintf("        errors = append(errors, runtime.NewValidationErrorFromError(\"%s\", err))", prop.GoName))
 				lines = append(lines, "    }")
 				lines = append(lines, "}")
 			} else {
 				lines = append(lines, fmt.Sprintf("if err := %s.Var(%s.%s, \"%s\"); err != nil {", validatorVar, alias, prop.GoName, tags))
-				lines = append(lines, fmt.Sprintf("        return runtime.NewValidationErrorFromError(\"%s\", err)", prop.GoName))
+				lines = append(lines, fmt.Sprintf("    errors = append(errors, runtime.NewValidationErrorFromError(\"%s\", err))", prop.GoName))
 				lines = append(lines, "}")
 			}
 		}
 	}
 
-	lines = append(lines, "return nil")
+	lines = append(lines, "if len(errors) == 0 {")
+	lines = append(lines, "    return nil")
+	lines = append(lines, "}")
+	lines = append(lines, "return errors")
 	return strings.Join(lines, "\n")
 }
 

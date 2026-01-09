@@ -86,24 +86,12 @@ type VariantA struct {
 	A *string `json:"a,omitempty"`
 }
 
-func (v VariantA) Validate() error {
-	return schemaTypesValidate.Struct(v)
-}
-
 type VariantB struct {
 	B *string `json:"b,omitempty"`
 }
 
-func (v VariantB) Validate() error {
-	return schemaTypesValidate.Struct(v)
-}
-
 type VariantC struct {
 	C *string `json:"c,omitempty"`
-}
-
-func (v VariantC) Validate() error {
-	return schemaTypesValidate.Struct(v)
 }
 
 type GetFiles_Response []GetFiles_Response_Item
@@ -112,14 +100,18 @@ func (g GetFiles_Response) Validate() error {
 	if g == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	for i, item := range g {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+				errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type GetFiles_Response_Item struct {
@@ -127,14 +119,18 @@ type GetFiles_Response_Item struct {
 }
 
 func (g GetFiles_Response_Item) Validate() error {
+	var errors runtime.ValidationErrors
 	if g.GetFiles_Response_OneOf != nil {
 		if v, ok := any(g.GetFiles_Response_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("GetFiles_Response_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("GetFiles_Response_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (g GetFiles_Response_Item) MarshalJSON() ([]byte, error) {
@@ -181,10 +177,6 @@ func init() {
 type GetFiles_Response_OneOf_0 struct {
 	A *string `json:"a,omitempty"`
 	B *string `json:"b,omitempty"`
-}
-
-func (g GetFiles_Response_OneOf_0) Validate() error {
-	return unionTypesValidate.Struct(g)
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {

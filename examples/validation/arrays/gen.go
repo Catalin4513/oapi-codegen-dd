@@ -24,17 +24,21 @@ func (u Users) Validate() error {
 	if u == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	if len(u) < 2 {
-		return runtime.NewValidationError("", fmt.Sprintf("must have at least 2 items, got %d", len(u)))
+		errors = append(errors, runtime.NewValidationError("", fmt.Sprintf("must have at least 2 items, got %d", len(u))))
 	}
 	for i, item := range u {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+				errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Users_Item struct {
@@ -42,14 +46,18 @@ type Users_Item struct {
 }
 
 func (u Users_Item) Validate() error {
+	var errors runtime.ValidationErrors
 	if u.Users_OneOf != nil {
 		if v, ok := any(u.Users_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Users_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Users_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (u Users_Item) MarshalJSON() ([]byte, error) {
@@ -91,14 +99,18 @@ type Nested struct {
 }
 
 func (n Nested) Validate() error {
+	var errors runtime.ValidationErrors
 	if n.Entity != nil {
 		if v, ok := any(n.Entity).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Entity", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Entity", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Nested_Entity struct {
@@ -106,14 +118,18 @@ type Nested_Entity struct {
 }
 
 func (n Nested_Entity) Validate() error {
+	var errors runtime.ValidationErrors
 	if n.Nested_Entity_OneOf != nil {
 		if v, ok := any(n.Nested_Entity_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Nested_Entity_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Nested_Entity_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (n Nested_Entity) MarshalJSON() ([]byte, error) {
@@ -155,14 +171,18 @@ type Nested_Entity_OneOf_1_Name struct {
 }
 
 func (n Nested_Entity_OneOf_1_Name) Validate() error {
+	var errors runtime.ValidationErrors
 	if n.Nested_Entity_OneOf_1_Name_OneOf != nil {
 		if v, ok := any(n.Nested_Entity_OneOf_1_Name_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Nested_Entity_OneOf_1_Name_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Nested_Entity_OneOf_1_Name_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (n Nested_Entity_OneOf_1_Name) MarshalJSON() ([]byte, error) {
@@ -204,10 +224,6 @@ type User struct {
 	Age  *int    `json:"age,omitempty"`
 }
 
-func (u User) Validate() error {
-	return schemaTypesValidate.Struct(u)
-}
-
 var unionTypesValidate *validator.Validate
 
 func init() {
@@ -220,14 +236,18 @@ type Nested_Entity_OneOf_1 struct {
 }
 
 func (n Nested_Entity_OneOf_1) Validate() error {
+	var errors runtime.ValidationErrors
 	if n.Name != nil {
 		if v, ok := any(n.Name).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Name", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Name", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {

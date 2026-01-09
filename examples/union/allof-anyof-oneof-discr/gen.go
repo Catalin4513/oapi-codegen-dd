@@ -125,7 +125,10 @@ type Client struct {
 }
 
 func (c Client) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if err := schemaTypesValidate.Struct(c); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type Identity struct {
@@ -133,7 +136,10 @@ type Identity struct {
 }
 
 func (i Identity) Validate() error {
-	return schemaTypesValidate.Struct(i)
+	if err := schemaTypesValidate.Struct(i); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type ClientAndMaybeIdentity struct {
@@ -142,19 +148,23 @@ type ClientAndMaybeIdentity struct {
 }
 
 func (c ClientAndMaybeIdentity) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.Entity != nil {
 		if v, ok := any(c.Entity).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Entity", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Entity", err))
 			}
 		}
 	}
 	if v, ok := any(c.Type).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Type", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type ClientAndMaybeIdentity_Entity struct {
@@ -162,14 +172,18 @@ type ClientAndMaybeIdentity_Entity struct {
 }
 
 func (c ClientAndMaybeIdentity_Entity) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.ClientAndMaybeIdentity_Entity_AnyOf != nil {
 		if v, ok := any(c.ClientAndMaybeIdentity_Entity_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ClientAndMaybeIdentity_Entity_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ClientAndMaybeIdentity_Entity_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (c ClientAndMaybeIdentity_Entity) MarshalJSON() ([]byte, error) {
@@ -211,14 +225,18 @@ type ClientOrID struct {
 }
 
 func (c ClientOrID) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.ClientOrID_OneOf != nil {
 		if v, ok := any(c.ClientOrID_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ClientOrID_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ClientOrID_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (c ClientOrID) MarshalJSON() ([]byte, error) {
@@ -260,14 +278,18 @@ type ClientOrIdentityWithDiscriminator struct {
 }
 
 func (c ClientOrIdentityWithDiscriminator) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.ClientOrIdentityWithDiscriminator_OneOf != nil {
 		if v, ok := any(c.ClientOrIdentityWithDiscriminator_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ClientOrIdentityWithDiscriminator_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ClientOrIdentityWithDiscriminator_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (c ClientOrIdentityWithDiscriminator) MarshalJSON() ([]byte, error) {
@@ -310,17 +332,21 @@ type Dog struct {
 }
 
 func (d Dog) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(d.Name, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Name", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Name", err))
 	}
 	if d.Type != nil {
 		if v, ok := any(d.Type).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Type", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Cat struct {
@@ -329,15 +355,19 @@ type Cat struct {
 }
 
 func (c Cat) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(c.Name, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Name", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Name", err))
 	}
 	if v, ok := any(c.Type).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Type", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Pet struct {
@@ -345,14 +375,18 @@ type Pet struct {
 }
 
 func (p Pet) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.Pet_OneOf != nil {
 		if v, ok := any(p.Pet_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Pet_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Pet_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (p Pet) MarshalJSON() ([]byte, error) {

@@ -3,8 +3,6 @@
 package gen
 
 import (
-	"fmt"
-
 	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 	"github.com/go-playground/validator/v10"
 )
@@ -22,10 +20,6 @@ type CreateTestBody struct {
 	Status *string `json:"status,omitempty"`
 }
 
-func (c CreateTestBody) Validate() error {
-	return bodyTypesValidate.Struct(c)
-}
-
 type GetBaseResponse struct {
 	Items *GetBase_Response_Items `json:"items,omitempty"`
 }
@@ -39,25 +33,7 @@ func init() {
 
 type GetBase_Response_Items []GetBase_Response_Items_Item
 
-func (g GetBase_Response_Items) Validate() error {
-	if g == nil {
-		return nil
-	}
-	for i, item := range g {
-		if v, ok := any(item).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
-			}
-		}
-	}
-	return nil
-}
-
 type GetBase_Response_Items_Item struct {
 	ID   *string `json:"id,omitempty"`
 	Name *string `json:"name,omitempty"`
-}
-
-func (g GetBase_Response_Items_Item) Validate() error {
-	return schemaTypesValidate.Struct(g)
 }

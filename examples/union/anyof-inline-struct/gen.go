@@ -23,14 +23,18 @@ type UpdateConfigBody struct {
 }
 
 func (u UpdateConfigBody) Validate() error {
+	var errors runtime.ValidationErrors
 	if u.Config != nil {
 		if v, ok := any(u.Config).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Config", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Config", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type CreateFirewallBody struct {
@@ -40,14 +44,18 @@ type CreateFirewallBody struct {
 }
 
 func (c CreateFirewallBody) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.Rules != nil {
 		if v, ok := any(c.Rules).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Rules", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Rules", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type GetConfigResponse struct {
@@ -78,14 +86,18 @@ type GetConfig_Response_Config struct {
 }
 
 func (g GetConfig_Response_Config) Validate() error {
+	var errors runtime.ValidationErrors
 	if g.GetConfig_Response_Config_AnyOf != nil {
 		if v, ok := any(g.GetConfig_Response_Config_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("GetConfig_Response_Config_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("GetConfig_Response_Config_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (g GetConfig_Response_Config) MarshalJSON() ([]byte, error) {
@@ -127,14 +139,18 @@ type UpdateConfigBody_Config struct {
 }
 
 func (u UpdateConfigBody_Config) Validate() error {
+	var errors runtime.ValidationErrors
 	if u.UpdateConfigBody_Config_AnyOf != nil {
 		if v, ok := any(u.UpdateConfigBody_Config_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("UpdateConfigBody_Config_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("UpdateConfigBody_Config_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (u UpdateConfigBody_Config) MarshalJSON() ([]byte, error) {
@@ -173,77 +189,23 @@ func (u *UpdateConfigBody_Config) UnmarshalJSON(data []byte) error {
 
 type GetFirewall_Response_Rules []GetFirewall_Response_Rules_Item
 
-func (g GetFirewall_Response_Rules) Validate() error {
-	if g == nil {
-		return nil
-	}
-	for i, item := range g {
-		if v, ok := any(item).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
-			}
-		}
-	}
-	return nil
-}
-
 type GetFirewall_Response_Rules_Item struct {
 	Protocol *string `json:"protocol,omitempty"`
 	Port     *int    `json:"port,omitempty"`
 }
 
-func (g GetFirewall_Response_Rules_Item) Validate() error {
-	return schemaTypesValidate.Struct(g)
-}
-
 type CreateFirewallBody_Rules []CreateFirewallBody_Rules_Item
-
-func (c CreateFirewallBody_Rules) Validate() error {
-	if c == nil {
-		return nil
-	}
-	for i, item := range c {
-		if v, ok := any(item).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
-			}
-		}
-	}
-	return nil
-}
 
 type CreateFirewallBody_Rules_Item struct {
 	Protocol *string `json:"protocol,omitempty"`
 	Port     *int    `json:"port,omitempty"`
 }
 
-func (c CreateFirewallBody_Rules_Item) Validate() error {
-	return schemaTypesValidate.Struct(c)
-}
-
 type CreateFirewall_Response_Rules []CreateFirewall_Response_Rules_Item
-
-func (c CreateFirewall_Response_Rules) Validate() error {
-	if c == nil {
-		return nil
-	}
-	for i, item := range c {
-		if v, ok := any(item).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
-			}
-		}
-	}
-	return nil
-}
 
 type CreateFirewall_Response_Rules_Item struct {
 	Protocol *string `json:"protocol,omitempty"`
 	Port     *int    `json:"port,omitempty"`
-}
-
-func (c CreateFirewall_Response_Rules_Item) Validate() error {
-	return schemaTypesValidate.Struct(c)
 }
 
 var unionTypesValidate *validator.Validate
@@ -262,7 +224,10 @@ type GetConfig_Response_Config_AnyOf_0 struct {
 }
 
 func (g GetConfig_Response_Config_AnyOf_0) Validate() error {
-	return unionTypesValidate.Struct(g)
+	if err := unionTypesValidate.Struct(g); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type GetConfig_Response_Config_AnyOf_1 struct {
@@ -271,16 +236,15 @@ type GetConfig_Response_Config_AnyOf_1 struct {
 }
 
 func (g GetConfig_Response_Config_AnyOf_1) Validate() error {
-	return unionTypesValidate.Struct(g)
+	if err := unionTypesValidate.Struct(g); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type GetConfig_Response_Config_AnyOf_2 struct {
 	// Compression Enable compression
 	Compression *bool `json:"compression,omitempty"`
-}
-
-func (g GetConfig_Response_Config_AnyOf_2) Validate() error {
-	return unionTypesValidate.Struct(g)
 }
 
 type UpdateConfigBody_Config_AnyOf_0 struct {
@@ -292,7 +256,10 @@ type UpdateConfigBody_Config_AnyOf_0 struct {
 }
 
 func (u UpdateConfigBody_Config_AnyOf_0) Validate() error {
-	return unionTypesValidate.Struct(u)
+	if err := unionTypesValidate.Struct(u); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type UpdateConfigBody_Config_AnyOf_1 struct {
@@ -301,16 +268,15 @@ type UpdateConfigBody_Config_AnyOf_1 struct {
 }
 
 func (u UpdateConfigBody_Config_AnyOf_1) Validate() error {
-	return unionTypesValidate.Struct(u)
+	if err := unionTypesValidate.Struct(u); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type UpdateConfigBody_Config_AnyOf_2 struct {
 	// Compression Enable compression
 	Compression *bool `json:"compression,omitempty"`
-}
-
-func (u UpdateConfigBody_Config_AnyOf_2) Validate() error {
-	return unionTypesValidate.Struct(u)
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {

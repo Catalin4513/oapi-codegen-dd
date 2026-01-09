@@ -27,7 +27,10 @@ type CreateUserBody struct {
 }
 
 func (c CreateUserBody) Validate() error {
-	return bodyTypesValidate.Struct(c)
+	if err := bodyTypesValidate.Struct(c); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type CreateUserResponse struct {
@@ -58,5 +61,8 @@ type User struct {
 }
 
 func (u User) Validate() error {
-	return schemaTypesValidate.Struct(u)
+	if err := schemaTypesValidate.Struct(u); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }

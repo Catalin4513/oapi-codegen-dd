@@ -21,7 +21,10 @@ type SearchQuery struct {
 }
 
 func (s SearchQuery) Validate() error {
-	return queryTypesValidate.Struct(s)
+	if err := queryTypesValidate.Struct(s); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type SearchResponse struct {

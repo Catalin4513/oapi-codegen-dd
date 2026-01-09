@@ -20,17 +20,21 @@ type ClientType struct {
 }
 
 func (c ClientType) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(c.Name, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Name", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Name", err))
 	}
 	if c.Type != nil {
 		if v, ok := any(c.Type).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Type", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Error struct {
@@ -38,17 +42,9 @@ type Error struct {
 	Message *string `json:"message,omitempty"`
 }
 
-func (e Error) Validate() error {
-	return schemaTypesValidate.Struct(e)
-}
-
 type UpdateClientErrorResponse struct {
 	Code    *ErrorCode `json:"code,omitempty"`
 	Message *string    `json:"message,omitempty"`
-}
-
-func (u UpdateClientErrorResponse) Validate() error {
-	return schemaTypesValidate.Struct(u)
 }
 
 type ErrorCode = string

@@ -21,7 +21,10 @@ type GetClientHeaders struct {
 }
 
 func (g GetClientHeaders) Validate() error {
-	return headerTypesValidate.Struct(g)
+	if err := headerTypesValidate.Struct(g); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type UpdateClientHeaders struct {
@@ -29,5 +32,8 @@ type UpdateClientHeaders struct {
 }
 
 func (u UpdateClientHeaders) Validate() error {
-	return headerTypesValidate.Struct(u)
+	if err := headerTypesValidate.Struct(u); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }

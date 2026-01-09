@@ -125,10 +125,6 @@ type GetTestQuery struct {
 	QueryParam *string `json:"query_param,omitempty"`
 }
 
-func (g GetTestQuery) Validate() error {
-	return queryTypesValidate.Struct(g)
-}
-
 type GetTestResponse struct {
 	Message *string                `json:"message,omitempty"`
 	Options *GetTestRequestOptions `json:"options,omitempty"`
@@ -147,20 +143,20 @@ type TestResponse struct {
 }
 
 func (t TestResponse) Validate() error {
+	var errors runtime.ValidationErrors
 	if t.Options != nil {
 		if v, ok := any(t.Options).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Options", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Options", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type GetTestRequestOptions struct {
 	Collision *string `json:"collision,omitempty"`
-}
-
-func (g GetTestRequestOptions) Validate() error {
-	return schemaTypesValidate.Struct(g)
 }

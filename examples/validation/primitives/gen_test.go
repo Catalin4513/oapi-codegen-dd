@@ -1,7 +1,10 @@
 package gen
 
 import (
+	"errors"
 	"testing"
+
+	"github.com/doordash/oapi-codegen-dd/v3/pkg/runtime"
 )
 
 func TestResponseValidation(t *testing.T) {
@@ -13,11 +16,11 @@ func TestResponseValidation(t *testing.T) {
 		{
 			name: "valid - all fields valid",
 			resp: Response{
-				Msn1:                     ptrMsn("12345"),
-				Msn2:                     ptrString("anything"),
+				Msn1:                     runtime.Ptr("12345"),
+				Msn2:                     runtime.Ptr("anything"),
 				MsnReqWithConstraints:    "valid",
 				MsnReqWithoutConstraints: "anything",
-				Msn3:                     ptrInt(50),
+				Msn3:                     runtime.Ptr(50),
 				MsnFloat:                 3.14,
 				MsnBool:                  true,
 				UserRequired:             User{},
@@ -27,7 +30,7 @@ func TestResponseValidation(t *testing.T) {
 		{
 			name: "invalid - msn1 too short",
 			resp: Response{
-				Msn1:                     ptrMsn("123"),
+				Msn1:                     runtime.Ptr("123"),
 				MsnReqWithConstraints:    "valid",
 				MsnReqWithoutConstraints: "anything",
 				MsnFloat:                 1.0,
@@ -39,7 +42,7 @@ func TestResponseValidation(t *testing.T) {
 		{
 			name: "invalid - msn1 too long",
 			resp: Response{
-				Msn1:                     ptrMsn("12345678"),
+				Msn1:                     runtime.Ptr("12345678"),
 				MsnReqWithConstraints:    "valid",
 				MsnReqWithoutConstraints: "anything",
 				MsnFloat:                 1.0,
@@ -51,7 +54,7 @@ func TestResponseValidation(t *testing.T) {
 		{
 			name: "invalid - msn3 too small",
 			resp: Response{
-				Msn3:                     ptrInt(0),
+				Msn3:                     runtime.Ptr(0),
 				MsnReqWithConstraints:    "valid",
 				MsnReqWithoutConstraints: "anything",
 				MsnFloat:                 1.0,
@@ -63,7 +66,7 @@ func TestResponseValidation(t *testing.T) {
 		{
 			name: "invalid - msn3 too large",
 			resp: Response{
-				Msn3:                     ptrInt(101),
+				Msn3:                     runtime.Ptr(101),
 				MsnReqWithConstraints:    "valid",
 				MsnReqWithoutConstraints: "anything",
 				MsnFloat:                 1.0,
@@ -75,7 +78,6 @@ func TestResponseValidation(t *testing.T) {
 		{
 			name: "invalid - missing required MsnFloat",
 			resp: Response{
-				// MsnFloat is required but missing (zero value)
 				MsnReqWithConstraints:    "valid",
 				MsnReqWithoutConstraints: "anything",
 				MsnBool:                  true,
@@ -89,7 +91,7 @@ func TestResponseValidation(t *testing.T) {
 				MsnReqWithConstraints:    "valid",
 				MsnReqWithoutConstraints: "anything",
 				MsnFloat:                 1.0,
-				MsnBool:                  false, // false is a valid value for booleans
+				MsnBool:                  false,
 				UserRequired:             User{},
 			},
 			wantErr: false,
@@ -99,7 +101,7 @@ func TestResponseValidation(t *testing.T) {
 			resp: Response{
 				MsnReqWithConstraints:    "valid",
 				MsnReqWithoutConstraints: "anything",
-				MsnFloat:                 0.0, // zero value should fail required validation
+				MsnFloat:                 0.0,
 				MsnBool:                  true,
 				UserRequired:             User{},
 			},
@@ -112,9 +114,9 @@ func TestResponseValidation(t *testing.T) {
 				MsnReqWithoutConstraints: "anything",
 				MsnFloat:                 1.0,
 				MsnBool:                  true,
-				UserRequired:             User{}, // Empty user struct - should this be valid?
+				UserRequired:             User{},
 			},
-			wantErr: false, // Currently passes because "required" only checks non-nil
+			wantErr: false,
 		},
 		{
 			name: "valid - UserOptional is nil",
@@ -123,8 +125,8 @@ func TestResponseValidation(t *testing.T) {
 				MsnReqWithoutConstraints: "anything",
 				MsnFloat:                 1.0,
 				MsnBool:                  true,
-				UserRequired:             User{Name: ptrString2("John"), Age: ptrInt(30)},
-				UserOptional:             nil, // Optional, so nil is fine
+				UserRequired:             User{Name: runtime.Ptr("John"), Age: runtime.Ptr(30)},
+				UserOptional:             nil,
 			},
 			wantErr: false,
 		},
@@ -135,8 +137,8 @@ func TestResponseValidation(t *testing.T) {
 				MsnReqWithoutConstraints: "anything",
 				MsnFloat:                 1.0,
 				MsnBool:                  true,
-				UserRequired:             User{Name: ptrString2("John"), Age: ptrInt(30)},
-				UserOptional:             &User{Name: ptrString2("Jane"), Age: ptrInt(25)},
+				UserRequired:             User{Name: runtime.Ptr("John"), Age: runtime.Ptr(30)},
+				UserOptional:             &User{Name: runtime.Ptr("Jane"), Age: runtime.Ptr(25)},
 			},
 			wantErr: false,
 		},
@@ -152,24 +154,6 @@ func TestResponseValidation(t *testing.T) {
 	}
 }
 
-func ptrMsn(s string) *MsnWithConstraints {
-	m := MsnWithConstraints(s)
-	return &m
-}
-
-func ptrString(s string) *MsnWithoutConstraints {
-	m := MsnWithoutConstraints(s)
-	return &m
-}
-
-func ptrInt(i int) *int {
-	return &i
-}
-
-func ptrString2(s string) *string {
-	return &s
-}
-
 func TestPredefinedValue_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -179,8 +163,8 @@ func TestPredefinedValue_Validate(t *testing.T) {
 		{
 			name: "valid - valid Predefined value",
 			pv: PredefinedValue{
-				Value: ptrPredefined(PredefinedA2),
-				Type:  ptrString2("test"),
+				Value: runtime.Ptr(PredefinedA2),
+				Type:  runtime.Ptr("test"),
 			},
 			wantErr: false,
 		},
@@ -188,17 +172,17 @@ func TestPredefinedValue_Validate(t *testing.T) {
 			name: "valid - nil Value",
 			pv: PredefinedValue{
 				Value: nil,
-				Type:  ptrString2("test"),
+				Type:  runtime.Ptr("test"),
 			},
 			wantErr: false,
 		},
 		{
 			name: "invalid - invalid Predefined value",
 			pv: PredefinedValue{
-				Value: ptrPredefined("INVALID"),
-				Type:  ptrString2("test"),
+				Value: runtime.Ptr(Predefined("INVALID")),
+				Type:  runtime.Ptr("test"),
 			},
-			wantErr: true, // Should fail because "INVALID" is not a valid Predefined value
+			wantErr: true,
 		},
 	}
 
@@ -212,6 +196,44 @@ func TestPredefinedValue_Validate(t *testing.T) {
 	}
 }
 
-func ptrPredefined(p Predefined) *Predefined {
-	return &p
+func TestResponseValidation_MultipleErrors(t *testing.T) {
+	// Test that all validation errors are collected, not just the first one
+	resp := Response{
+		Msn1:                     runtime.Ptr(MsnWithConstraints("123")), // Too short (min=4)
+		MsnReqWithConstraints:    "12",                                   // Too short (min=4)
+		MsnReqWithoutConstraints: "",                                     // Missing required
+		Msn3:                     runtime.Ptr(200),                       // Too large (max=100)
+		MsnFloat:                 0,                                      // Missing required (zero value)
+		UserRequired:             User{},
+	}
+
+	err := resp.Validate()
+	if err == nil {
+		t.Fatal("Expected validation errors, got nil")
+	}
+
+	// Check that it's a ValidationErrors (multiple errors)
+	var validationErrors runtime.ValidationErrors
+	if !errors.As(err, &validationErrors) {
+		t.Fatalf("Expected runtime.ValidationErrors, got %T", err)
+	}
+
+	// Should have multiple errors (at least 4: Msn1, MsnReqWithConstraints, MsnReqWithoutConstraints, Msn3, MsnFloat)
+	if len(validationErrors) < 4 {
+		t.Errorf("Expected at least 4 validation errors, got %d: %v", len(validationErrors), validationErrors)
+	}
+
+	// Verify error message contains all field names
+	errMsg := err.Error()
+	expectedFields := []string{"Msn1", "MsnReqWithConstraints", "MsnReqWithoutConstraints", "Msn3"}
+	for _, field := range expectedFields {
+		if !contains(errMsg, field) {
+			t.Errorf("Expected error message to contain field %q, got: %s", field, errMsg)
+		}
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+		(len(s) > 0 && (s[:len(substr)] == substr || contains(s[1:], substr))))
 }

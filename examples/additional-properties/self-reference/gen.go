@@ -23,7 +23,3 @@ type AggregatedResult struct {
 	TotalClicks     *int                        `json:"totalClicks,omitempty"`
 	HourlyBreakDown map[string]AggregatedResult `json:"hourlyBreakDown,omitempty"`
 }
-
-func (a AggregatedResult) Validate() error {
-	return schemaTypesValidate.Struct(a)
-}

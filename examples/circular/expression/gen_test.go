@@ -158,16 +158,16 @@ func TestExpressions_Validate(t *testing.T) {
 		exprs := Expressions{}
 		err := exprs.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "must have at least 1 items")
-		assert.Contains(t, err.Error(), "got 0")
+		assert.Equal(t, "must have at least 1 items, got 0", err.Error())
 	})
 
 	t.Run("valid - array with empty Expression struct", func(t *testing.T) {
 		// Expression is a struct, not a pointer, so it can't be nil
 		// But it can be an empty struct with all fields as zero values
 		exprs := Expressions{
-			Expression{}, // empty struct - all fields are nil/empty
+			Expression{},
 		}
+
 		// This should be valid - the array has 1 item (satisfies minItems: 1)
 		// The empty Expression itself is valid (all fields are optional)
 		assert.Nil(t, exprs.Validate())
@@ -177,13 +177,11 @@ func TestExpressions_Validate(t *testing.T) {
 		// Create an Expression with an empty Or array (violates minItems: 1)
 		exprs := Expressions{
 			Expression{
-				Or: Expressions{}, // empty array - violates minItems: 1
+				Or: Expressions{},
 			},
 		}
 		err := exprs.Validate()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "[0]")
-		assert.Contains(t, err.Error(), "Or")
-		assert.Contains(t, err.Error(), "must have at least 1 items")
+		assert.Equal(t, "[0].Or: must have at least 1 items, got 0", err.Error())
 	})
 }

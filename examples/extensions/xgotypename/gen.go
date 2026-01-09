@@ -20,7 +20,10 @@ type Client struct {
 }
 
 func (c Client) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if err := schemaTypesValidate.Struct(c); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type ClientWithExtension = ClientRenamedByExtension
@@ -31,5 +34,8 @@ type ClientRenamedByExtension struct {
 }
 
 func (c ClientRenamedByExtension) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if err := schemaTypesValidate.Struct(c); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }

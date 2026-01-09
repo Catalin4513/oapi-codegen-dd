@@ -25,7 +25,10 @@ type GetUserSingleResponse struct {
 }
 
 func (g GetUserSingleResponse) Validate() error {
-	return responseTypesValidate.Struct(g)
+	if err := responseTypesValidate.Struct(g); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type GetUserUnion1Response = User
@@ -35,14 +38,18 @@ type GetUserUnion2Response struct {
 }
 
 func (g GetUserUnion2Response) Validate() error {
+	var errors runtime.ValidationErrors
 	if g.GetUserUnion2_Response_OneOf != nil {
 		if v, ok := any(g.GetUserUnion2_Response_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("GetUserUnion2_Response_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("GetUserUnion2_Response_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (g GetUserUnion2Response) MarshalJSON() ([]byte, error) {
@@ -84,14 +91,18 @@ type GetUserUnion3Response struct {
 }
 
 func (g GetUserUnion3Response) Validate() error {
+	var errors runtime.ValidationErrors
 	if g.GetUserUnion3_Response_OneOf != nil {
 		if v, ok := any(g.GetUserUnion3_Response_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("GetUserUnion3_Response_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("GetUserUnion3_Response_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (g GetUserUnion3Response) MarshalJSON() ([]byte, error) {

@@ -34,14 +34,18 @@ type FilterRequest struct {
 }
 
 func (f FilterRequest) Validate() error {
+	var errors runtime.ValidationErrors
 	if f.Filter != nil {
 		if v, ok := any(f.Filter).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Filter", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Filter", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Expression struct {
@@ -52,31 +56,35 @@ type Expression struct {
 }
 
 func (e Expression) Validate() error {
-	if v, ok := any(e.Or).(runtime.Validator); ok {
+	var errors runtime.ValidationErrors
+	if v, ok := any(e.Or).(runtime.Validator); ok && v != nil {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Or", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Or", err))
 		}
 	}
-	if v, ok := any(e.And).(runtime.Validator); ok {
+	if v, ok := any(e.And).(runtime.Validator); ok && v != nil {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("And", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("And", err))
 		}
 	}
 	if e.Not != nil {
 		if v, ok := any(e.Not).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Not", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Not", err))
 			}
 		}
 	}
 	if e.Dimensions != nil {
 		if v, ok := any(e.Dimensions).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Dimensions", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Dimensions", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Expressions []Expression
@@ -85,24 +93,24 @@ func (e Expressions) Validate() error {
 	if e == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	if len(e) < 1 {
-		return runtime.NewValidationError("", fmt.Sprintf("must have at least 1 items, got %d", len(e)))
+		errors = append(errors, runtime.NewValidationError("", fmt.Sprintf("must have at least 1 items, got %d", len(e))))
 	}
 	for i, item := range e {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+				errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type DimensionValues struct {
 	Key    *string  `json:"Key,omitempty"`
 	Values []string `json:"Values,omitempty"`
-}
-
-func (d DimensionValues) Validate() error {
-	return schemaTypesValidate.Struct(d)
 }

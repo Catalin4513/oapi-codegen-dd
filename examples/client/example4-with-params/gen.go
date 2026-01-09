@@ -135,7 +135,10 @@ type GetOrderPath struct {
 }
 
 func (g GetOrderPath) Validate() error {
-	return pathTypesValidate.Struct(g)
+	if err := pathTypesValidate.Struct(g); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 var queryTypesValidate *validator.Validate
@@ -148,10 +151,6 @@ func init() {
 type GetOrderQuery struct {
 	ClientSecret *string  `json:"client_secret,omitempty"`
 	Expand       []string `json:"expand,omitempty"`
-}
-
-func (g GetOrderQuery) Validate() error {
-	return queryTypesValidate.Struct(g)
 }
 
 type GetOrderResponse = map[string]any

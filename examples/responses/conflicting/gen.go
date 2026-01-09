@@ -143,15 +143,7 @@ type CreatePaymentRequest struct {
 	CustomerInteraction *string `json:"customerInteraction,omitempty"`
 }
 
-func (c CreatePaymentRequest) Validate() error {
-	return schemaTypesValidate.Struct(c)
-}
-
 // CreatePaymentResponse Schema for The `CreatePaymentResponse` object.
 type CreatePaymentResponse struct {
 	RedirectURL *string `json:"redirectUrl,omitempty"`
-}
-
-func (c CreatePaymentResponse) Validate() error {
-	return schemaTypesValidate.Struct(c)
 }

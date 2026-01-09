@@ -90,5 +90,8 @@ type Person struct {
 }
 
 func (p Person) Validate() error {
-	return schemaTypesValidate.Struct(p)
+	if err := schemaTypesValidate.Struct(p); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }

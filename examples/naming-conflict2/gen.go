@@ -63,14 +63,18 @@ type Payment struct {
 }
 
 func (p Payment) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.Source != nil {
 		if v, ok := any(p.Source).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Source", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Source", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Payment_Source struct {
@@ -78,14 +82,18 @@ type Payment_Source struct {
 }
 
 func (p Payment_Source) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.Type != nil {
 		if v, ok := any(p.Type).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Type", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Type", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Choice = SourceType
@@ -94,8 +102,4 @@ type SourceTypeAlipay struct {
 	DataString          *string `json:"data_string,omitempty"`
 	NativeURL           *string `json:"native_url,omitempty"`
 	StatementDescriptor *string `json:"statement_descriptor,omitempty"`
-}
-
-func (s SourceTypeAlipay) Validate() error {
-	return schemaTypesValidate.Struct(s)
 }

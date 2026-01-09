@@ -19,7 +19,3 @@ type TypeWithUnexportedField struct {
 	Name              *string `json:"name,omitempty"`
 	accountIdentifier *string `json:"-"`
 }
-
-func (t TypeWithUnexportedField) Validate() error {
-	return schemaTypesValidate.Struct(t)
-}

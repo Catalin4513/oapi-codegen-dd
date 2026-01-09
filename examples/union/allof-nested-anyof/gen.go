@@ -25,14 +25,18 @@ type Order struct {
 }
 
 func (o Order) Validate() error {
+	var errors runtime.ValidationErrors
 	if o.Product != nil {
 		if v, ok := any(o.Product).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Product", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Product", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Order_Product1 struct {
@@ -41,19 +45,23 @@ type Order_Product1 struct {
 }
 
 func (o Order_Product1) Validate() error {
+	var errors runtime.ValidationErrors
 	if o.Order_Product_AllOf0 != nil {
 		if v, ok := any(o.Order_Product_AllOf0).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Order_Product_AllOf0", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Order_Product_AllOf0", err))
 			}
 		}
 	}
 	if v, ok := any(o.Base).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Base", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Base", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (o Order_Product1) MarshalJSON() ([]byte, error) {
@@ -107,23 +115,18 @@ type Base struct {
 }
 
 func (b Base) Validate() error {
-	return schemaTypesValidate.Struct(b)
+	if err := schemaTypesValidate.Struct(b); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type VariantA struct {
 	Color *string `json:"color,omitempty"`
 }
 
-func (v VariantA) Validate() error {
-	return schemaTypesValidate.Struct(v)
-}
-
 type VariantB struct {
 	Country *string `json:"country,omitempty"`
-}
-
-func (v VariantB) Validate() error {
-	return schemaTypesValidate.Struct(v)
 }
 
 var unionTypesValidate *validator.Validate
@@ -139,19 +142,23 @@ type Order_Product struct {
 }
 
 func (o Order_Product) Validate() error {
+	var errors runtime.ValidationErrors
 	if o.Order_Product_AllOf0 != nil {
 		if v, ok := any(o.Order_Product_AllOf0).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Order_Product_AllOf0", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Order_Product_AllOf0", err))
 			}
 		}
 	}
 	if v, ok := any(o.Base).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Base", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Base", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (o Order_Product) MarshalJSON() ([]byte, error) {
@@ -205,14 +212,18 @@ type Order_Product_AllOf0 struct {
 }
 
 func (o Order_Product_AllOf0) Validate() error {
+	var errors runtime.ValidationErrors
 	if o.Order_Product_AllOf0_AnyOf != nil {
 		if v, ok := any(o.Order_Product_AllOf0_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Order_Product_AllOf0_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Order_Product_AllOf0_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (o Order_Product_AllOf0) MarshalJSON() ([]byte, error) {

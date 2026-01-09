@@ -25,19 +25,23 @@ type Response struct {
 }
 
 func (r Response) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(r.User).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("User", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("User", err))
 		}
 	}
 	if r.Friend != nil {
 		if v, ok := any(r.Friend).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Friend", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Friend", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Response_User struct {
@@ -45,14 +49,18 @@ type Response_User struct {
 }
 
 func (r Response_User) Validate() error {
+	var errors runtime.ValidationErrors
 	if r.Response_User_OneOf != nil {
 		if v, ok := any(r.Response_User_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Response_User_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Response_User_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (r Response_User) MarshalJSON() ([]byte, error) {
@@ -94,14 +102,18 @@ type Response_Friend struct {
 }
 
 func (r Response_Friend) Validate() error {
+	var errors runtime.ValidationErrors
 	if r.Response_Friend_AnyOf != nil {
 		if v, ok := any(r.Response_Friend_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Response_Friend_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Response_Friend_AnyOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (r Response_Friend) MarshalJSON() ([]byte, error) {
@@ -145,15 +157,19 @@ type Payload struct {
 }
 
 func (p Payload) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(p.User).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("User", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("User", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(p.CreatedAt, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("CreatedAt", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("CreatedAt", err))
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type Payload_User struct {
@@ -161,14 +177,18 @@ type Payload_User struct {
 }
 
 func (p Payload_User) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.Payload_User_OneOf != nil {
 		if v, ok := any(p.Payload_User_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Payload_User_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Payload_User_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (p Payload_User) MarshalJSON() ([]byte, error) {
@@ -208,10 +228,6 @@ func (p *Payload_User) UnmarshalJSON(data []byte) error {
 type User struct {
 	Name *string `json:"name,omitempty"`
 	Age  *int    `json:"age,omitempty"`
-}
-
-func (u User) Validate() error {
-	return schemaTypesValidate.Struct(u)
 }
 
 var unionTypesValidate *validator.Validate

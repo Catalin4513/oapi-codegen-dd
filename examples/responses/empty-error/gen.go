@@ -163,7 +163,10 @@ type CreateUserRequest struct {
 }
 
 func (c CreateUserRequest) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if err := schemaTypesValidate.Struct(c); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type User struct {
@@ -173,23 +176,14 @@ type User struct {
 }
 
 func (u User) Validate() error {
-	return schemaTypesValidate.Struct(u)
+	if err := schemaTypesValidate.Struct(u); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type BadRequestException struct{}
 
-func (b BadRequestException) Validate() error {
-	return nil
-}
-
 type ConflictException struct{}
 
-func (c ConflictException) Validate() error {
-	return nil
-}
-
 type InternalServerException struct{}
-
-func (i InternalServerException) Validate() error {
-	return nil
-}

@@ -92,26 +92,30 @@ type TestObject struct {
 }
 
 func (t TestObject) Validate() error {
+	var errors runtime.ValidationErrors
 	if t.Status != nil {
 		if v, ok := any(t.Status).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Status", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Status", err))
 			}
 		}
 	}
 	if t.Priority != nil {
 		if v, ok := any(t.Priority).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Priority", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Priority", err))
 			}
 		}
 	}
 	if v, ok := any(t.Color).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Color", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Color", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type TestObjectRequired struct {
@@ -121,20 +125,24 @@ type TestObjectRequired struct {
 }
 
 func (t TestObjectRequired) Validate() error {
+	var errors runtime.ValidationErrors
 	if v, ok := any(t.Status).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Status", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Status", err))
 		}
 	}
 	if v, ok := any(t.Priority).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Priority", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Priority", err))
 		}
 	}
 	if v, ok := any(t.Color).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("Color", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Color", err))
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }

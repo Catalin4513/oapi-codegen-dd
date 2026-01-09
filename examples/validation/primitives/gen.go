@@ -77,45 +77,49 @@ type Response struct {
 }
 
 func (r Response) Validate() error {
+	var errors runtime.ValidationErrors
 	if r.Msn1 != nil {
 		if err := schemaTypesValidate.Var(r.Msn1, "omitempty,max=7,min=4"); err != nil {
-			return runtime.NewValidationErrorFromError("Msn1", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Msn1", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(r.MsnReqWithConstraints, "required,max=7,min=4"); err != nil {
-		return runtime.NewValidationErrorFromError("MsnReqWithConstraints", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("MsnReqWithConstraints", err))
 	}
 	if err := schemaTypesValidate.Var(r.MsnReqWithoutConstraints, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("MsnReqWithoutConstraints", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("MsnReqWithoutConstraints", err))
 	}
 	if r.Msn3 != nil {
 		if err := schemaTypesValidate.Var(r.Msn3, "omitempty,gte=1,lte=100"); err != nil {
-			return runtime.NewValidationErrorFromError("Msn3", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("Msn3", err))
 		}
 	}
 	if err := schemaTypesValidate.Var(r.MsnFloat, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("MsnFloat", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("MsnFloat", err))
 	}
 	if v, ok := any(r.UserRequired).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
-			return runtime.NewValidationErrorFromError("UserRequired", err)
+			errors = append(errors, runtime.NewValidationErrorFromError("UserRequired", err))
 		}
 	}
 	if r.UserOptional != nil {
 		if v, ok := any(r.UserOptional).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("UserOptional", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("UserOptional", err))
 			}
 		}
 	}
 	if r.Predefined != nil {
 		if v, ok := any(r.Predefined).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Predefined", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Predefined", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type PredefinedValue struct {
@@ -124,14 +128,18 @@ type PredefinedValue struct {
 }
 
 func (p PredefinedValue) Validate() error {
+	var errors runtime.ValidationErrors
 	if p.Value != nil {
 		if v, ok := any(p.Value).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Value", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Value", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type MsnWithConstraints = string
@@ -145,8 +153,4 @@ type MsnBool = bool
 type User struct {
 	Name *string `json:"name,omitempty"`
 	Age  *int    `json:"age,omitempty"`
-}
-
-func (u User) Validate() error {
-	return schemaTypesValidate.Struct(u)
 }

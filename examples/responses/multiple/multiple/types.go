@@ -19,20 +19,12 @@ type LinksSelf struct {
 	Self *string `json:"self,omitempty"`
 }
 
-func (l LinksSelf) Validate() error {
-	return schemaTypesValidate.Struct(l)
-}
-
 type Problem struct {
 	Type     *string `json:"type,omitempty"`
 	Title    *string `json:"title,omitempty"`
 	Detail   *string `json:"detail,omitempty"`
 	Instance *string `json:"instance,omitempty"`
 	Status   *int    `json:"status,omitempty"`
-}
-
-func (p Problem) Validate() error {
-	return schemaTypesValidate.Struct(p)
 }
 
 func (s Problem) Error() string {
@@ -48,19 +40,23 @@ type Booking struct {
 }
 
 func (b Booking) Validate() error {
+	var errors runtime.ValidationErrors
 	if b.ID != nil {
 		if v, ok := any(b.ID).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("ID", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("ID", err))
 			}
 		}
 	}
 	if b.TripID != nil {
 		if v, ok := any(b.TripID).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("TripID", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("TripID", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }

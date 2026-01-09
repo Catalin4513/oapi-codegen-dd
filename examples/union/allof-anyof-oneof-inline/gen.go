@@ -24,21 +24,25 @@ type CreateUserBody struct {
 }
 
 func (c CreateUserBody) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.User != nil {
 		if v, ok := any(c.User).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("User", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("User", err))
 			}
 		}
 	}
 	if c.Pages != nil {
 		if v, ok := any(c.Pages).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Pages", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Pages", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 var schemaTypesValidate *validator.Validate
@@ -54,7 +58,10 @@ type CreateUserBody_User struct {
 }
 
 func (c CreateUserBody_User) Validate() error {
-	return schemaTypesValidate.Struct(c)
+	if err := schemaTypesValidate.Struct(c); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type CreateUserBody_Pages []CreateUserBody_Pages_Item
@@ -63,14 +70,18 @@ func (c CreateUserBody_Pages) Validate() error {
 	if c == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	for i, item := range c {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+				errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type CreateUserBody_Pages_Item struct {
@@ -82,24 +93,28 @@ type CreateUserBody_Pages_Item struct {
 }
 
 func (c CreateUserBody_Pages_Item) Validate() error {
+	var errors runtime.ValidationErrors
 	if err := schemaTypesValidate.Var(c.Limit, "required"); err != nil {
-		return runtime.NewValidationErrorFromError("Limit", err)
+		errors = append(errors, runtime.NewValidationErrorFromError("Limit", err))
 	}
 	if c.CreateUserBody_Pages_AnyOf != nil {
 		if v, ok := any(c.CreateUserBody_Pages_AnyOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("CreateUserBody_Pages_AnyOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("CreateUserBody_Pages_AnyOf", err))
 			}
 		}
 	}
 	if c.CreateUserBody_Pages_OneOf != nil {
 		if v, ok := any(c.CreateUserBody_Pages_OneOf).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("CreateUserBody_Pages_OneOf", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("CreateUserBody_Pages_OneOf", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 func (c CreateUserBody_Pages_Item) MarshalJSON() ([]byte, error) {
@@ -180,7 +195,10 @@ type CreateUserBody_Pages_AnyOf_0 struct {
 }
 
 func (c CreateUserBody_Pages_AnyOf_0) Validate() error {
-	return unionTypesValidate.Struct(c)
+	if err := unionTypesValidate.Struct(c); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type CreateUserBody_Pages_AnyOf_1 struct {
@@ -188,7 +206,10 @@ type CreateUserBody_Pages_AnyOf_1 struct {
 }
 
 func (c CreateUserBody_Pages_AnyOf_1) Validate() error {
-	return unionTypesValidate.Struct(c)
+	if err := unionTypesValidate.Struct(c); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type CreateUserBody_Pages_OneOf_0 struct {
@@ -197,7 +218,10 @@ type CreateUserBody_Pages_OneOf_0 struct {
 }
 
 func (c CreateUserBody_Pages_OneOf_0) Validate() error {
-	return unionTypesValidate.Struct(c)
+	if err := unionTypesValidate.Struct(c); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type CreateUserBody_Pages_OneOf_1 struct {
@@ -205,7 +229,10 @@ type CreateUserBody_Pages_OneOf_1 struct {
 }
 
 func (c CreateUserBody_Pages_OneOf_1) Validate() error {
-	return unionTypesValidate.Struct(c)
+	if err := unionTypesValidate.Struct(c); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {

@@ -314,7 +314,10 @@ type GetUserPath struct {
 }
 
 func (g GetUserPath) Validate() error {
-	return pathTypesValidate.Struct(g)
+	if err := pathTypesValidate.Struct(g); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 type GetPostPath struct {
@@ -322,7 +325,10 @@ type GetPostPath struct {
 }
 
 func (g GetPostPath) Validate() error {
-	return pathTypesValidate.Struct(g)
+	if err := pathTypesValidate.Struct(g); err != nil {
+		return runtime.ConvertValidatorError(err)
+	}
+	return nil
 }
 
 var bodyTypesValidate *validator.Validate
@@ -341,21 +347,25 @@ type CreateEventBody struct {
 }
 
 func (c CreateEventBody) Validate() error {
+	var errors runtime.ValidationErrors
 	if c.Timestamp != nil {
 		if v, ok := any(c.Timestamp).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Timestamp", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Timestamp", err))
 			}
 		}
 	}
 	if c.Metadata != nil {
 		if v, ok := any(c.Metadata).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Metadata", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Metadata", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type GetUserResponse struct {
@@ -402,10 +412,6 @@ type GetUser_Response_Metadata struct {
 	Score *int     `json:"score,omitempty"`
 }
 
-func (g GetUser_Response_Metadata) Validate() error {
-	return schemaTypesValidate.Struct(g)
-}
-
 // Users_Get_Response200_JSON_Properties_CreatedAt When the user was created
 type Users_Get_Response200_JSON_Properties_CreatedAt = time.Time
 
@@ -417,33 +423,29 @@ type GetPost_Response_Metadata struct {
 	Score *int     `json:"score,omitempty"`
 }
 
-func (g GetPost_Response_Metadata) Validate() error {
-	return schemaTypesValidate.Struct(g)
-}
-
 type ListComments_Response []ListComments_Response_Item
 
 func (l ListComments_Response) Validate() error {
 	if l == nil {
 		return nil
 	}
+	var errors runtime.ValidationErrors
 	for i, item := range l {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err)
+				errors = append(errors, runtime.NewValidationErrorFromError(fmt.Sprintf("[%d]", i), err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type ListComments_Response_Metadata struct {
 	Tags  []string `json:"tags,omitempty"`
 	Score *int     `json:"score,omitempty"`
-}
-
-func (l ListComments_Response_Metadata) Validate() error {
-	return schemaTypesValidate.Struct(l)
 }
 
 type ListComments_Response_Item struct {
@@ -459,35 +461,35 @@ type ListComments_Response_Item struct {
 }
 
 func (l ListComments_Response_Item) Validate() error {
+	var errors runtime.ValidationErrors
 	if l.CreatedAt != nil {
 		if v, ok := any(l.CreatedAt).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("CreatedAt", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("CreatedAt", err))
 			}
 		}
 	}
 	if l.UpdatedAt != nil {
 		if v, ok := any(l.UpdatedAt).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("UpdatedAt", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("UpdatedAt", err))
 			}
 		}
 	}
 	if l.Metadata != nil {
 		if v, ok := any(l.Metadata).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Metadata", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Metadata", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type CreateEventBody_Metadata struct {
 	Tags  []string `json:"tags,omitempty"`
 	Score *int     `json:"score,omitempty"`
-}
-
-func (c CreateEventBody_Metadata) Validate() error {
-	return schemaTypesValidate.Struct(c)
 }

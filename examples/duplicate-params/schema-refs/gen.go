@@ -33,14 +33,18 @@ type UpdateOrganizationQuery struct {
 }
 
 func (u UpdateOrganizationQuery) Validate() error {
+	var errors runtime.ValidationErrors
 	if u.Establishments != nil {
 		if v, ok := any(u.Establishments).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
-				return runtime.NewValidationErrorFromError("Establishments", err)
+				errors = append(errors, runtime.NewValidationErrorFromError("Establishments", err))
 			}
 		}
 	}
-	return nil
+	if len(errors) == 0 {
+		return nil
+	}
+	return errors
 }
 
 type UpdateOrganizationResponse struct {
@@ -61,14 +65,6 @@ type Establishments_Item struct {
 	Address *string `json:"address,omitempty"`
 }
 
-func (e Establishments_Item) Validate() error {
-	return schemaTypesValidate.Struct(e)
-}
-
 type Arrangements_Item struct {
 	Name *string `json:"name,omitempty"`
-}
-
-func (a Arrangements_Item) Validate() error {
-	return schemaTypesValidate.Struct(a)
 }
