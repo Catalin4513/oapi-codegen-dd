@@ -26,3 +26,5 @@ type CreateBookingResponse struct {
 	HasDog        *bool      `json:"has_dog,omitempty"`
 	Links         *LinksSelf `json:"links,omitempty"`
 }
+
+type CreateBookingErrorResponse = BadRequest

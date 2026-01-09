@@ -34,9 +34,9 @@ func (u UpdateConfigBody) Validate() error {
 }
 
 type CreateFirewallBody struct {
-	ID    *string                          `json:"id,omitempty"`
-	Name  *string                          `json:"name,omitempty"`
-	Rules *CreateFirewallBody_Merged_Rules `json:"rules,omitempty"`
+	ID    *string                   `json:"id,omitempty"`
+	Name  *string                   `json:"name,omitempty"`
+	Rules *CreateFirewallBody_Rules `json:"rules,omitempty"`
 }
 
 func (c CreateFirewallBody) Validate() error {
@@ -55,15 +55,15 @@ type GetConfigResponse struct {
 }
 
 type GetFirewallResponse struct {
-	ID    *string                            `json:"id,omitempty"`
-	Name  *string                            `json:"name,omitempty"`
-	Rules *GetFirewall_Response_Merged_Rules `json:"rules,omitempty"`
+	ID    *string                     `json:"id,omitempty"`
+	Name  *string                     `json:"name,omitempty"`
+	Rules *GetFirewall_Response_Rules `json:"rules,omitempty"`
 }
 
 type CreateFirewallResponse struct {
-	ID    *string                               `json:"id,omitempty"`
-	Name  *string                               `json:"name,omitempty"`
-	Rules *CreateFirewall_Response_Merged_Rules `json:"rules,omitempty"`
+	ID    *string                        `json:"id,omitempty"`
+	Name  *string                        `json:"name,omitempty"`
+	Rules *CreateFirewall_Response_Rules `json:"rules,omitempty"`
 }
 
 var schemaTypesValidate *validator.Validate
@@ -171,9 +171,9 @@ func (u *UpdateConfigBody_Config) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type GetFirewall_Response_Merged_Rules []GetFirewall_Response_Merged_Rules_Item
+type GetFirewall_Response_Rules []GetFirewall_Response_Rules_Item
 
-func (g GetFirewall_Response_Merged_Rules) Validate() error {
+func (g GetFirewall_Response_Rules) Validate() error {
 	for i, item := range g {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -184,18 +184,18 @@ func (g GetFirewall_Response_Merged_Rules) Validate() error {
 	return nil
 }
 
-type GetFirewall_Response_Merged_Rules_Item struct {
+type GetFirewall_Response_Rules_Item struct {
 	Protocol *string `json:"protocol,omitempty"`
 	Port     *int    `json:"port,omitempty"`
 }
 
-func (g GetFirewall_Response_Merged_Rules_Item) Validate() error {
+func (g GetFirewall_Response_Rules_Item) Validate() error {
 	return schemaTypesValidate.Struct(g)
 }
 
-type CreateFirewallBody_Merged_Rules []CreateFirewallBody_Merged_Rules_Item
+type CreateFirewallBody_Rules []CreateFirewallBody_Rules_Item
 
-func (c CreateFirewallBody_Merged_Rules) Validate() error {
+func (c CreateFirewallBody_Rules) Validate() error {
 	for i, item := range c {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -206,18 +206,18 @@ func (c CreateFirewallBody_Merged_Rules) Validate() error {
 	return nil
 }
 
-type CreateFirewallBody_Merged_Rules_Item struct {
+type CreateFirewallBody_Rules_Item struct {
 	Protocol *string `json:"protocol,omitempty"`
 	Port     *int    `json:"port,omitempty"`
 }
 
-func (c CreateFirewallBody_Merged_Rules_Item) Validate() error {
+func (c CreateFirewallBody_Rules_Item) Validate() error {
 	return schemaTypesValidate.Struct(c)
 }
 
-type CreateFirewall_Response_Merged_Rules []CreateFirewall_Response_Merged_Rules_Item
+type CreateFirewall_Response_Rules []CreateFirewall_Response_Rules_Item
 
-func (c CreateFirewall_Response_Merged_Rules) Validate() error {
+func (c CreateFirewall_Response_Rules) Validate() error {
 	for i, item := range c {
 		if v, ok := any(item).(runtime.Validator); ok {
 			if err := v.Validate(); err != nil {
@@ -228,12 +228,12 @@ func (c CreateFirewall_Response_Merged_Rules) Validate() error {
 	return nil
 }
 
-type CreateFirewall_Response_Merged_Rules_Item struct {
+type CreateFirewall_Response_Rules_Item struct {
 	Protocol *string `json:"protocol,omitempty"`
 	Port     *int    `json:"port,omitempty"`
 }
 
-func (c CreateFirewall_Response_Merged_Rules_Item) Validate() error {
+func (c CreateFirewall_Response_Rules_Item) Validate() error {
 	return schemaTypesValidate.Struct(c)
 }
 

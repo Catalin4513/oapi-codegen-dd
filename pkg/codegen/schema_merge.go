@@ -257,12 +257,6 @@ func mergeAllOfSchemas(allOf []*base.SchemaProxy, options ParseOptions) (GoSchem
 			opts = options.WithReference(lastRef)
 		}
 
-		// If the merged schema doesn't have a reference, we need to use a different path
-		// to avoid circular reference detection issues with the parent schema
-		if opts.reference == "" {
-			opts = opts.WithPath(append(options.path, "$merged"))
-		}
-
 		return GenerateGoSchema(schemaProxy, opts)
 	}
 
