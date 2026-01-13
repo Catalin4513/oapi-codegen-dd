@@ -218,6 +218,13 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 			options.AddType(td)
 			typeDefinitions = append(typeDefinitions, td)
 			responseName = aliasName
+
+			// Use the component's schema instead of the regenerated contentSchema.
+			// This ensures we use the correct AdditionalTypes from the component
+			// rather than duplicates generated with the response path context.
+			if componentTd, ok := options.currentTypes[componentTypeName]; ok {
+				contentSchema = componentTd.Schema
+			}
 		} else {
 			switch {
 			case contentType == "application/json":
