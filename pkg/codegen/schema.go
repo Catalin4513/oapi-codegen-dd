@@ -472,7 +472,11 @@ func GenerateGoSchema(schemaProxy *base.SchemaProxy, options ParseOptions) (GoSc
 	// This handles cases like:
 	// - allOf with a description-only schema and a $ref (DefineViaAlias=true)
 	// - allOf with additionalProperties that results in a map type
-	if !merged.IsZero() && (merged.DefineViaAlias || strings.HasPrefix(merged.GoType, "map[")) {
+	// - allOf with a single element that has a primitive type (string, int, bool, etc.)
+	// - allOf with a single element that has an array type
+	// - allOf with a single element that has enum values
+	if !merged.IsZero() && (merged.DefineViaAlias || strings.HasPrefix(merged.GoType, "map[") ||
+		isPrimitiveType(merged.GoType) || strings.HasPrefix(merged.GoType, "[]") || len(merged.EnumValues) > 0) {
 		return merged, nil
 	}
 

@@ -454,4 +454,114 @@ components:
 		assert.Contains(t, combined, "Value")
 		assert.Contains(t, combined, "Either")
 	})
+
+	t.Run("allOf with single element containing enum should generate enum type", func(t *testing.T) {
+		// This test verifies that allOf with a single element that has an enum
+		// generates the correct enum type, not struct{}.
+		// See: https://github.com/box/box-openapi/issues/XXX
+		contents := []byte(`
+openapi: 3.0.0
+info:
+  title: Test
+  version: 1.0.0
+paths:
+  /test:
+    get:
+      operationId: getTest
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestObject'
+components:
+  schemas:
+    TestObject:
+      type: object
+      properties:
+        sync_state:
+          allOf:
+            - description: Test description
+              enum:
+                - synced
+                - not_synced
+              example: synced
+              nullable: false
+              type: string
+`)
+		opts := Configuration{
+			PackageName: "testpkg",
+			Output: &Output{
+				UseSingleFile: true,
+			},
+		}
+
+		code, err := Generate(contents, opts)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		combined := code.GetCombined()
+
+		// Should NOT generate struct{} for sync_state
+		assert.NotContains(t, combined, "SyncState *struct {")
+
+		// Should generate a proper enum type
+		assert.Contains(t, combined, "SyncState")
+		assert.Contains(t, combined, "synced")
+		assert.Contains(t, combined, "not_synced")
+	})
+
+	t.Run("allOf with primitive type and nullable should generate primitive type", func(t *testing.T) {
+		// This test verifies that allOf with a primitive type element and a nullable-only element
+		// generates the correct primitive type, not struct{}.
+		contents := []byte(`
+openapi: 3.0.0
+info:
+  title: Test
+  version: 1.0.0
+paths:
+  /test:
+    get:
+      operationId: getTest
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestObject'
+components:
+  schemas:
+    TestObject:
+      type: object
+      properties:
+        tags:
+          allOf:
+            - description: Tags
+              items:
+                type: string
+              type: array
+            - nullable: false
+`)
+		opts := Configuration{
+			PackageName: "testpkg",
+			Output: &Output{
+				UseSingleFile: true,
+			},
+		}
+
+		code, err := Generate(contents, opts)
+		require.NoError(t, err)
+		assert.NotEmpty(t, code)
+
+		combined := code.GetCombined()
+
+		// Should NOT generate struct{} for tags
+		assert.NotContains(t, combined, "Tags *struct {")
+
+		// Should generate a proper array type
+		assert.Contains(t, combined, "Tags")
+		assert.Contains(t, combined, "[]string")
+	})
 }
