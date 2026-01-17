@@ -64,43 +64,7 @@ func (c CatType) Validate() error {
 
 type GetFooResponse = map[string]any
 
-type GetPetResponse struct {
-	GetPet_Response_OneOf *GetPet_Response_OneOf `json:"-"`
-}
-
-func (g GetPetResponse) MarshalJSON() ([]byte, error) {
-	var parts []json.RawMessage
-
-	{
-		b, err := runtime.MarshalJSON(g.GetPet_Response_OneOf)
-		if err != nil {
-			return nil, fmt.Errorf("GetPet_Response_OneOf marshal: %w", err)
-		}
-		parts = append(parts, b)
-	}
-
-	return runtime.CoalesceOrMerge(parts...)
-}
-
-func (g *GetPetResponse) UnmarshalJSON(data []byte) error {
-	trim := bytes.TrimSpace(data)
-	if bytes.Equal(trim, []byte("null")) {
-		return nil
-	}
-	if len(trim) == 0 {
-		return fmt.Errorf("empty JSON input")
-	}
-
-	if g.GetPet_Response_OneOf == nil {
-		g.GetPet_Response_OneOf = &GetPet_Response_OneOf{}
-	}
-
-	if err := runtime.UnmarshalJSON(data, g.GetPet_Response_OneOf); err != nil {
-		return fmt.Errorf("GetPet_Response_OneOf unmarshal: %w", err)
-	}
-
-	return nil
-}
+type GetPetResponse = Pet
 
 type Client struct {
 	Name string `json:"name" validate:"required"`
@@ -602,81 +566,6 @@ func (p *Pet_OneOf) UnmarshalJSON(data []byte) error {
 
 		p.A = res
 		p.N = 1
-	default:
-		return errors.New("unknown discriminator value: " + discriminator)
-	}
-	return nil
-}
-
-type GetPet_Response_OneOf struct {
-	runtime.Either[Dog, Cat]
-}
-
-func (g *GetPet_Response_OneOf) Validate() error {
-	if g.IsA() {
-		if v, ok := any(g.A).(runtime.Validator); ok {
-			return v.Validate()
-		}
-	}
-	if g.IsB() {
-		if v, ok := any(g.B).(runtime.Validator); ok {
-			return v.Validate()
-		}
-	}
-	return nil
-}
-
-func (g GetPet_Response_OneOf) discriminator(data []byte) (string, error) {
-	var discriminator struct {
-		Value string `json:"type"`
-	}
-	if err := json.Unmarshal(data, &discriminator); err != nil {
-		return "", err
-	}
-	return discriminator.Value, nil
-}
-
-func (g *GetPet_Response_OneOf) MarshalJSON() ([]byte, error) {
-	data := g.Value()
-	if data == nil {
-		return []byte("null"), nil
-	}
-
-	obj, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
-	}
-
-	disc, err := g.discriminator(obj)
-	if err != nil {
-		return nil, err
-	}
-	return marshalJSONWithDiscriminator(obj, "type", disc)
-}
-
-func (g *GetPet_Response_OneOf) UnmarshalJSON(data []byte) error {
-	discriminator, err := g.discriminator(data)
-	if err != nil {
-		return err
-	}
-
-	switch discriminator {
-	case "cat":
-		var res Cat
-		if err = json.Unmarshal(data, &res); err != nil {
-			return err
-		}
-
-		g.B = res
-		g.N = 2
-	case "dog":
-		var res Dog
-		if err = json.Unmarshal(data, &res); err != nil {
-			return err
-		}
-
-		g.A = res
-		g.N = 1
 	default:
 		return errors.New("unknown discriminator value: " + discriminator)
 	}

@@ -8,3 +8,4 @@ error-mapping:
 generate:
   client: true
   omit-description: true
+  always-prefix-enum-values: true

@@ -90,6 +90,7 @@ func CreateParseContextFromDocument(doc libopenapi.Document, cfg Configuration) 
 		DefaultIntType:         cfg.Generate.DefaultIntType,
 		AlwaysPrefixEnumValues: cfg.Generate.AlwaysPrefixEnumValues,
 		SkipValidation:         cfg.Generate.Validation.Skip,
+		ErrorMapping:           cfg.ErrorMapping,
 		typeTracker:            newTypeTracker(),
 		visited:                map[string]bool{},
 		model:                  model,
@@ -373,6 +374,18 @@ func collectComponentDefinitions(model *v3high.Document, options ParseOptions) (
 
 	var typeDefs []TypeDefinition
 
+	// Pre-register schema names and refs FIRST, before processing any other components.
+	// This ensures that when parameters/requestBodies/responses reference schemas,
+	// they can look up the correct (potentially renamed) type name.
+	var schemaNames map[string]string
+	if model.Components.Schemas != nil {
+		var err error
+		schemaNames, err = preRegisterSchemaNames(model.Components.Schemas, options)
+		if err != nil {
+			return nil, fmt.Errorf("error pre-registering schema names: %w", err)
+		}
+	}
+
 	// Parameters
 	if model.Components.Parameters != nil {
 		res, err := getComponentParameters(model.Components.Parameters, options)
@@ -382,9 +395,9 @@ func collectComponentDefinitions(model *v3high.Document, options ParseOptions) (
 		typeDefs = append(typeDefs, res...)
 	}
 
-	// Schemas
+	// Schemas (second pass - generate full schemas using pre-registered names)
 	if model.Components.Schemas != nil {
-		schemas, err := getComponentsSchemas(model.Components.Schemas, options)
+		schemas, err := generateSchemaDefinitions(model.Components.Schemas, schemaNames, options)
 		if err != nil {
 			return nil, fmt.Errorf("error getting components schemas: %w", err)
 		}

@@ -234,9 +234,28 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 				// e.g., GetFilesErrorResponse = InvalidRequestError
 				aliasName := operationID + typeSuffix
 
-				// Check if the alias already exists (e.g., from a component response with the same name)
-				// If so, check if it's the same type - if yes, reuse it; if no, generate a unique name
-				if existingTd, exists := options.typeTracker.LookupByName(aliasName); exists {
+				// Check if error mapping is configured for this response type.
+				// If so, we cannot use an alias because aliases don't support methods,
+				// and we need to generate an Error() method for error-mapped types.
+				hasErrorMapping := len(options.ErrorMapping) > 0 && options.ErrorMapping[aliasName] != ""
+
+				if hasErrorMapping {
+					// Error mapping is configured - generate a full struct instead of alias
+					// so we can attach the Error() method
+					responseName = aliasName
+					// Don't set componentTypeExists to false - we still want to use the component schema
+					// but we need to generate a new type definition with the full schema
+					td := TypeDefinition{
+						Name:           aliasName,
+						Schema:         componentTd.Schema,
+						SpecLocation:   SpecLocationResponse,
+						NeedsMarshaler: needsMarshaler(componentTd.Schema),
+					}
+					options.typeTracker.register(td, "")
+					typeDefinitions = append(typeDefinitions, td)
+				} else if existingTd, exists := options.typeTracker.LookupByName(aliasName); exists {
+					// Check if the alias already exists (e.g., from a component response with the same name)
+					// If so, check if it's the same type - if yes, reuse it; if no, generate a unique name
 					if existingTd.Schema.RefType == componentTypeName {
 						// Same type, reuse the existing alias
 						responseName = aliasName
@@ -301,6 +320,19 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 				contentSchema, _ = replaceInlineTypes(contentSchema, options)
 			}
 
+			// Check if error mapping is configured for this response type.
+			// If so and the schema is an alias, we need to look up the original type
+			// and copy its schema to generate a full struct (aliases don't support methods).
+			hasErrorMapping := len(options.ErrorMapping) > 0 && options.ErrorMapping[responseName] != ""
+			if hasErrorMapping && contentSchema.DefineViaAlias {
+				// Look up the original type by name (GoType contains the type name)
+				if originalTd, exists := options.typeTracker.LookupByName(contentSchema.GoType); exists {
+					// Copy the original schema but clear DefineViaAlias
+					contentSchema = originalTd.Schema
+					contentSchema.DefineViaAlias = false
+				}
+			}
+
 			td := TypeDefinition{
 				Name:           responseName,
 				Schema:         contentSchema,
@@ -309,7 +341,14 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 			}
 			options.typeTracker.register(td, "")
 			typeDefinitions = append(typeDefinitions, td)
-			typeDefinitions = append(typeDefinitions, contentSchema.AdditionalTypes...)
+			// Filter out AdditionalTypes that already exist in the type tracker
+			// to avoid duplicating types that were already generated (e.g., from component schemas)
+			for _, additionalType := range contentSchema.AdditionalTypes {
+				if _, exists := options.typeTracker.LookupByName(additionalType.Name); !exists {
+					typeDefinitions = append(typeDefinitions, additionalType)
+					options.typeTracker.register(additionalType, "")
+				}
+			}
 		}
 
 		rcd := &ResponseContentDefinition{
@@ -389,7 +428,14 @@ func getOperationResponses(operationID string, responses *v3high.Responses, opti
 			}
 			options.typeTracker.register(td, "")
 			typeDefinitions = append(typeDefinitions, td)
-			typeDefinitions = append(typeDefinitions, contentSchema.AdditionalTypes...)
+
+			// Filter out AdditionalTypes that already exist in the type tracker
+			for _, additionalType := range contentSchema.AdditionalTypes {
+				if _, exists := options.typeTracker.LookupByName(additionalType.Name); !exists {
+					typeDefinitions = append(typeDefinitions, additionalType)
+					options.typeTracker.register(additionalType, "")
+				}
+			}
 
 			errHeaders, err := generateResponseHeadersSchema(defaultResponse.Headers.FromOldest(), operationID, options)
 			if err != nil {

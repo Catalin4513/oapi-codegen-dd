@@ -129,21 +129,13 @@ func (o *CreateUserRequestOptions) GetHeader() (map[string]string, error) {
 
 type CreateUserBody = CreateUserRequest
 
-type CreateUserResponse struct {
-	ID       string `json:"id" validate:"required"`
-	Username string `json:"username" validate:"required"`
-	Email    string `json:"email" validate:"required"`
-}
+type CreateUserResponse = User
 
-type CreateUserErrorResponse struct{}
+type CreateUserErrorResponse = BadRequestException
 
-func (r CreateUserErrorResponse) Error() string {
-	return "unmapped client error"
-}
+type CreateUserErrorResponseJSON = ConflictException
 
-type CreateUserErrorResponseJSON struct{}
-
-type CreateUserErrorResponseJSON500 struct{}
+type CreateUserErrorResponseJSON500 = InternalServerException
 
 type CreateUserRequest struct {
 	Username string `json:"username" validate:"required"`

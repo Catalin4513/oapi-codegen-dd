@@ -118,10 +118,7 @@ func (o *CreateClientRequestOptions) GetHeader() (map[string]string, error) {
 
 type CreateClientBody = ClientRenamedByExtension
 
-type CreateClientResponse struct {
-	Name              string   `json:"name" validate:"required"`
-	AccountIdentifier *float32 `json:"id,omitempty"`
-}
+type CreateClientResponse = ClientRenamedByExtension
 
 type Client struct {
 	Name string   `json:"name" validate:"required"`

@@ -19,21 +19,20 @@ import (
 	"github.com/pb33f/libopenapi/orderedmap"
 )
 
-// getComponentsSchemas generates type definitions for any custom types defined in the
-// components/schemas section of the Swagger spec.
-func getComponentsSchemas(schemas *orderedmap.Map[string, *base.SchemaProxy], options ParseOptions) ([]TypeDefinition, error) {
-	types := make([]TypeDefinition, 0)
-
-	// First pass: register all schema names with their refs.
-	// This allows forward references to be resolved correctly during schema generation.
+// preRegisterSchemaNames registers all schema names and refs in the TypeTracker
+// BEFORE any other components are processed. This ensures that when parameters,
+// requestBodies, or responses reference schemas, they can look up the correct
+// (potentially renamed) type name.
+func preRegisterSchemaNames(schemas *orderedmap.Map[string, *base.SchemaProxy], options ParseOptions) (map[string]string, error) {
 	schemaNames := make(map[string]string) // schemaName -> goTypeName
+
 	for schemaName, schemaRef := range schemas.FromOldest() {
 		goTypeName, err := renameComponent(schemaNameToTypeName(schemaName), schemaRef)
 		if err != nil {
 			return nil, fmt.Errorf("error making name for components/schemas/%s: %w", schemaName, err)
 		}
 
-		// Check if a type with the same name already exists (e.g., from parameters).
+		// Check if a type with the same name already exists.
 		// If it does, generate a unique name to avoid conflicts.
 		if options.typeTracker.Exists(goTypeName) {
 			goTypeName = options.typeTracker.generateUniqueName(goTypeName)
@@ -41,12 +40,19 @@ func getComponentsSchemas(schemas *orderedmap.Map[string, *base.SchemaProxy], op
 
 		schemaNames[schemaName] = goTypeName
 		componentRef := "#/components/schemas/" + schemaName
-		// Register just the name and ref mapping - full type definition comes in second pass
+		// Register just the name and ref mapping - full type definition comes later
 		options.typeTracker.registerName(goTypeName)
 		options.typeTracker.registerRef(componentRef, goTypeName)
 	}
 
-	// Second pass: generate full schemas (now all refs can be resolved)
+	return schemaNames, nil
+}
+
+// generateSchemaDefinitions generates full type definitions for schemas using
+// pre-registered names. This is the second pass after preRegisterSchemaNames.
+func generateSchemaDefinitions(schemas *orderedmap.Map[string, *base.SchemaProxy], schemaNames map[string]string, options ParseOptions) ([]TypeDefinition, error) {
+	types := make([]TypeDefinition, 0)
+
 	for schemaName, schemaRef := range schemas.FromOldest() {
 		ref := schemaRef.GoLow().GetReference()
 		opts := options.WithReference(ref).WithPath([]string{schemaName})
@@ -94,6 +100,12 @@ func getComponentParameters(params *orderedmap.Map[string, *v3high.Parameter], o
 			return nil, fmt.Errorf("error making name for components/parameters/%s: %w", paramName, err)
 		}
 
+		// Check if a type with the same name already exists (e.g., from schemas).
+		// If it does, generate a unique name to avoid conflicts.
+		if options.typeTracker.Exists(goTypeName) {
+			goTypeName = options.typeTracker.generateUniqueName(goTypeName)
+		}
+
 		ref := ""
 		if paramOrRef.Schema != nil {
 			ref = paramOrRef.Schema.GoLow().GetReference()
@@ -119,12 +131,18 @@ func getComponentParameters(params *orderedmap.Map[string, *v3high.Parameter], o
 		options.typeTracker.register(typeDef, paramRef)
 
 		if ref != "" {
-			// Generate a reference type for referenced parameters
-			refType, err := refPathToGoType(ref)
-			if err != nil {
-				return nil, fmt.Errorf("error generating Go type for (%s) in parameter %s: %w", ref, paramName, err)
+			// Look up the actual registered name for the ref in the TypeTracker.
+			// This handles cases where the schema was renamed due to conflicts.
+			if registeredName, found := options.typeTracker.LookupByRef(ref); found {
+				typeDef.Name = registeredName
+			} else {
+				// Fall back to extracting the name from the ref path
+				refType, err := refPathToGoType(ref)
+				if err != nil {
+					return nil, fmt.Errorf("error generating Go type for (%s) in parameter %s: %w", ref, paramName, err)
+				}
+				typeDef.Name = schemaNameToTypeName(refType)
 			}
-			typeDef.Name = schemaNameToTypeName(refType)
 		}
 
 		types = append(types, typeDef)
@@ -161,6 +179,18 @@ func getComponentsRequestBodies(bodies *orderedmap.Map[string, *v3high.RequestBo
 				return nil, fmt.Errorf("error making name for components/schemas/%s: %w", requestBodyName, err)
 			}
 
+			// Check if a type with the same name already exists (e.g., from components/schemas).
+			// If so, and the existing type is different, generate a unique name for the request body type.
+			if existingType, exists := options.typeTracker.LookupByName(goTypeName); exists {
+				// Check if the types are different (different GoType or different structure)
+				isDifferent := existingType.Schema.GoType != goType.GoType ||
+					(existingType.Schema.ArrayType == nil) != (goType.ArrayType == nil)
+				if isDifferent {
+					// Generate a unique name by appending "Body" suffix
+					goTypeName = options.typeTracker.generateUniqueNameWithSuffixes(goTypeName, []string{"Body"})
+				}
+			}
+
 			typeDef := TypeDefinition{
 				JsonName:       requestBodyName,
 				Schema:         goType,
@@ -175,12 +205,19 @@ func getComponentsRequestBodies(bodies *orderedmap.Map[string, *v3high.RequestBo
 				bodyRef = body.Schema.GoLow().GetReference()
 			}
 			if bodyRef != "" {
-				// Generate a reference type for referenced bodies
-				refType, err := refPathToGoType(bodyRef)
-				if err != nil {
-					return nil, fmt.Errorf("error generating Go type for (%s) in body %s: %w", bodyRef, requestBodyName, err)
+				// Look up the actual registered name for the ref in the TypeTracker.
+				// This handles cases where the schema was renamed due to conflicts
+				// (e.g., Label -> Label1 when a parameter named "label" exists).
+				if registeredName, found := options.typeTracker.LookupByRef(bodyRef); found {
+					typeDef.Name = registeredName
+				} else {
+					// Fall back to extracting the name from the ref path
+					refType, err := refPathToGoType(bodyRef)
+					if err != nil {
+						return nil, fmt.Errorf("error generating Go type for (%s) in body %s: %w", bodyRef, requestBodyName, err)
+					}
+					typeDef.Name = schemaNameToTypeName(refType)
 				}
-				typeDef.Name = schemaNameToTypeName(refType)
 			}
 			types = append(types, typeDef)
 		}
@@ -234,20 +271,27 @@ func getComponentResponses(responses *orderedmap.Map[string, *v3high.Response], 
 				NeedsMarshaler: needsMarshaler(goType),
 			}
 
-			// TODO: check if same as ref
 			contentRef := ""
 			if content.Schema != nil {
 				contentRef = content.Schema.GoLow().GetReference()
 			}
 			if contentRef != "" {
-				// Generate a reference type for referenced parameters
-				refType, err := refPathToGoType(contentRef)
-				if err != nil {
-					return nil, fmt.Errorf("error generating Go type for (%s) in parameter %s: %w",
-						content.Schema.GetReference(), responseName, err)
+				// Look up the actual registered name for the ref in the TypeTracker.
+				// This handles cases where the schema was renamed due to conflicts
+				// (e.g., Label -> Label1 when a parameter named "label" exists).
+				var renamed string
+				if registeredName, found := options.typeTracker.LookupByRef(contentRef); found {
+					renamed = registeredName
+				} else {
+					// Fall back to extracting the name from the ref path
+					refType, err := refPathToGoType(contentRef)
+					if err != nil {
+						return nil, fmt.Errorf("error generating Go type for (%s) in response %s: %w",
+							content.Schema.GetReference(), responseName, err)
+					}
+					renamed = schemaNameToTypeName(refType)
 				}
 
-				renamed := schemaNameToTypeName(refType)
 				// Only set RefType if it's different from the type name to avoid self-reference.
 				// Self-referential RefType causes infinite recursion when processing schemas.
 				if renamed != goTypeName {

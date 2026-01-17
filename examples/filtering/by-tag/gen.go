@@ -107,9 +107,7 @@ var _ ClientInterface = (*Client)(nil)
 
 type GetPurchasesResponse []Purchase
 
-type GetPurchaseResponse struct {
-	ID int `json:"id" validate:"required"`
-}
+type GetPurchaseResponse = Purchase
 
 type Purchase struct {
 	ID int `json:"id" validate:"required"`

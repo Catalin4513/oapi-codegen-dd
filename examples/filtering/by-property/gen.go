@@ -266,16 +266,7 @@ type CreateUserBody = User
 
 type GetUsersResponse []User
 
-type CreateUserResponse struct {
-	// ID Unique identifier
-	ID    string        `json:"id" validate:"required"`
-	Email runtime.Email `json:"email" validate:"required"`
-	Name  *string       `json:"name,omitempty"`
-
-	// Organization Organization that a user belongs to.
-	// This schema is kept because User.organization is in the filter.
-	Organization *Organization `json:"organization,omitempty"`
-}
+type CreateUserResponse = User
 
 type CreateUserErrorResponse struct {
 	Code    string  `json:"code" validate:"required"`
@@ -288,16 +279,7 @@ func (r CreateUserErrorResponse) Error() string {
 	return res0
 }
 
-type GetUserResponse struct {
-	// ID Unique identifier
-	ID    string        `json:"id" validate:"required"`
-	Email runtime.Email `json:"email" validate:"required"`
-	Name  *string       `json:"name,omitempty"`
-
-	// Organization Organization that a user belongs to.
-	// This schema is kept because User.organization is in the filter.
-	Organization *Organization `json:"organization,omitempty"`
-}
+type GetUserResponse = User
 
 type User struct {
 	// ID Unique identifier

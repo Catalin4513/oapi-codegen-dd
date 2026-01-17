@@ -14,10 +14,6 @@ func TestEnumPrefixes(t *testing.T) {
 	// Component schema enum should have type name prefix
 	assert.Equal(t, "company", string(example1.ClientTypeTypeCompany))
 	assert.Equal(t, "individual", string(example1.ClientTypeTypeIndividual))
-
-	// Response schema enum should have response type name prefix
-	assert.Equal(t, "company", string(example1.GetClientResponseTypeCompany))
-	assert.Equal(t, "individual", string(example1.GetClientResponseTypeIndividual))
 }
 
 func TestErrorResponseErrorMethod(t *testing.T) {

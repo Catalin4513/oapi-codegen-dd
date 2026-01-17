@@ -9,21 +9,9 @@ import (
 
 type PostUsersBody = User
 
-type GetUsersResponse struct {
-	Name    *string  `json:"name,omitempty"`
-	Age     *int     `json:"age,omitempty"`
-	Address *Address `json:"address,omitempty"`
-	Contact *Contact `json:"contact,omitempty"`
-	ID      *string  `json:"id,omitempty"`
-}
+type GetUsersResponse = User
 
-type PostUsersResponse struct {
-	Name    *string  `json:"name,omitempty"`
-	Age     *int     `json:"age,omitempty"`
-	Address *Address `json:"address,omitempty"`
-	Contact *Contact `json:"contact,omitempty"`
-	ID      *string  `json:"id,omitempty"`
-}
+type PostUsersResponse = User
 
 type User struct {
 	Name    *string  `json:"name,omitempty"`

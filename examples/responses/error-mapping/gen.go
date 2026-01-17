@@ -97,9 +97,7 @@ type Problem struct {
 	Message *string `json:"message,omitempty"`
 }
 
-type GetFilesResponse struct {
-	Name *string `json:"name,omitempty"`
-}
+type GetFilesResponse = Files
 
 type GetFilesErrorResponse = InvalidRequestError
 

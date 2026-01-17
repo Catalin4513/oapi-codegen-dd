@@ -9,19 +9,7 @@ import (
 
 type PostUsersBody = User
 
-type PostUsersResponse struct {
-	Name string `json:"name" validate:"required"`
-
-	// Active Whether the user is active
-	Active bool `json:"active"`
-
-	// Verified Optional boolean field
-	Verified *bool `json:"verified,omitempty"`
-}
-
-func (p PostUsersResponse) Validate() error {
-	return runtime.ConvertValidatorError(typesValidator.Struct(p))
-}
+type PostUsersResponse = User
 
 type User struct {
 	Name string `json:"name" validate:"required"`

@@ -70,10 +70,7 @@ func (c *Client) GetClient(ctx context.Context, reqEditors ...runtime.RequestEdi
 
 var _ ClientInterface = (*Client)(nil)
 
-type GetClientResponse struct {
-	Name string `json:"name" validate:"required"`
-	Age  *int   `json:"age,omitempty"`
-}
+type GetClientResponse = Person
 
 type Person struct {
 	Name string `json:"name" validate:"required"`

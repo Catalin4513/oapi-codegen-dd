@@ -7,9 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type PostUsersResponse struct {
-	City *Address `json:"city,omitempty"`
-}
+type PostUsersResponse = Address
 
 // User info.
 type User struct{}

@@ -2,10 +2,7 @@
 
 package example1
 
-type GetClientResponse struct {
-	Name string                 `json:"name" validate:"required"`
-	Type *GetClientResponseType `json:"type,omitempty"`
-}
+type GetClientResponse = ClientType
 
 type GetClientErrorResponse struct {
 	Code    *string `json:"code,omitempty"`

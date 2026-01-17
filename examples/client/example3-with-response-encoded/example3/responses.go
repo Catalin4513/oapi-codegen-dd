@@ -10,15 +10,7 @@ import (
 	"github.com/doordash-oss/oapi-codegen-dd/v3/pkg/runtime"
 )
 
-type GetUserSingleResponse struct {
-	ID      string  `json:"id" validate:"required"`
-	Name    *string `json:"name,omitempty"`
-	Address *string `json:"address,omitempty"`
-}
-
-func (g GetUserSingleResponse) Validate() error {
-	return runtime.ConvertValidatorError(typesValidator.Struct(g))
-}
+type GetUserSingleResponse = User
 
 type GetUserUnion1Response = User
 

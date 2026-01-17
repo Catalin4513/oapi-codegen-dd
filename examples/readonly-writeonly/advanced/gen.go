@@ -3,7 +3,6 @@
 package advanced
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/doordash-oss/oapi-codegen-dd/v3/pkg/runtime"
@@ -126,109 +125,13 @@ func (u UpdateUserBody) Validate() error {
 	return errors
 }
 
-type CreateUserResponse struct {
-	// ID Auto-generated user ID. This is readOnly AND required.
-	// - In request bodies (POST, PATCH): should be optional (pointer with omitempty)
-	// - In responses (GET): should be required (non-pointer)
-	ID *string `json:"id,omitempty"`
+type CreateUserResponse = User
 
-	// Name User's full name (regular required field)
-	Name string `json:"name" validate:"required"`
+type ListUsersResponse []User
 
-	// Email User's email address (regular required field)
-	Email runtime.Email `json:"email" validate:"required"`
+type GetUserResponse = User
 
-	// Password User's password. This is writeOnly AND required.
-	// - In request bodies (POST, PATCH): should be required
-	// - In responses (GET): should not be present
-	Password *string `json:"password,omitempty"`
-
-	// Bio Optional user biography (not required, not readOnly/writeOnly)
-	Bio *string `json:"bio,omitempty"`
-
-	// CreatedAt Auto-generated creation timestamp. This is readOnly AND required.
-	// - In request bodies: should be optional (pointer with omitempty)
-	// - In responses: should be required (non-pointer)
-	CreatedAt *time.Time `json:"createdAt,omitempty"`
-
-	// UpdatedAt Auto-generated update timestamp. This is readOnly but NOT required.
-	// - In request bodies: should be optional (pointer with omitempty)
-	// - In responses: should be optional (pointer with omitempty)
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
-
-	// LastLogin Optional last login timestamp (readOnly but not required)
-	LastLogin *time.Time `json:"lastLogin,omitempty"`
-}
-
-type ListUsersResponse ListUsers_Response
-
-type GetUserResponse struct {
-	// ID Auto-generated user ID. This is readOnly AND required.
-	// - In request bodies (POST, PATCH): should be optional (pointer with omitempty)
-	// - In responses (GET): should be required (non-pointer)
-	ID *string `json:"id,omitempty"`
-
-	// Name User's full name (regular required field)
-	Name string `json:"name" validate:"required"`
-
-	// Email User's email address (regular required field)
-	Email runtime.Email `json:"email" validate:"required"`
-
-	// Password User's password. This is writeOnly AND required.
-	// - In request bodies (POST, PATCH): should be required
-	// - In responses (GET): should not be present
-	Password *string `json:"password,omitempty"`
-
-	// Bio Optional user biography (not required, not readOnly/writeOnly)
-	Bio *string `json:"bio,omitempty"`
-
-	// CreatedAt Auto-generated creation timestamp. This is readOnly AND required.
-	// - In request bodies: should be optional (pointer with omitempty)
-	// - In responses: should be required (non-pointer)
-	CreatedAt *time.Time `json:"createdAt,omitempty"`
-
-	// UpdatedAt Auto-generated update timestamp. This is readOnly but NOT required.
-	// - In request bodies: should be optional (pointer with omitempty)
-	// - In responses: should be optional (pointer with omitempty)
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
-
-	// LastLogin Optional last login timestamp (readOnly but not required)
-	LastLogin *time.Time `json:"lastLogin,omitempty"`
-}
-
-type UpdateUserResponse struct {
-	// ID Auto-generated user ID. This is readOnly AND required.
-	// - In request bodies (POST, PATCH): should be optional (pointer with omitempty)
-	// - In responses (GET): should be required (non-pointer)
-	ID *string `json:"id,omitempty"`
-
-	// Name User's full name (regular required field)
-	Name string `json:"name" validate:"required"`
-
-	// Email User's email address (regular required field)
-	Email runtime.Email `json:"email" validate:"required"`
-
-	// Password User's password. This is writeOnly AND required.
-	// - In request bodies (POST, PATCH): should be required
-	// - In responses (GET): should not be present
-	Password *string `json:"password,omitempty"`
-
-	// Bio Optional user biography (not required, not readOnly/writeOnly)
-	Bio *string `json:"bio,omitempty"`
-
-	// CreatedAt Auto-generated creation timestamp. This is readOnly AND required.
-	// - In request bodies: should be optional (pointer with omitempty)
-	// - In responses: should be required (non-pointer)
-	CreatedAt *time.Time `json:"createdAt,omitempty"`
-
-	// UpdatedAt Auto-generated update timestamp. This is readOnly but NOT required.
-	// - In request bodies: should be optional (pointer with omitempty)
-	// - In responses: should be optional (pointer with omitempty)
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
-
-	// LastLogin Optional last login timestamp (readOnly but not required)
-	LastLogin *time.Time `json:"lastLogin,omitempty"`
-}
+type UpdateUserResponse = User
 
 type User struct {
 	// ID Auto-generated user ID. This is readOnly AND required.
@@ -270,76 +173,6 @@ func (u User) Validate() error {
 		errors = errors.Append("Name", err)
 	}
 	if v, ok := any(u.Email).(runtime.Validator); ok {
-		if err := v.Validate(); err != nil {
-			errors = errors.Append("Email", err)
-		}
-	}
-	if len(errors) == 0 {
-		return nil
-	}
-	return errors
-}
-
-type ListUsers_Response []ListUsers_Response_Item
-
-func (l ListUsers_Response) Validate() error {
-	if l == nil {
-		return nil
-	}
-	var errors runtime.ValidationErrors
-	for i, item := range l {
-		if v, ok := any(item).(runtime.Validator); ok {
-			if err := v.Validate(); err != nil {
-				errors = errors.Append(fmt.Sprintf("[%d]", i), err)
-			}
-		}
-	}
-	if len(errors) == 0 {
-		return nil
-	}
-	return errors
-}
-
-type ListUsers_Response_Item struct {
-	// ID Auto-generated user ID. This is readOnly AND required.
-	// - In request bodies (POST, PATCH): should be optional (pointer with omitempty)
-	// - In responses (GET): should be required (non-pointer)
-	ID *string `json:"id,omitempty"`
-
-	// Name User's full name (regular required field)
-	Name string `json:"name" validate:"required"`
-
-	// Email User's email address (regular required field)
-	Email runtime.Email `json:"email" validate:"required"`
-
-	// Password User's password. This is writeOnly AND required.
-	// - In request bodies (POST, PATCH): should be required
-	// - In responses (GET): should not be present
-	Password *string `json:"password,omitempty"`
-
-	// Bio Optional user biography (not required, not readOnly/writeOnly)
-	Bio *string `json:"bio,omitempty"`
-
-	// CreatedAt Auto-generated creation timestamp. This is readOnly AND required.
-	// - In request bodies: should be optional (pointer with omitempty)
-	// - In responses: should be required (non-pointer)
-	CreatedAt *time.Time `json:"createdAt,omitempty"`
-
-	// UpdatedAt Auto-generated update timestamp. This is readOnly but NOT required.
-	// - In request bodies: should be optional (pointer with omitempty)
-	// - In responses: should be optional (pointer with omitempty)
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
-
-	// LastLogin Optional last login timestamp (readOnly but not required)
-	LastLogin *time.Time `json:"lastLogin,omitempty"`
-}
-
-func (l ListUsers_Response_Item) Validate() error {
-	var errors runtime.ValidationErrors
-	if err := typesValidator.Var(l.Name, "required"); err != nil {
-		errors = errors.Append("Name", err)
-	}
-	if v, ok := any(l.Email).(runtime.Validator); ok {
 		if err := v.Validate(); err != nil {
 			errors = errors.Append("Email", err)
 		}

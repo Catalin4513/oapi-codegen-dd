@@ -23,15 +23,7 @@ func (c CreateUserBody) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(c))
 }
 
-type CreateUserResponse struct {
-	// ID Auto-generated user ID
-	ID    *string `json:"id,omitempty"`
-	Name  string  `json:"name" validate:"required"`
-	Email string  `json:"email" validate:"required"`
-
-	// CreatedAt Auto-generated timestamp
-	CreatedAt *time.Time `json:"createdAt,omitempty"`
-}
+type CreateUserResponse = User
 
 type User struct {
 	// ID Auto-generated user ID

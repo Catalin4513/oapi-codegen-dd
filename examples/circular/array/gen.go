@@ -18,11 +18,7 @@ func (g GetNodesIDPath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(g))
 }
 
-type GetNodesIDResponse struct {
-	ID       *int    `json:"id,omitempty"`
-	Name     *string `json:"name,omitempty"`
-	Children []Node  `json:"children,omitempty"`
-}
+type GetNodesIDResponse = Node
 
 type Node struct {
 	ID       *int    `json:"id,omitempty"`

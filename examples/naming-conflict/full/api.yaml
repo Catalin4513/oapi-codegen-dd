@@ -1,0 +1,287 @@
+# Comprehensive naming conflict test
+# Tests all possible naming conflicts between different OpenAPI component types
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Full Naming Conflict Test
+
+paths:
+  /items:
+    get:
+      operationId: GetItems
+      parameters:
+        - $ref: '#/components/parameters/item'
+      responses:
+        '200':
+          $ref: '#/components/responses/Item'
+        '400':
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: CreateItem
+      requestBody:
+        $ref: '#/components/requestBodies/Item'
+      responses:
+        '201':
+          $ref: '#/components/responses/Item'
+
+  /tokens:
+    post:
+      operationId: CreateToken
+      requestBody:
+        $ref: '#/components/requestBodies/Token'
+      responses:
+        '200':
+          $ref: '#/components/responses/Token'
+
+  /labels:
+    get:
+      operationId: GetLabels
+      parameters:
+        - $ref: '#/components/parameters/label'
+      responses:
+        '200':
+          $ref: '#/components/responses/LabelList'
+    post:
+      operationId: CreateLabel
+      requestBody:
+        $ref: '#/components/requestBodies/Label'
+      responses:
+        '201':
+          $ref: '#/components/responses/Label'
+
+  /status:
+    get:
+      operationId: GetStatus
+      parameters:
+        - $ref: '#/components/parameters/status'
+      responses:
+        '200':
+          description: Status response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+
+components:
+  # PARAMETERS - processed first
+  # These create types that may conflict with schemas
+  parameters:
+    # Lowercase 'item' becomes 'Item' type - conflicts with schema 'Item'
+    item:
+      name: item
+      in: query
+      description: Filter by item IDs
+      schema:
+        type: array
+        items:
+          type: string
+
+    # Lowercase 'label' becomes 'Label' type - conflicts with schema 'Label'
+    label:
+      name: label
+      in: query
+      description: Filter by labels
+      schema:
+        type: array
+        items:
+          type: string
+
+    # Lowercase 'status' becomes 'Status' type - conflicts with schema 'Status' (enum)
+    status:
+      name: status
+      in: query
+      description: Filter by status
+      schema:
+        type: string
+        enum:
+          - pending
+          - active
+
+    # Parameter that references a schema
+    category:
+      name: category
+      in: query
+      description: Filter by category
+      schema:
+        $ref: '#/components/schemas/Category'
+
+  # SCHEMAS - processed second
+  # May get renamed if parameter with same name exists
+  schemas:
+    # Conflicts with parameter 'item' -> should become Item1
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        category:
+          $ref: '#/components/schemas/Category'
+
+    # Conflicts with parameter 'label' -> should become Label1
+    Label:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        color:
+          type: string
+
+    # Conflicts with parameter 'status' -> should become Status1
+    Status:
+      type: string
+      enum:
+        - draft
+        - published
+        - archived
+
+    # Simple string type - conflicts with requestBody 'Token'
+    # But schemas are processed before requestBodies, so this stays as 'Token'
+    Token:
+      type: string
+      description: Authentication token
+      example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    # No conflict
+    Category:
+      type: string
+      enum:
+        - electronics
+        - clothing
+        - food
+
+    # Enum with values that could conflict with type names
+    ItemType:
+      type: string
+      enum:
+        - item        # Could conflict with Item type
+        - label       # Could conflict with Label type
+        - category    # Could conflict with Category type
+
+    # Nested object with inline enum
+    Product:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - physical
+            - digital
+            - service
+
+    # Schema referencing another schema
+    ItemList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        total:
+          type: integer
+
+    # Error schema - conflicts with response 'Error'
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+
+  # REQUEST BODIES - processed third
+  # May conflict with schemas
+  requestBodies:
+    # References schema 'Item' (which may be renamed to Item1)
+    Item:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Item'
+
+    # References schema 'Label' (which may be renamed to Label1)
+    Label:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Label'
+
+    # Inline schema - conflicts with schema 'Token'
+    Token:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+                description: The token value
+            required:
+              - token
+
+  # RESPONSES - processed fourth
+  # May conflict with schemas and request bodies
+  responses:
+    # References schema 'Item' (which may be renamed to Item1)
+    Item:
+      description: Single item response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Item'
+
+    # References schema 'Label' (which may be renamed to Label1)
+    Label:
+      description: Single label response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Label'
+
+    # Inline schema for label list
+    LabelList:
+      description: List of labels
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              labels:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Label'
+              total:
+                type: integer
+
+    # References schema 'Token'
+    Token:
+      description: Token response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              token:
+                $ref: '#/components/schemas/Token'
+              expires_at:
+                type: string
+                format: date-time
+                readOnly: true
+
+    # Conflicts with schema 'Error'
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

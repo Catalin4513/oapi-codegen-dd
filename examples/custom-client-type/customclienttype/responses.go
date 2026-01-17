@@ -2,6 +2,4 @@
 
 package customclienttype
 
-type GetClientResponse struct {
-	Name string `json:"name" validate:"required"`
-}
+type GetClientResponse = Client

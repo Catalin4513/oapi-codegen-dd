@@ -120,10 +120,7 @@ type GetTestQuery struct {
 	QueryParam *string `json:"query_param,omitempty"`
 }
 
-type GetTestResponse struct {
-	Message *string                `json:"message,omitempty"`
-	Options *GetTestRequestOptions `json:"options,omitempty"`
-}
+type GetTestResponse = TestResponse
 
 type TestResponse struct {
 	Message *string                `json:"message,omitempty"`

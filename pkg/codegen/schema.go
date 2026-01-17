@@ -503,6 +503,30 @@ func GenerateGoSchema(schemaProxy *base.SchemaProxy, options ParseOptions) (GoSc
 		outSchema.SkipOptionalPointer = skipOptionalPointer
 	}
 
+	// If the schema has a component reference and the type already exists in the tracker,
+	// return early with just the type reference. This prevents regenerating types
+	// (like enums) that were already generated from component schemas.
+	// This handles cases where options.reference was cleared (e.g., for inline responses)
+	// but the schema itself is a ref to a component.
+	// Only do this for inline schemas (path length > 1), not for component schemas/responses
+	// (path length == 1) which need to create their own type definitions.
+	if len(options.path) > 1 && schemaRef != "" && isStandardComponentReference(schemaRef) && options.typeTracker != nil {
+		if actualName, found := options.typeTracker.LookupByRef(schemaRef); found {
+			// The type already exists, just return a reference to it
+			constraints := newConstraints(schema, ConstraintsContext{
+				hasNilType:   slices.Contains(schema.Type, "null"),
+				specLocation: options.specLocation,
+			})
+			return GoSchema{
+				GoType:         actualName,
+				DefineViaAlias: true,
+				Description:    schema.Description,
+				OpenAPISchema:  schema,
+				Constraints:    constraints,
+			}, nil
+		}
+	}
+
 	// GoSchema type and format, eg. string / binary
 	t := schema.Type
 	// Handle objects and empty schemas first as a special case

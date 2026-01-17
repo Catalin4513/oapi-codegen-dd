@@ -28,10 +28,7 @@ func (o OrgModelType) Validate() error {
 	}
 }
 
-type AcctstructureResponse struct {
-	Response *OrgModel `json:"response,omitempty"`
-	Success  *bool     `json:"success,omitempty"`
-}
+type AcctstructureResponse = OrgByIDResponseWrapperModel
 
 type OrgByIDResponseWrapperModel struct {
 	Response *OrgModel `json:"response,omitempty"`

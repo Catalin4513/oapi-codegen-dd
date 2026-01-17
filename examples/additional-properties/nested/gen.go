@@ -17,11 +17,7 @@ func (g GetFilePath) Validate() error {
 	return runtime.ConvertValidatorError(typesValidator.Struct(g))
 }
 
-type GetFileResponse struct {
-	ID       *string                                   `json:"id,omitempty"`
-	Name     *string                                   `json:"name,omitempty"`
-	Metadata map[string]map[string]map[string]Metadata `json:"metadata,omitempty"`
-}
+type GetFileResponse = File
 
 type File struct {
 	ID       *string                                   `json:"id,omitempty"`

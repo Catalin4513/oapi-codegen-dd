@@ -24,20 +24,3 @@ func (c ClientTypeType) Validate() error {
 		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid ClientTypeType value, got: %v", c))
 	}
 }
-
-type GetClientResponseType string
-
-const (
-	GetClientResponseTypeCompany    GetClientResponseType = "company"
-	GetClientResponseTypeIndividual GetClientResponseType = "individual"
-)
-
-// Validate checks if the GetClientResponseType value is valid
-func (g GetClientResponseType) Validate() error {
-	switch g {
-	case GetClientResponseTypeCompany, GetClientResponseTypeIndividual:
-		return nil
-	default:
-		return runtime.NewValidationErrorsFromString("Enum", fmt.Sprintf("must be a valid GetClientResponseType value, got: %v", g))
-	}
-}

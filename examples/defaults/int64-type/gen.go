@@ -7,10 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type GetClientResponse struct {
-	ID  *int64 `json:"id,omitempty"`
-	Age *int32 `json:"age,omitempty"`
-}
+type GetClientResponse = Person
 
 type Person struct {
 	ID  *int64 `json:"id,omitempty"`

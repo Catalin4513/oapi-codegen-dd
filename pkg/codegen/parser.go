@@ -53,6 +53,11 @@ type ParseOptions struct {
 	AlwaysPrefixEnumValues bool
 	SkipValidation         bool
 
+	// ErrorMapping maps response type names to the field that should be used
+	// for the Error() method. When a response type has error mapping configured,
+	// it cannot be an alias (aliases don't support methods).
+	ErrorMapping map[string]string
+
 	// runtime options
 	typeTracker  *TypeTracker
 	reference    string
@@ -113,7 +118,7 @@ type TplOperationsContext struct {
 
 // NewParser creates a new Parser with the provided ParseConfig and ParseContext.
 func NewParser(cfg Configuration, ctx *ParseContext) (*Parser, error) {
-	cfg = cfg.Merge(NewDefaultConfiguration())
+	cfg = cfg.WithDefaults()
 	tpl, err := loadTemplates()
 	if err != nil {
 		return nil, fmt.Errorf("loading templates: %w", err)

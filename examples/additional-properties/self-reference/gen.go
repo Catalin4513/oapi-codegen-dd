@@ -9,10 +9,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type GetTestResponse struct {
-	TotalClicks     *int                        `json:"totalClicks,omitempty"`
-	HourlyBreakDown map[string]AggregatedResult `json:"hourlyBreakDown,omitempty"`
-}
+type GetTestResponse = AggregatedResult
 
 type AggregatedResult struct {
 	TotalClicks     *int                        `json:"totalClicks,omitempty"`
