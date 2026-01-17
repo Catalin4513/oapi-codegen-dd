@@ -260,6 +260,13 @@ func extractDiscriminatorValue(element *base.SchemaProxy, discriminatorProp stri
 		return ""
 	}
 
-	// Return the first (and typically only) enum value
+	// Only return the enum value if there's exactly one.
+	// If there are multiple enum values, we can't determine which one is the
+	// correct discriminator value for this specific schema, so return empty
+	// to fall back to using the reference name.
+	if len(propSchema.Enum) != 1 {
+		return ""
+	}
+
 	return propSchema.Enum[0].Value
 }
