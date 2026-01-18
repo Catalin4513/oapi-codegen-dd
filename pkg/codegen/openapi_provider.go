@@ -51,7 +51,6 @@ func CreateDocument(docContents []byte, cfg Configuration) (libopenapi.Document,
 func LoadDocumentFromContents(contents []byte) (libopenapi.Document, error) {
 	docConfig := &datamodel.DocumentConfiguration{
 		SkipCircularReferenceCheck: true,
-		ExcludeExtensionRefs:       true,
 	}
 	doc, err := libopenapi.NewDocumentWithConfiguration(contents, docConfig)
 	if err != nil {

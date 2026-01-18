@@ -169,6 +169,13 @@ func sanitizeEnumNames(enumNames, enumValues []string) map[string]string {
 		n, v := p[0], p[1]
 		sanitized := sanitizeGoIdentity(schemaNameToTypeName(n))
 
+		// If sanitized is empty (all chars were special chars that got stripped),
+		// use "Empty" as the base name. The duplicate handling below will add
+		// numeric suffixes if there are multiple such values.
+		if sanitized == "" {
+			sanitized = "Value"
+		}
+
 		if _, dup := dupCheck[sanitized]; !dup {
 			sanitizedDeDup[sanitized] = v
 		} else {
@@ -344,6 +351,15 @@ func filterOutEnums(types []TypeDefinition, options ParseOptions) ([]EnumDefinit
 	return enums, rest
 }
 
+// nonConstantTypes contains Go types that cannot be used as constants.
+// These are typically struct types, arrays, or other non-primitive types
+// that require runtime initialization.
+var nonConstantTypes = map[string]bool{
+	"time.Time":    true, // requires runtime initialization
+	"runtime.File": true, // struct type for binary file uploads
+	"uuid.UUID":    true, // [16]byte array type
+}
+
 // isComparableType checks if a Go type can be used as a constant or map key
 func isComparableType(schema GoSchema) bool {
 	// Arrays, slices, maps, and structs cannot be used as constants or map keys
@@ -357,9 +373,8 @@ func isComparableType(schema GoSchema) bool {
 		return false
 	}
 
-	// time.Time cannot be used as a constant (constants must be compile-time values)
-	// This handles cases where format: date-time is combined with enum values
-	if schema.GoType == "time.Time" {
+	// Check against known non-constant types
+	if nonConstantTypes[schema.GoType] {
 		return false
 	}
 

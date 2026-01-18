@@ -52,11 +52,33 @@ func generateUnion(elements []*base.SchemaProxy, discriminator *base.Discriminat
 		}
 	}
 
+	// isSelfReference checks if a schema reference points to the current schema being defined.
+	// This prevents generating invalid recursive type aliases like "type Foo = Foo".
+	isSelfReference := func(ref string) bool {
+		if ref == "" {
+			return false
+		}
+		// Construct the current schema's reference from the path if options.reference is empty
+		// This handles component schemas where the schema itself doesn't have a reference
+		// The path may be ["SchemaName", "oneOf"] so we check the first element
+		currentRef := options.reference
+		if currentRef == "" && len(options.path) >= 1 {
+			currentRef = "#/components/schemas/" + options.path[0]
+		}
+		return currentRef != "" && ref == currentRef
+	}
+
 	// Early return for single element unions (no null involved)
-	if len(elements) == 1 {
+	// Skip this optimization if:
+	// - the single element is a self-reference (would create invalid recursive type alias)
+	// - there's a discriminator (implies polymorphism where child extends parent via allOf)
+	if len(elements) == 1 && discriminator == nil {
 		ref := elements[0].GoLow().GetReference()
-		opts := options.WithReference(ref).WithPath(options.path)
-		return GenerateGoSchema(elements[0], opts)
+		if !isSelfReference(ref) {
+			opts := options.WithReference(ref).WithPath(options.path)
+			return GenerateGoSchema(elements[0], opts)
+		}
+		// Fall through to create a proper union wrapper for self-references
 	}
 
 	// Filter out null types from union elements
@@ -79,17 +101,23 @@ func generateUnion(elements []*base.SchemaProxy, discriminator *base.Discriminat
 	}
 
 	// If after filtering we have only 1 element, return it as a nullable type
-	if len(nonNullElements) == 1 {
+	// Skip this optimization if:
+	// - the single element is a self-reference (would create invalid recursive type alias)
+	// - there's a discriminator (implies polymorphism where child extends parent via allOf)
+	if len(nonNullElements) == 1 && discriminator == nil {
 		ref := nonNullElements[0].GoLow().GetReference()
-		opts := options.WithReference(ref).WithPath(options.path)
-		schema, err := GenerateGoSchema(nonNullElements[0], opts)
-		if err != nil {
-			return GoSchema{}, err
+		if !isSelfReference(ref) {
+			opts := options.WithReference(ref).WithPath(options.path)
+			schema, err := GenerateGoSchema(nonNullElements[0], opts)
+			if err != nil {
+				return GoSchema{}, err
+			}
+			if hasNull {
+				schema.Constraints.Nullable = ptr(true)
+			}
+			return schema, nil
 		}
-		if hasNull {
-			schema.Constraints.Nullable = ptr(true)
-		}
-		return schema, nil
+		// Fall through to create a proper union wrapper for self-references
 	}
 
 	// Use the filtered elements for union generation
@@ -155,12 +183,15 @@ func generateUnion(elements []*base.SchemaProxy, discriminator *base.Discriminat
 
 		if discriminator != nil {
 			// Explicit mapping.
+			// Note: We don't break after finding a match because the same reference
+			// can appear multiple times in the oneOf with different discriminator values.
+			// For example, TextValue might be mapped by both "text" and "filterable-text".
 			var mapped bool
 			for k, v := range discriminator.Mapping.FromOldest() {
 				if v == element.GetReference() {
 					outSchema.Discriminator.Mapping[k] = elementSchema.GoType
 					mapped = true
-					break
+					// Don't break - continue to find all mappings for this reference
 				}
 			}
 			// Implicit mapping.
@@ -202,8 +233,20 @@ func generateUnion(elements []*base.SchemaProxy, discriminator *base.Discriminat
 	// Deduplicate union elements to avoid generating duplicate methods
 	outSchema.UnionElements = deduplicateUnionElements(outSchema.UnionElements)
 
-	if (outSchema.Discriminator != nil) && len(outSchema.Discriminator.Mapping) != len(elements) {
-		return GoSchema{}, ErrDiscriminatorNotAllMapped
+	// Verify that all union elements have at least one discriminator mapping.
+	// Note: Multiple discriminator values can map to the same schema (e.g., different event types
+	// mapping to the same event schema), so we check that all element types are covered,
+	// not that the mapping count equals the element count.
+	if outSchema.Discriminator != nil {
+		mappedTypes := make(map[string]bool)
+		for _, typeName := range outSchema.Discriminator.Mapping {
+			mappedTypes[typeName] = true
+		}
+		for _, elem := range outSchema.UnionElements {
+			if !mappedTypes[elem.TypeName] {
+				return GoSchema{}, ErrDiscriminatorNotAllMapped
+			}
+		}
 	}
 
 	return outSchema, nil
@@ -244,6 +287,7 @@ func isStricterElement(elem1, elem2 UnionElement) bool {
 // extractDiscriminatorValue attempts to extract the discriminator value from a schema.
 // It looks for the discriminator property and extracts its enum value.
 // Works for both inline and referenced schemas (references are resolved automatically).
+// Also handles allOf schemas by searching through all elements.
 // Returns empty string if the value cannot be determined.
 func extractDiscriminatorValue(element *base.SchemaProxy, discriminatorProp string) string {
 	if element == nil {
@@ -251,11 +295,42 @@ func extractDiscriminatorValue(element *base.SchemaProxy, discriminatorProp stri
 	}
 
 	schema := element.Schema()
-	if schema == nil || schema.Properties == nil {
+	if schema == nil {
 		return ""
 	}
 
-	// Look for the discriminator property in the schema
+	// Try to find the discriminator property directly in the schema
+	if value := extractDiscriminatorFromProperties(schema, discriminatorProp); value != "" {
+		return value
+	}
+
+	// If not found directly, search through allOf elements
+	for _, allOfElement := range schema.AllOf {
+		if allOfElement == nil {
+			continue
+		}
+		allOfSchema := allOfElement.Schema()
+		if allOfSchema == nil {
+			continue
+		}
+		if value := extractDiscriminatorFromProperties(allOfSchema, discriminatorProp); value != "" {
+			return value
+		}
+		// Recursively check nested allOf
+		if value := extractDiscriminatorValue(allOfElement, discriminatorProp); value != "" {
+			return value
+		}
+	}
+
+	return ""
+}
+
+// extractDiscriminatorFromProperties extracts the discriminator value from a schema's properties.
+func extractDiscriminatorFromProperties(schema *base.Schema, discriminatorProp string) string {
+	if schema.Properties == nil {
+		return ""
+	}
+
 	propProxy, found := schema.Properties.Get(discriminatorProp)
 	if !found || propProxy == nil {
 		return ""
