@@ -47,6 +47,8 @@ func (m Measurement) Validate() error {
 	return errors
 }
 
+type IgnoredOneOf = int
+
 func UnmarshalAs[T any](v json.RawMessage) (T, error) {
 	var res T
 	err := json.Unmarshal(v, &res)

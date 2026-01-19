@@ -32,3 +32,9 @@ components:
     FlexibleId:
       description: An ID that can be either a string or an integer
       type: ["string", "integer"]
+
+    IgnoredOneOf:
+      type: integer
+      oneOf:
+        - $ref: '#/components/schemas/FlexibleId'
+        - type: string

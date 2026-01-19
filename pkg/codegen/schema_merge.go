@@ -35,6 +35,21 @@ func createFromCombinator(schema *base.Schema, options ParseOptions) (GoSchema, 
 		return GoSchema{}, nil
 	}
 
+	// If the schema has an explicit primitive type alongside oneOf/anyOf,
+	// the primitive type takes precedence. This is common in specs where
+	// oneOf/anyOf is used to constrain values (e.g., enum refs) rather than
+	// define a true union. Example:
+	//   type: integer
+	//   oneOf:
+	//     - $ref: '#/components/schemas/ZeroOneEnum'
+	//     - $ref: '#/components/schemas/NullEnum'
+	// In this case, the field should be an integer, not a union struct.
+	// TODO: Extract validation constraints (e.g., enum values) from oneOf/anyOf
+	// elements and merge them into the primitive type's validation tags.
+	if hasPrimitiveType(schema.Type) && !hasAllOf {
+		return GoSchema{}, nil
+	}
+
 	var (
 		out             GoSchema
 		allOfSchema     GoSchema
@@ -651,5 +666,17 @@ func isDiscriminatedUnionWithChild(schema *base.Schema, childRef string) bool {
 		}
 	}
 
+	return false
+}
+
+// hasPrimitiveType checks if the OpenAPI type array contains a primitive type
+// (string, integer, number, boolean) that should take precedence over oneOf/anyOf.
+func hasPrimitiveType(types []string) bool {
+	for _, t := range types {
+		switch t {
+		case "string", "integer", "number", "boolean":
+			return true
+		}
+	}
 	return false
 }
