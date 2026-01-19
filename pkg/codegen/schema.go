@@ -705,7 +705,7 @@ func schemaHasAdditionalProperties(schema *base.Schema) bool {
 }
 
 func replaceInlineTypes(src GoSchema, options ParseOptions) (GoSchema, string) {
-	if len(src.Properties) == 0 || src.RefType != "" {
+	if (len(src.Properties) == 0 && len(src.UnionElements) == 0) || src.RefType != "" {
 		return src, ""
 	}
 
@@ -728,10 +728,15 @@ func replaceInlineTypes(src GoSchema, options ParseOptions) (GoSchema, string) {
 		needsMarshal = false
 	}
 
+	specLocation := SpecLocationSchema
+	if len(src.UnionElements) > 0 {
+		specLocation = SpecLocationUnion
+	}
+
 	td := TypeDefinition{
 		Name:           name,
 		Schema:         src,
-		SpecLocation:   SpecLocationSchema,
+		SpecLocation:   specLocation,
 		NeedsMarshaler: needsMarshal,
 		JsonName:       "-",
 	}

@@ -362,3 +362,49 @@ func extractDiscriminatorFromProperties(schema *base.Schema, discriminatorProp s
 
 	return propSchema.Enum[0].Value
 }
+
+// generateUnionFromTypes creates a union GoSchema from a list of OpenAPI type strings.
+// This handles OpenAPI 3.1 type arrays like ["string", "number"].
+func generateUnionFromTypes(types []string, schema *base.Schema, constraints Constraints, options ParseOptions) (GoSchema, error) {
+	outSchema := GoSchema{
+		Description:   schema.Description,
+		OpenAPISchema: schema,
+		Constraints:   constraints,
+	}
+
+	for _, typ := range types {
+		var goType string
+		switch typ {
+		case "string":
+			goType = "string"
+		case "number":
+			goType = "float32"
+		case "integer":
+			goType = options.DefaultIntType
+			if goType == "" {
+				goType = "int"
+			}
+		case "boolean", "bool":
+			goType = "bool"
+		default:
+			// For unknown types, use any
+			goType = "any"
+		}
+
+		outSchema.UnionElements = append(outSchema.UnionElements, UnionElement{
+			TypeName: goType,
+			Schema: GoSchema{
+				GoType:         goType,
+				DefineViaAlias: true,
+			},
+		})
+	}
+
+	// Deduplicate union elements
+	outSchema.UnionElements = deduplicateUnionElements(outSchema.UnionElements)
+
+	// Set GoType using createGoStruct to generate proper union struct
+	outSchema.GoType = outSchema.createGoStruct(nil)
+
+	return outSchema, nil
+}

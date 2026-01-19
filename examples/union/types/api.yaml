@@ -1,0 +1,34 @@
+openapi: "3.1.0"
+info:
+  version: 1.0.0
+  title: Type arrays example
+  description: An example of OpenAPI 3.1 type arrays like ["string", "number"]
+paths:
+  /foo:
+    get:
+      responses:
+        '200':
+          description: Foo
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  schemas:
+    Measurement:
+      type: object
+      properties:
+        # Union of string or number
+        value:
+          type: ["string", "number"]
+        # Union of string or integer
+        count:
+          type: ["string", "integer", "boolean"]
+        # Union of boolean or string
+        flag:
+          type: ["boolean", "string"]
+
+    FlexibleId:
+      description: An ID that can be either a string or an integer
+      type: ["string", "integer"]

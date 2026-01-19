@@ -59,6 +59,22 @@ func oapiSchemaToGoType(schema *base.Schema, options ParseOptions) (GoSchema, er
 		specLocation: options.specLocation,
 	})
 
+	// Handle multi-type schemas (union types like ["string", "number"]).
+	// This is OpenAPI 3.1 syntax for type unions.
+	// Count non-null types to determine if this is a union.
+	var nonNullTypes []string
+	for _, typ := range t {
+		if typ != "null" {
+			nonNullTypes = append(nonNullTypes, typ)
+		}
+	}
+	if len(nonNullTypes) > 1 {
+		// Multiple non-null types means this is a union type.
+		// Build union elements from the primitive types.
+		slog.Debug("multi-type schema (union)", "types", t, "path", path)
+		return generateUnionFromTypes(nonNullTypes, schema, constraints, options)
+	}
+
 	if slices.Contains(t, "array") {
 		// For arrays, we'll get the type of the Items and throw a
 		// [] in front of it.
