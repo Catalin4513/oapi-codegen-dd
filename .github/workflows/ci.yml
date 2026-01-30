@@ -1,11 +1,7 @@
 name: CI
 on:
-  push:
-    branches: [main, master]
   pull_request:
-    branches: [main, master]
-  merge_group:
-    types: [checks_requested]
+    branches: [main]
   workflow_dispatch:
     inputs:
       run_integration:
@@ -28,6 +24,18 @@ jobs:
     steps:
       - name: Check out source code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check branch is up to date with main
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            echo "❌ Branch is not up to date with main. Please rebase or merge main into your branch."
+            exit 1
+          fi
+          echo "✅ Branch is up to date with main"
 
       - name: Set up Go
         uses: actions/setup-go@v5
