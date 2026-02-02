@@ -284,6 +284,13 @@ func genFieldsFromProperties(props []Property, options ParseOptions) []string {
 			fieldTags["sensitive"] = ""
 		}
 
+		// Support x-jsonschema
+		if extension, ok := p.Extensions[extPropJsonSchema]; ok {
+			if jsonSchemaValue, err := parseString(extension); err == nil {
+				fieldTags["jsonschema"] = jsonSchemaValue
+			}
+		}
+
 		// Convert the fieldTags map into Go field annotations.
 		keys := sortedMapKeys(fieldTags)
 		tags := make([]string, len(keys))

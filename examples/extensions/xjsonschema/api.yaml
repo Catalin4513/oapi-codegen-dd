@@ -1,0 +1,67 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: x-jsonschema
+  description: Example of using x-jsonschema extension to add jsonschema struct tags
+components:
+  schemas:
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - username
+      properties:
+        id:
+          type: integer
+          format: int64
+          x-jsonschema: "type=integer,minimum=1"
+          description: User ID
+        email:
+          type: string
+          format: email
+          x-jsonschema: "type=string,format=email,pattern=^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+          description: User email address
+        username:
+          type: string
+          minLength: 3
+          maxLength: 20
+          x-jsonschema: "type=string,minLength=3,maxLength=20"
+          description: Username
+        age:
+          type: integer
+          minimum: 0
+          maximum: 150
+          x-jsonschema: "type=integer,minimum=0,maximum=150"
+          description: User age
+        website:
+          type: string
+          format: uri
+          x-jsonschema: "type=string,format=uri"
+          description: User website URL
+        isActive:
+          type: boolean
+          x-jsonschema: "type=boolean"
+          description: Whether the user account is active
+    Product:
+      type: object
+      required:
+        - name
+        - price
+      properties:
+        name:
+          type: string
+          x-jsonschema: "type=string,required"
+          description: Product name
+        price:
+          type: number
+          format: float
+          minimum: 0
+          x-jsonschema: "type=number,minimum=0,exclusiveMinimum=false"
+          description: Product price
+        tags:
+          type: array
+          items:
+            type: string
+          x-jsonschema: "type=array"
+          description: Product tags

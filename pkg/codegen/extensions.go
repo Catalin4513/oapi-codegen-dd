@@ -39,6 +39,7 @@ const (
 	extPropGoJsonIgnore = "x-go-json-ignore"
 	extPropOmitEmpty    = "x-omitempty"
 	extPropExtraTags    = "x-oapi-codegen-extra-tags"
+	extPropJsonSchema   = "x-jsonschema"
 
 	// Override generated variable names for enum constants.
 	extEnumNames         = "x-enum-names"
